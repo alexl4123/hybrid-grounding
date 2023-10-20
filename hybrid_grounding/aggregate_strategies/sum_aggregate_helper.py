@@ -2,6 +2,7 @@
 Helper module for the rewriting of the sum aggregate.
 """
 
+
 class SumAggregateHelper:
     """
     Helper class for the rewriting of the sum aggregate.

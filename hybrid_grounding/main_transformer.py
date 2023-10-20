@@ -71,7 +71,7 @@ class MainTransformer(Transformer):
         self.rule_comparisons = []
         self.shown_predicates = shown_predicates
         self.foundness = {}
-        self.f = {}
+        self.foundedness_check = {}
         self.counter = 0
         self.non_ground_rules = {}
         self.g_counter = "A"
@@ -143,7 +143,7 @@ class MainTransformer(Transformer):
 
         if self.rule_is_non_ground:
             self.handle_non_ground_rule(node)
-        else: 
+        else:
             self.handle_ground_rule(node)
 
         self.current_rule_position += 1
@@ -345,22 +345,22 @@ class MainTransformer(Transformer):
 
         for c in combinations:
             c = tuple(c)
-            if pred not in self.f:
-                self.f[pred] = {}
-                self.f[pred][arity] = {}
-                self.f[pred][arity][c] = {}
-                self.f[pred][arity][c][rule] = {indices}
-            elif arity not in self.f[pred]:
-                self.f[pred][arity] = {}
-                self.f[pred][arity][c] = {}
-                self.f[pred][arity][c][rule] = {indices}
-            elif c not in self.f[pred][arity]:
-                self.f[pred][arity][c] = {}
-                self.f[pred][arity][c][rule] = {indices}
-            elif rule not in self.f[pred][arity][c]:
-                self.f[pred][arity][c][rule] = {indices}
+            if pred not in self.foundedness_check:
+                self.foundedness_check[pred] = {}
+                self.foundedness_check[pred][arity] = {}
+                self.foundedness_check[pred][arity][c] = {}
+                self.foundedness_check[pred][arity][c][rule] = {indices}
+            elif arity not in self.foundedness_check[pred]:
+                self.foundedness_check[pred][arity] = {}
+                self.foundedness_check[pred][arity][c] = {}
+                self.foundedness_check[pred][arity][c][rule] = {indices}
+            elif c not in self.foundedness_check[pred][arity]:
+                self.foundedness_check[pred][arity][c] = {}
+                self.foundedness_check[pred][arity][c][rule] = {indices}
+            elif rule not in self.foundedness_check[pred][arity][c]:
+                self.foundedness_check[pred][arity][c][rule] = {indices}
             else:
-                self.f[pred][arity][c][rule].add(indices)
+                self.foundedness_check[pred][arity][c][rule].add(indices)
 
     def _output_node_format_conform(self, rule):
         """
@@ -497,7 +497,6 @@ class MainTransformer(Transformer):
         return_from_parent_function = False
 
         if not self.program_rules:
-
             self._reset_after_rule()
             if self.cyclic_strategy not in [
                 CyclicStrategy.LEVEL_MAPPING,
@@ -526,7 +525,7 @@ class MainTransformer(Transformer):
                     self._output_node_format_conform(node)
                     self.current_rule_position += 1
                     return_from_parent_function = True
-                
+
         return return_from_parent_function
 
     def handle_non_ground_rule(self, node):
@@ -610,7 +609,7 @@ class MainTransformer(Transformer):
             )
             foundedness_generator.generate_foundedness_part()
 
-    def handle_ground_rule(self,node):
+    def handle_ground_rule(self, node):
         """
         Handle rule which shall be rewritten and is ground.
         """
@@ -644,4 +643,3 @@ class MainTransformer(Transformer):
             self.g_counter = chr(ord(self.g_counter) + 1)
         # print rule as it is
         self._output_node_format_conform(node)
-

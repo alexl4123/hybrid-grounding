@@ -86,7 +86,7 @@ class ComparisonTools:
         """
         @root - A AST operation/term.
         Given a root ast term, it computes all arguments from an operation.
-        Performs a tree traversal of an operation (e.g. X+Y -> first ''+'', then ''X'' and lastly ''Y'' 
+        Performs a tree traversal of an operation (e.g. X+Y -> first ''+'', then ''X'' and lastly ''Y''
             -> then combines together)
         """
 
@@ -377,8 +377,8 @@ class ComparisonTools:
             return res
         else:
             print(
-                f"[WARNING] - The compare evaluation operation for {operation}, " + 
-                f"which is of type {operation.ast_type} is not supported"
+                f"[WARNING] - The compare evaluation operation for {operation}, "
+                + f"which is of type {operation.ast_type} is not supported"
             )
             return "NOT-IMPLEMENTED"
 

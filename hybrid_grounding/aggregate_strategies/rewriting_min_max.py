@@ -4,10 +4,12 @@ Rewriting min-max aggregates.
 
 from .aggregate_mode import AggregateMode
 
+
 class RewritingMinMax:
     """
     Class for rewriting-min-max aggregates.
     """
+
     @classmethod
     def add_min_max_aggregate_rules(
         cls,
@@ -61,7 +63,6 @@ class RewritingMinMax:
             if len(list(guard_domain)) == 1:
                 guard_value = int(str(list(guard_domain)[0]))  # Assuming constant
 
-                # cls._add_min_max_aggregate_rules(cls, aggregate_dict, variable_dependencies, aggregate_mode, cur_variable_dependencies, original_rule_additional_body_literals, new_prg_part_list, new_prg_part_set, [], guard_string)
                 cls._add_min_max_single_domain_adder(
                     aggregate_dict,
                     aggregate_mode,
@@ -86,7 +87,6 @@ class RewritingMinMax:
                 for guard_value in guard_domain_list:
                     always_add_variable_dependecies = [str(guard_value)]
 
-                    # cls._add_min_max_aggregate_rules(cls, aggregate_dict, variable_dependencies, new_operator_functions, remaining_body_functions, aggregate_mode, cur_variable_dependencies)
                     cls._add_min_max_single_domain_adder(
                         aggregate_dict,
                         aggregate_mode,
@@ -219,9 +219,11 @@ class RewritingMinMax:
                         aggregate_mode == AggregateMode.RS_STAR
                         or aggregate_mode == AggregateMode.RS
                     ):
-                        rule_string = f"{head} :- {positive_body_string} {tuple_predicate_head}, {terms[0]} >= {final_guard_value}."
+                        rule_string = f"{head} :- {positive_body_string} " +\
+                            f"{tuple_predicate_head}, {terms[0]} >= {final_guard_value}."
                     elif aggregate_mode == AggregateMode.RS_PLUS:
-                        rule_string = f"{head} :- {positive_body_string} {conditions_string}, {terms[0]} >= {final_guard_value}."
+                        rule_string = f"{head} :- {positive_body_string} " +\
+                            f"{conditions_string}, {terms[0]} >= {final_guard_value}."
 
                     new_prg_part_list.append(rule_string)
 
@@ -233,12 +235,18 @@ class RewritingMinMax:
                         aggregate_mode == AggregateMode.RS_STAR
                         or aggregate_mode == AggregateMode.RS
                     ):
-                        rule_string_1 = f"{head_name}_1{head_terms_string} :- {positive_body_string} {tuple_predicate_head}, {terms[0]} >= {final_guard_value_1}."
-                        rule_string_2 = f"{head_name}_2{head_terms_string} :- {positive_body_string} {tuple_predicate_head}, {terms[0]} >= {final_guard_value_2}."
+                        rule_string_1 = f"{head_name}_1{head_terms_string} :- " +\
+                            f"{positive_body_string} {tuple_predicate_head}, " +\
+                            f"{terms[0]} >= {final_guard_value_1}."
+                        rule_string_2 = f"{head_name}_2{head_terms_string} :- " +\
+                            f"{positive_body_string} {tuple_predicate_head}, " +\
+                            f"{terms[0]} >= {final_guard_value_2}."
 
                     elif aggregate_mode == AggregateMode.RS_PLUS:
-                        rule_string_1 = f"{head_name}_1{head_terms_string} :- {positive_body_string} {conditions_string}, {terms[0]} >= {final_guard_value_1}."
-                        rule_string_2 = f"{head_name}_2{head_terms_string} :- {positive_body_string} {conditions_string}, {terms[0]} >= {final_guard_value_2}."
+                        rule_string_1 = f"{head_name}_1{head_terms_string} :- " +\
+                            f"{positive_body_string} {conditions_string}, {terms[0]} >= {final_guard_value_1}."
+                        rule_string_2 = f"{head_name}_2{head_terms_string} :- " +\
+                            f"{positive_body_string} {conditions_string}, {terms[0]} >= {final_guard_value_2}."
 
                     new_prg_part_list.append(rule_string_1)
                     new_prg_part_list.append(rule_string_2)
@@ -260,9 +268,11 @@ class RewritingMinMax:
                         aggregate_mode == AggregateMode.RS_STAR
                         or aggregate_mode == AggregateMode.RS
                     ):
-                        rule_string = f"{head} :- {positive_body_string} {tuple_predicate_head}, {terms[0]} <= {final_guard_value}."
+                        rule_string = f"{head} :- {positive_body_string} {tuple_predicate_head}, " +\
+                            f"{terms[0]} <= {final_guard_value}."
                     elif aggregate_mode == AggregateMode.RS_PLUS:
-                        rule_string = f"{head} :- {positive_body_string} {conditions_string}, {terms[0]} <= {final_guard_value}."
+                        rule_string = f"{head} :- {positive_body_string} {conditions_string}, " +\
+                            f"{terms[0]} <= {final_guard_value}."
 
                     new_prg_part_list.append(rule_string)
 
@@ -274,11 +284,15 @@ class RewritingMinMax:
                         aggregate_mode == AggregateMode.RS_STAR
                         or aggregate_mode == AggregateMode.RS
                     ):
-                        rule_string_1 = f"{head_name}_1{head_terms_string} :- {positive_body_string} {tuple_predicate_head}, {terms[0]} <= {final_guard_value_1}."
-                        rule_string_2 = f"{head_name}_2{head_terms_string} :- {positive_body_string} {tuple_predicate_head}, {terms[0]} <= {final_guard_value_2}."
+                        rule_string_1 = f"{head_name}_1{head_terms_string} :- {positive_body_string} " +\
+                            f"{tuple_predicate_head}, {terms[0]} <= {final_guard_value_1}."
+                        rule_string_2 = f"{head_name}_2{head_terms_string} :- {positive_body_string} " +\
+                            f"{tuple_predicate_head}, {terms[0]} <= {final_guard_value_2}."
                     elif aggregate_mode == AggregateMode.RS_PLUS:
-                        rule_string_1 = f"{head_name}_1{head_terms_string} :- {positive_body_string} {conditions_string}, {terms[0]} <= {final_guard_value_1}."
-                        rule_string_2 = f"{head_name}_2{head_terms_string} :- {positive_body_string} {conditions_string}, {terms[0]} <= {final_guard_value_2}."
+                        rule_string_1 = f"{head_name}_1{head_terms_string} :- {positive_body_string} " +\
+                            f"{conditions_string}, {terms[0]} <= {final_guard_value_1}."
+                        rule_string_2 = f"{head_name}_2{head_terms_string} :- {positive_body_string} " +\
+                            f"{conditions_string}, {terms[0]} <= {final_guard_value_2}."
 
                     new_prg_part_list.append(rule_string_1)
                     new_prg_part_list.append(rule_string_2)
@@ -318,7 +332,8 @@ class RewritingMinMax:
             )
 
         elif operator_type == "!=":
-            intermediate_rule = f"not_{head} :- {head_name}_1{original_rule_head_terms_string}, not {head_name}_2{original_rule_head_terms_string}."
+            intermediate_rule = f"not_{head} :- {head_name}_1{original_rule_head_terms_string}, " +\
+                f"not {head_name}_2{original_rule_head_terms_string}."
             new_prg_part_list.append(intermediate_rule)
 
             original_rule_additional_body_literals.append(f"not not_{head}")

@@ -89,7 +89,7 @@ class ReplaceAggregateStrategy:
 
             new_aggregate += f" {operator} {right_guard_term}"
 
-        if grounding_mode != GroundingModes.RewriteAggregatesNoGround:
+        if grounding_mode != GroundingModes.REWRITE_AGGREGATES_NO_GROUND:
             new_program_list.append("#program no_rules.")
 
         return (new_program_list, [new_aggregate], list(set(new_program_set)))

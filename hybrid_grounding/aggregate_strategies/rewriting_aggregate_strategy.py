@@ -11,6 +11,7 @@ class RSRewriting:
     """
     General class for the rewriting strategy.
     """
+
     @classmethod
     def rewriting_aggregate_strategy(
         cls,
@@ -34,16 +35,49 @@ class RSRewriting:
         output_remaining_body = []
 
         if aggregate_dict["left_guard"]:
-            cls.handle_left_guard(aggregate_dict, variables_dependencies_aggregate, aggregate_mode, cur_variable_dependencies, domain, rule_positive_body, str_type, new_prg_list, new_prg_set, output_remaining_body)
+            cls.handle_left_guard(
+                aggregate_dict,
+                variables_dependencies_aggregate,
+                aggregate_mode,
+                cur_variable_dependencies,
+                domain,
+                rule_positive_body,
+                str_type,
+                new_prg_list,
+                new_prg_set,
+                output_remaining_body,
+            )
 
         if aggregate_dict["right_guard"]:
-
-            cls.handle_right_guard(aggregate_dict, variables_dependencies_aggregate, aggregate_mode, cur_variable_dependencies, domain, rule_positive_body, str_type, new_prg_list, new_prg_set, output_remaining_body)
+            cls.handle_right_guard(
+                aggregate_dict,
+                variables_dependencies_aggregate,
+                aggregate_mode,
+                cur_variable_dependencies,
+                domain,
+                rule_positive_body,
+                str_type,
+                new_prg_list,
+                new_prg_set,
+                output_remaining_body,
+            )
 
         return (new_prg_list, list(set(output_remaining_body)), list(set(new_prg_set)))
 
     @classmethod
-    def handle_right_guard(cls, aggregate_dict, variables_dependencies_aggregate, aggregate_mode, cur_variable_dependencies, domain, rule_positive_body, str_type, new_prg_list, new_prg_set, output_remaining_body):
+    def handle_right_guard(
+        cls,
+        aggregate_dict,
+        variables_dependencies_aggregate,
+        aggregate_mode,
+        cur_variable_dependencies,
+        domain,
+        rule_positive_body,
+        str_type,
+        new_prg_list,
+        new_prg_set,
+        output_remaining_body,
+    ):
         """
         Method which handles the right guard of the aggregate.
         """
@@ -51,13 +85,13 @@ class RSRewriting:
         right_guard_string = str(right_guard.term)
 
         right_guard_domain = cls.get_guard_domain(
-                cur_variable_dependencies,
-                domain,
-                right_guard,
-                right_guard_string,
-                variables_dependencies_aggregate,
-                aggregate_dict,
-            )
+            cur_variable_dependencies,
+            domain,
+            right_guard,
+            right_guard_string,
+            variables_dependencies_aggregate,
+            aggregate_dict,
+        )
 
         operator = ComparisonTools.getCompOperator(right_guard.comparison)
         operator_type = operator
@@ -65,29 +99,41 @@ class RSRewriting:
         string_capsulation = "right"
 
         (
-                new_prg_list_tmp,
-                output_remaining_body_tmp,
-                new_prg_set_tmp,
-            ) = cls.aggregate_caller(
-                str_type,
-                aggregate_dict,
-                variables_dependencies_aggregate,
-                aggregate_mode,
-                cur_variable_dependencies,
-                right_guard_domain,
-                operator_type,
-                string_capsulation,
-                right_guard_string,
-                rule_positive_body,
-                domain,
-            )
+            new_prg_list_tmp,
+            output_remaining_body_tmp,
+            new_prg_set_tmp,
+        ) = cls.aggregate_caller(
+            str_type,
+            aggregate_dict,
+            variables_dependencies_aggregate,
+            aggregate_mode,
+            cur_variable_dependencies,
+            right_guard_domain,
+            operator_type,
+            string_capsulation,
+            right_guard_string,
+            rule_positive_body,
+            domain,
+        )
 
         new_prg_list += new_prg_list_tmp
         output_remaining_body += output_remaining_body_tmp
         new_prg_set += new_prg_set_tmp
 
     @classmethod
-    def handle_left_guard(cls, aggregate_dict, variables_dependencies_aggregate, aggregate_mode, cur_variable_dependencies, domain, rule_positive_body, str_type, new_prg_list, new_prg_set, output_remaining_body):
+    def handle_left_guard(
+        cls,
+        aggregate_dict,
+        variables_dependencies_aggregate,
+        aggregate_mode,
+        cur_variable_dependencies,
+        domain,
+        rule_positive_body,
+        str_type,
+        new_prg_list,
+        new_prg_set,
+        output_remaining_body,
+    ):
         """
         Method which handles the left guard of the aggregate.
         """
@@ -95,13 +141,13 @@ class RSRewriting:
         left_guard_string = str(left_guard.term)
 
         left_guard_domain = cls.get_guard_domain(
-                cur_variable_dependencies,
-                domain,
-                left_guard,
-                left_guard_string,
-                variables_dependencies_aggregate,
-                aggregate_dict,
-            )
+            cur_variable_dependencies,
+            domain,
+            left_guard,
+            left_guard_string,
+            variables_dependencies_aggregate,
+            aggregate_dict,
+        )
 
         operator = ComparisonTools.getCompOperator(left_guard.comparison)
 
@@ -119,22 +165,22 @@ class RSRewriting:
         string_capsulation = "left"
 
         (
-                new_prg_list_tmp,
-                output_remaining_body_tmp,
-                new_prg_set_tmp,
-            ) = cls.aggregate_caller(
-                str_type,
-                aggregate_dict,
-                variables_dependencies_aggregate,
-                aggregate_mode,
-                cur_variable_dependencies,
-                left_guard_domain,
-                operator_type,
-                string_capsulation,
-                left_guard_string,
-                rule_positive_body,
-                domain,
-            )
+            new_prg_list_tmp,
+            output_remaining_body_tmp,
+            new_prg_set_tmp,
+        ) = cls.aggregate_caller(
+            str_type,
+            aggregate_dict,
+            variables_dependencies_aggregate,
+            aggregate_mode,
+            cur_variable_dependencies,
+            left_guard_domain,
+            operator_type,
+            string_capsulation,
+            left_guard_string,
+            rule_positive_body,
+            domain,
+        )
 
         new_prg_list += new_prg_list_tmp
         output_remaining_body += output_remaining_body_tmp

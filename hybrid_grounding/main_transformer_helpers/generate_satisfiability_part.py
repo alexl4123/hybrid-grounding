@@ -12,6 +12,7 @@ class GenerateSatisfiabilityPart:
     """
     Class for ensuring satisfiability.
     """
+
     def __init__(
         self,
         rule_head,

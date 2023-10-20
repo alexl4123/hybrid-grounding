@@ -14,6 +14,7 @@ class RewritingCountSum:
     """
     Rewriting count/sum class.
     """
+
     @classmethod
     def _add_count_sum_aggregate_rules(
         cls,

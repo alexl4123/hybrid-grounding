@@ -46,15 +46,15 @@ def main():
     grounding_modes_choices = {
         "PAR": {
             "cmd_line": "rewrite-aggregates-ground-partly",
-            "enum_mode": GroundingModes.RewriteAggregatesGroundPartly,
+            "enum_mode": GroundingModes.REWRITE_AGGREGATES_GROUND_PARTLY,
         },
         "AGG": {
             "cmd_line": "rewrite-aggregates-no-ground",
-            "enum_mode": GroundingModes.RewriteAggregatesNoGround,
+            "enum_mode": GroundingModes.REWRITE_AGGREGATES_NO_GROUND,
         },
         "FUL": {
             "cmd_line": "rewrite-aggregates-ground-fully",
-            "enum_mode": GroundingModes.RewriteAggregatesGroundFully,
+            "enum_mode": GroundingModes.REWRITE_AGGREGATES_GROUND_FULLY,
         },
     }
 
@@ -66,7 +66,7 @@ def main():
     )
     parser.add_argument(
         "--mode",
-        default=GroundingModes.RewriteAggregatesGroundPartly,
+        default=GroundingModes.REWRITE_AGGREGATES_GROUND_PARTLY,
         choices=[
             grounding_modes_choices[key]["cmd_line"]
             for key in grounding_modes_choices.keys()
@@ -98,7 +98,7 @@ def main():
         if args.mode == grounding_modes_choices[key]["cmd_line"]:
             grounding_mode = grounding_modes_choices[key]["enum_mode"]
 
-    if grounding_mode and grounding_mode == GroundingModes.RewriteAggregatesGroundFully:
+    if grounding_mode and grounding_mode == GroundingModes.REWRITE_AGGREGATES_GROUND_FULLY:
         ground_guess = True
 
     aggregate_strategy = None

@@ -12,6 +12,7 @@ class LevelMappingsPart:
     """
     Class for generating the level mappings.
     """
+
     def __init__(
         self,
         custom_printer,

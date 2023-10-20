@@ -2,10 +2,12 @@
 General helper module for the reduction.
 """
 
+
 class HelperPart:
     """
     General helper class for the reduction.
     """
+
     @classmethod
     def get_domain_values_from_rule_variable(
         cls, rule, variable, domain, safe_variables_rules, rule_variables_predicates={}

@@ -348,7 +348,6 @@ class GenerateFoundednessPart:
         dom_list_lookup,
         head,
     ):
-
         head_tuple_list = []
         partly_head_tuple_list = []
 

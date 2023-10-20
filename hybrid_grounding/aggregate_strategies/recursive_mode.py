@@ -10,6 +10,7 @@ class RecursiveAggregateRewriting:
     """
     Class for the recursive strategies.
     """
+
     @classmethod
     def recursive_strategy(
         cls,
@@ -53,20 +54,74 @@ class RecursiveAggregateRewriting:
         str_type = aggregate_dict["function"][1]
         str_id = aggregate_dict["id"]
 
-        skolem_constants, element_dependent_variables = cls.generate_tuple_predicate_rules(aggregate_dict, variable_dependencies, domain, rule_positive_body, new_prg_part_set, str_type, str_id)
+        (
+            skolem_constants,
+            element_dependent_variables,
+        ) = cls.generate_tuple_predicate_rules(
+            aggregate_dict,
+            variable_dependencies,
+            domain,
+            rule_positive_body,
+            new_prg_part_set,
+            str_type,
+            str_id,
+        )
 
-        body_heads, body_heads_tuple_vars, body_heads_tuple_vars_first, joined_variable_dependencies, first_tuple_predicate_arguments, second_tuple_predicate_arguments = cls.generate_helper_variables(variable_dependencies, str_type, str_id, skolem_constants, element_dependent_variables)
+        (
+            body_heads,
+            body_heads_tuple_vars,
+            body_heads_tuple_vars_first,
+            joined_variable_dependencies,
+            first_tuple_predicate_arguments,
+            second_tuple_predicate_arguments,
+        ) = cls.generate_helper_variables(
+            variable_dependencies,
+            str_type,
+            str_id,
+            skolem_constants,
+            element_dependent_variables,
+        )
 
-        cls.added_to_original_body(str_id, str_type, joined_variable_dependencies, remaining_body_part, aggregate_dict)
-        
-        cls.add_partial_predicate_rules(str_type, str_id, joined_variable_dependencies, first_tuple_predicate_arguments, body_heads_tuple_vars, second_tuple_predicate_arguments, body_heads_tuple_vars_first, new_prg_part)
+        cls.added_to_original_body(
+            str_id,
+            str_type,
+            joined_variable_dependencies,
+            remaining_body_part,
+            aggregate_dict,
+        )
 
-        cls.generate_ordering_predicate_rules(body_heads, str_id, joined_variable_dependencies, first_tuple_predicate_arguments, body_heads_tuple_vars, second_tuple_predicate_arguments, new_prg_part)
+        cls.add_partial_predicate_rules(
+            str_type,
+            str_id,
+            joined_variable_dependencies,
+            first_tuple_predicate_arguments,
+            body_heads_tuple_vars,
+            second_tuple_predicate_arguments,
+            body_heads_tuple_vars_first,
+            new_prg_part,
+        )
+
+        cls.generate_ordering_predicate_rules(
+            body_heads,
+            str_id,
+            joined_variable_dependencies,
+            first_tuple_predicate_arguments,
+            body_heads_tuple_vars,
+            second_tuple_predicate_arguments,
+            new_prg_part,
+        )
 
         return (new_prg_part, remaining_body_part, new_prg_part_set)
 
     @classmethod
-    def generate_helper_variables(cls, variable_dependencies, str_type, str_id, skolem_constants, element_dependent_variables):
+    def generate_helper_variables(
+        cls,
+        variable_dependencies,
+        str_type,
+        str_id,
+        skolem_constants,
+        element_dependent_variables,
+    ):
         """
         Generate the helper variables, needed by the other construction methods.
         """
@@ -100,10 +155,26 @@ class RecursiveAggregateRewriting:
             joined_variable_dependencies = ""
             first_tuple_predicate_arguments = f"{body_heads_tuple_vars[0]}"
             second_tuple_predicate_arguments = f"{body_heads_tuple_vars[1]}"
-        return body_heads,body_heads_tuple_vars,body_heads_tuple_vars_first,joined_variable_dependencies,first_tuple_predicate_arguments,second_tuple_predicate_arguments
+        return (
+            body_heads,
+            body_heads_tuple_vars,
+            body_heads_tuple_vars_first,
+            joined_variable_dependencies,
+            first_tuple_predicate_arguments,
+            second_tuple_predicate_arguments,
+        )
 
     @classmethod
-    def generate_tuple_predicate_rules(cls, aggregate_dict, variable_dependencies, domain, rule_positive_body, new_prg_part_set, str_type, str_id):
+    def generate_tuple_predicate_rules(
+        cls,
+        aggregate_dict,
+        variable_dependencies,
+        domain,
+        rule_positive_body,
+        new_prg_part_set,
+        str_type,
+        str_id,
+    ):
         """
         Generate the tuple predicates and rules.
         """
@@ -150,10 +221,17 @@ class RecursiveAggregateRewriting:
 
             body_string = f"body_{str_type}_ag{str_id}({term_string}) :- {positive_body_string} {','.join(element['condition'])}."
             new_prg_part_set.append(body_string)
-        return skolem_constants,element_dependent_variables
+        return skolem_constants, element_dependent_variables
 
     @classmethod
-    def added_to_original_body(cls, str_id, str_type, joined_variable_dependencies, remaining_body_part, aggregate_dict):
+    def added_to_original_body(
+        cls,
+        str_id,
+        str_type,
+        joined_variable_dependencies,
+        remaining_body_part,
+        aggregate_dict,
+    ):
         """
         Handle the rewriting of the original rule.
         """
@@ -177,9 +255,18 @@ class RecursiveAggregateRewriting:
                 f"{original_rule_aggregate_variable} {right_operator} {right_guard_string}"
             )
 
-
     @classmethod
-    def add_partial_predicate_rules(cls, str_type, str_id, joined_variable_dependencies, first_tuple_predicate_arguments, body_heads_tuple_vars, second_tuple_predicate_arguments, body_heads_tuple_vars_first, new_prg_part):
+    def add_partial_predicate_rules(
+        cls,
+        str_type,
+        str_id,
+        joined_variable_dependencies,
+        first_tuple_predicate_arguments,
+        body_heads_tuple_vars,
+        second_tuple_predicate_arguments,
+        body_heads_tuple_vars_first,
+        new_prg_part,
+    ):
         """
         Add all 'partial' predicate rules.
         """
@@ -244,7 +331,16 @@ class RecursiveAggregateRewriting:
         new_prg_part.append(rule_string)
 
     @classmethod
-    def generate_ordering_predicate_rules(cls, body_heads, str_id, joined_variable_dependencies, first_tuple_predicate_arguments, body_heads_tuple_vars, second_tuple_predicate_arguments, new_prg_part):
+    def generate_ordering_predicate_rules(
+        cls,
+        body_heads,
+        str_id,
+        joined_variable_dependencies,
+        first_tuple_predicate_arguments,
+        body_heads_tuple_vars,
+        second_tuple_predicate_arguments,
+        new_prg_part,
+    ):
         """
         Generate all predicates/rules which are needed for the ordering.
         """
@@ -281,4 +377,3 @@ class RecursiveAggregateRewriting:
         first_head = f"first_ag{str_id}({first_tuple_predicate_arguments})"
         rule_string = f"{first_head} :- {body_heads[0]}, not not_first_ag{str_id}({first_tuple_predicate_arguments})."
         new_prg_part.append(rule_string)
-

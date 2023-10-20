@@ -15,6 +15,7 @@ class GuessHeadPart:
     """
     Class for guessing the head part.
     """
+
     def __init__(
         self,
         rule_head,

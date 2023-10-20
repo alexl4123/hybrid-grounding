@@ -3,6 +3,7 @@ Helper class for the count and RELATED aggregates.
 I.e., it implements some commonly used methods, used also by other aggregates.
 """
 
+
 class CountAggregateHelper:
     """
     Helper class for the count aggregate.

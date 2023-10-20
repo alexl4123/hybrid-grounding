@@ -1,3 +1,4 @@
+# pylint: disable=C0103
 """
 Preliminary transformer module/class.
 Necessary for domain inference, and strongly-connected-component computation.
@@ -22,7 +23,7 @@ class TermTransformer(Transformer):
         self.terms = []
         self.facts = {}
         self.ng_heads = {}
-        self.ng = False
+        self.non_ground = False
         self.show = False
         self.shown_predicates = {}
         self.no_show = no_show
@@ -105,44 +106,32 @@ class TermTransformer(Transformer):
             if node_counter not in self.dependency_graph_node_rule_bodies_lookup:
                 self.dependency_graph_node_rule_bodies_lookup[node_counter] = {}
 
-            if (
-                    rule
-                    not in self.dependency_graph_node_rule_bodies_lookup[node_counter]
-                ):
-                self.dependency_graph_node_rule_bodies_lookup[node_counter][
-                        rule
-                    ] = []
+            if rule not in self.dependency_graph_node_rule_bodies_lookup[node_counter]:
+                self.dependency_graph_node_rule_bodies_lookup[node_counter][rule] = []
 
             if (
-                    predicate
-                    not in self.dependency_graph_node_rule_bodies_lookup[node_counter][
-                        rule
-                    ]
-                ):
+                predicate
+                not in self.dependency_graph_node_rule_bodies_lookup[node_counter][rule]
+            ):
                 self.dependency_graph_node_rule_bodies_lookup[node_counter][
-                        rule
-                    ].append(predicate)
+                    rule
+                ].append(predicate)
 
             for head_predicate_name in self.current_head_predicate_names:
-                if (
-                        head_predicate_name
-                        not in self.dependency_graph_rule_node_lookup
-                    ):
+                if head_predicate_name not in self.dependency_graph_rule_node_lookup:
                     self.dependency_graph_rule_node_lookup[
-                            head_predicate_name
-                        ] = self.dependency_graph_node_counter
+                        head_predicate_name
+                    ] = self.dependency_graph_node_counter
                     self.dependency_graph_node_rule_lookup[
-                            self.dependency_graph_node_counter
-                        ] = [rule]
+                        self.dependency_graph_node_counter
+                    ] = [rule]
 
-                    self.dependency_graph.add_node(
-                            self.dependency_graph_node_counter
-                        )
+                    self.dependency_graph.add_node(self.dependency_graph_node_counter)
                     self.dependency_graph_node_counter += 1
 
                 head_counter = self.dependency_graph_rule_node_lookup[
-                        head_predicate_name
-                    ]
+                    head_predicate_name
+                ]
                 if not self.dependency_graph.has_edge(node_counter, head_counter):
                     self.dependency_graph.add_edge(node_counter, head_counter)
 
@@ -150,23 +139,16 @@ class TermTransformer(Transformer):
             if node_counter not in self.dependency_graph_node_rule_heads_lookup:
                 self.dependency_graph_node_rule_heads_lookup[node_counter] = {}
 
-            if (
-                    rule
-                    not in self.dependency_graph_node_rule_heads_lookup[node_counter]
-                ):
-                self.dependency_graph_node_rule_heads_lookup[node_counter][
-                        rule
-                    ] = []
+            if rule not in self.dependency_graph_node_rule_heads_lookup[node_counter]:
+                self.dependency_graph_node_rule_heads_lookup[node_counter][rule] = []
 
             if (
+                predicate
+                not in self.dependency_graph_node_rule_heads_lookup[node_counter][rule]
+            ):
+                self.dependency_graph_node_rule_heads_lookup[node_counter][rule].append(
                     predicate
-                    not in self.dependency_graph_node_rule_heads_lookup[node_counter][
-                        rule
-                    ]
-                ):
-                self.dependency_graph_node_rule_heads_lookup[node_counter][
-                        rule
-                    ].append(predicate)
+                )
 
     def add_predicate_name_to_dependency_graph(self, predicate, rule, predicate_name):
         """
@@ -174,58 +156,51 @@ class TermTransformer(Transformer):
         """
 
         self.dependency_graph_rule_node_lookup[
-                predicate_name
-            ] = self.dependency_graph_node_counter
-        self.dependency_graph_node_rule_lookup[
-                self.dependency_graph_node_counter
-            ] = [rule]
+            predicate_name
+        ] = self.dependency_graph_node_counter
+        self.dependency_graph_node_rule_lookup[self.dependency_graph_node_counter] = [
+            rule
+        ]
 
         self.dependency_graph.add_node(self.dependency_graph_node_counter)
 
         if self.in_body is True or self._head_aggregate_element is True:
             self.dependency_graph_node_rule_bodies_lookup[
-                    self.dependency_graph_node_counter
-                ] = {}
+                self.dependency_graph_node_counter
+            ] = {}
             self.dependency_graph_node_rule_bodies_lookup[
-                    self.dependency_graph_node_counter
-                ][rule] = [predicate]
+                self.dependency_graph_node_counter
+            ][rule] = [predicate]
 
             temp_node_counter = self.dependency_graph_node_counter
 
             self.dependency_graph_node_counter += 1
 
             for head_predicate_name in self.current_head_predicate_names:
-                if (
-                        head_predicate_name
-                        not in self.dependency_graph_rule_node_lookup
-                    ):
+                if head_predicate_name not in self.dependency_graph_rule_node_lookup:
                     self.dependency_graph_rule_node_lookup[
-                            head_predicate_name
-                        ] = self.dependency_graph_node_counter
+                        head_predicate_name
+                    ] = self.dependency_graph_node_counter
                     self.dependency_graph_node_rule_lookup[
-                            self.dependency_graph_node_counter
-                        ] = [rule]
+                        self.dependency_graph_node_counter
+                    ] = [rule]
 
-                    self.dependency_graph.add_node(
-                            self.dependency_graph_node_counter
-                        )
+                    self.dependency_graph.add_node(self.dependency_graph_node_counter)
                     self.dependency_graph_node_counter += 1
 
                 head_counter = self.dependency_graph_rule_node_lookup[
-                        head_predicate_name
-                    ]
-                if not self.dependency_graph.has_edge(
-                        temp_node_counter, head_counter
-                    ):
+                    head_predicate_name
+                ]
+                if not self.dependency_graph.has_edge(temp_node_counter, head_counter):
                     self.dependency_graph.add_edge(temp_node_counter, head_counter)
 
         elif self.in_head is True:
             self.dependency_graph_node_rule_heads_lookup[
-                    self.dependency_graph_node_counter
-                ] = {}
+                self.dependency_graph_node_counter
+            ] = {}
             self.dependency_graph_node_rule_heads_lookup[
-                    self.dependency_graph_node_counter
-                ][rule] = [predicate]
+                self.dependency_graph_node_counter
+            ][rule] = [predicate]
 
             self.dependency_graph_node_counter += 1
 
@@ -257,15 +232,16 @@ class TermTransformer(Transformer):
         arguments = re.sub(r"^.*?\(", "", str(node.head))[:-1].split(",")
         arity = len(arguments)
 
-        if self.ng:
-            self.ng = False
+        if self.non_ground:
+            self.non_ground = False
             if str(node.head) != "#false":
                 # save pred and arity for later use
                 if pred not in self.ng_heads:
                     self.ng_heads[pred] = {arity}
                 else:
                     self.ng_heads[pred].add(arity)
-        elif node.body.__len__() == 0:
+        elif len(node.body) == 0:
+            # elif node.body.__len__() == 0:
             arguments = ",".join(arguments)
             if pred not in self.facts:
                 self.facts[pred] = {}
@@ -498,7 +474,7 @@ class TermTransformer(Transformer):
                 str(self.current_rule_position), str(node), self.current_comparison
             )
 
-        self.ng = True
+        self.non_ground = True
         return node
 
     def visit_Interval(self, node):

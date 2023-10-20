@@ -1,9 +1,8 @@
+# pylint: disable=C0103
 """
 Transformer that transforms the aggregates according to hybrid-grounding.
 """
 
-import argparse
-import sys
 
 import clingo
 from clingo.ast import Transformer
@@ -41,6 +40,7 @@ class AggregateTransformer(Transformer):
 
         self.in_head = False
         self.in_body = False
+        self.rules = False
 
         self.grounding_mode = grounding_mode
 
@@ -57,7 +57,7 @@ class AggregateTransformer(Transformer):
         """
         if node.name == "rules":
             self.rules = True
-            if self.grounding_mode != GroundingModes.RewriteAggregatesNoGround:
+            if self.grounding_mode != GroundingModes.REWRITE_AGGREGATES_NO_GROUND:
                 self.new_prg.append(str(node))
         else:
             self.rules = False
@@ -105,8 +105,6 @@ class AggregateTransformer(Transformer):
             self._dispatch(old)
             self.in_body = False
 
-        # self.visit_children(node)
-
         if not self.cur_has_aggregate or not self.rules:
             body_rep = ""
 
@@ -136,8 +134,6 @@ class AggregateTransformer(Transformer):
                     remaining_body.append(str(body_item))
 
             for aggregate_index in range(len(self.cur_aggregates)):
-                aggregate = self.cur_aggregates[aggregate_index]
-                aggregate["function"][1]
                 remaining_body += self._add_aggregate_helper_rules(aggregate_index)
 
             remaining_body_string = ",".join(remaining_body)
@@ -218,8 +214,9 @@ class AggregateTransformer(Transformer):
             condition_ast_list = []
             condition_strings = []
             for condition in node.condition:
-
-                self.for_each_aggregate_condition(element_dict, condition_ast_list, condition_strings, condition)
+                self.for_each_aggregate_condition(
+                    element_dict, condition_ast_list, condition_strings, condition
+                )
 
             element_dict["condition"] = condition_strings
             element_dict["condition_ast"] = condition_ast_list
@@ -228,27 +225,27 @@ class AggregateTransformer(Transformer):
 
         return node
 
-    def for_each_aggregate_condition(self, element_dict, condition_ast_list, condition_strings, condition):
+    def for_each_aggregate_condition(
+        self, element_dict, condition_ast_list, condition_strings, condition
+    ):
         """
         For each aggregate condition the following code is executed.
         """
         condition_ast_list.append(condition)
 
         if (
-                    hasattr(condition, "atom")
-                    and hasattr(condition.atom, "symbol")
-                    and condition.atom.symbol.ast_type == clingo.ast.ASTType.Function
-                ):
+            hasattr(condition, "atom")
+            and hasattr(condition.atom, "symbol")
+            and condition.atom.symbol.ast_type == clingo.ast.ASTType.Function
+        ):
             for argument in condition.atom.symbol.arguments:
                 if argument.ast_type == clingo.ast.ASTType.Variable:
                     if str(argument) not in element_dict["condition_variables"]:
-                        element_dict["condition_variables"].append(
-                                    str(argument)
-                                )
+                        element_dict["condition_variables"].append(str(argument))
         elif (
-                    hasattr(condition, "atom")
-                    and condition.atom.ast_type == clingo.ast.ASTType.Comparison
-                ):
+            hasattr(condition, "atom")
+            and condition.atom.ast_type == clingo.ast.ASTType.Comparison
+        ):
             comparison = condition.atom
 
             left = comparison.term
@@ -260,19 +257,13 @@ class AggregateTransformer(Transformer):
             for argument in left_arguments:
                 if argument.ast_type == clingo.ast.ASTType.Variable:
                     if str(argument) not in element_dict["condition_variables"]:
-                        element_dict["condition_variables"].append(
-                                    str(argument)
-                                )
+                        element_dict["condition_variables"].append(str(argument))
 
-            right_arguments = ComparisonTools.get_arguments_from_operation(
-                        right
-                    )
+            right_arguments = ComparisonTools.get_arguments_from_operation(right)
             for argument in right_arguments:
                 if argument.ast_type == clingo.ast.ASTType.Variable:
                     if str(argument) not in element_dict["condition_variables"]:
-                        element_dict["condition_variables"].append(
-                                    str(argument)
-                                )
+                        element_dict["condition_variables"].append(str(argument))
 
         else:
             print(condition)
@@ -280,54 +271,56 @@ class AggregateTransformer(Transformer):
             assert False
 
         if self.aggregate_mode == AggregateMode.RS_PLUS:
-            if (
-                        hasattr(condition, "atom")
-                        and hasattr(condition.atom, "symbol")
-                        and condition.atom.symbol.ast_type
-                        == clingo.ast.ASTType.Function
-                    ):
-                cur_dict = {}
-                cur_dict["all"] = str(condition)
-                cur_dict["name"] = str(condition.atom.symbol.name)
-                cur_dict["arguments"] = []
-
-                for argument in condition.atom.symbol.arguments:
-                    if argument.ast_type == clingo.ast.ASTType.Variable:
-                        variable_argument = {}
-                        variable_argument["variable"] = str(argument)
-
-                        cur_dict["arguments"].append(variable_argument)
-
-                    elif argument.ast_type == clingo.ast.ASTType.SymbolicTerm:
-                        term_argument = {}
-                        term_argument["term"] = str(argument)
-
-                        cur_dict["arguments"].append(term_argument)
-
-                    else:
-                        print(argument)
-                        print(argument.ast_type)
-                        print("NOT IMPLEMENTED")
-                        assert False  # Not implemented
-
-                condition_strings.append(cur_dict)
-            elif (
-                        hasattr(condition, "atom")
-                        and condition.atom.ast_type == clingo.ast.ASTType.Comparison
-                    ):
-                cur_dict = {}
-                cur_dict["all"] = str(condition)
-                cur_dict["comparison"] = condition.atom
-
-                condition_strings.append(cur_dict)
-
-            else:
-                print(condition)
-                print(condition.ast_type)
-                assert False
+            self.rs_plus_aggregate_condition_special_case(condition_strings, condition)
 
         else:
             condition_strings.append(str(condition))
+
+    def rs_plus_aggregate_condition_special_case(self, condition_strings, condition):
+        if (
+                hasattr(condition, "atom")
+                and hasattr(condition.atom, "symbol")
+                and condition.atom.symbol.ast_type == clingo.ast.ASTType.Function
+            ):
+            cur_dict = {}
+            cur_dict["all"] = str(condition)
+            cur_dict["name"] = str(condition.atom.symbol.name)
+            cur_dict["arguments"] = []
+
+            for argument in condition.atom.symbol.arguments:
+                if argument.ast_type == clingo.ast.ASTType.Variable:
+                    variable_argument = {}
+                    variable_argument["variable"] = str(argument)
+
+                    cur_dict["arguments"].append(variable_argument)
+
+                elif argument.ast_type == clingo.ast.ASTType.SymbolicTerm:
+                    term_argument = {}
+                    term_argument["term"] = str(argument)
+
+                    cur_dict["arguments"].append(term_argument)
+
+                else:
+                    print(argument)
+                    print(argument.ast_type)
+                    print("NOT IMPLEMENTED")
+                    assert False  # Not implemented
+
+            condition_strings.append(cur_dict)
+        elif (
+                hasattr(condition, "atom")
+                and condition.atom.ast_type == clingo.ast.ASTType.Comparison
+            ):
+            cur_dict = {}
+            cur_dict["all"] = str(condition)
+            cur_dict["comparison"] = condition.atom
+
+            condition_strings.append(cur_dict)
+
+        else:
+            print(condition)
+            print(condition.ast_type)
+            assert False
 
     def visit_Variable(self, node):
         """

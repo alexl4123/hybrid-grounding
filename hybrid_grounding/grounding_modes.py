@@ -8,6 +8,7 @@ class GroundingModes(Enum):
     """
     Enum which depicts the different grounding modes.
     """
-    RewriteAggregatesGroundPartly = 1
-    RewriteAggregatesNoGround = 2
-    RewriteAggregatesGroundFully = 3
+
+    REWRITE_AGGREGATES_GROUND_PARTLY = 1
+    REWRITE_AGGREGATES_NO_GROUND = 2
+    REWRITE_AGGREGATES_GROUND_FULLY = 3

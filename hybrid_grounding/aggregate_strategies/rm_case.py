@@ -11,6 +11,7 @@ class RMCase:
     """
     Class which handles the RM-Case.
     """
+
     @classmethod
     def handle_rm_case(
         cls,
