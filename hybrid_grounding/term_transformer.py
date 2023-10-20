@@ -6,7 +6,7 @@ Necessary for domain inference, and strongly-connected-component computation.
 import re
 
 import clingo
-from clingo.ast import Transformer, Variable, parse_string
+from clingo.ast import Transformer
 from networkx import DiGraph
 
 from .comparison_tools import ComparisonTools

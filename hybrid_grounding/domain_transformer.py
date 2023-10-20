@@ -159,13 +159,7 @@ class DomainTransformer(Transformer):
                     all_variables_present = False
                     break
             elif safe_position["type"] == "term":
-                print("--------------------------")
-                print("--------------------------")
-                print("<<<<<<<HEYYYYYY>>>>>>>>>>>>>>>>")
-                print("--------------------------")
-                print("--------------------------")
                 rule_name = str(self.current_rule_position)
-                variable_name = str(node)
 
                 variable_assignments = {}
 

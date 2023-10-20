@@ -54,7 +54,6 @@ class MainTransformer(Transformer):
         self.terms = terms
         self.facts = facts
         self.ng_heads = ng_heads
-        # self.sub_doms = sub_doms
 
         self.ground_entire_output = ground_guess
 
@@ -134,7 +133,7 @@ class MainTransformer(Transformer):
             and self.aggregate_mode == AggregateMode.RA
             and self.program_rules
         ):
-            self._outputNodeFormatConform(node)
+            self._output_node_format_conform(node)
 
             return node
 
@@ -291,7 +290,7 @@ class MainTransformer(Transformer):
 
         return node
 
-    def _generateCombinationInformation(self, h_args, f_vars_needed, c, head):
+    def _generate_combination_information(self, h_args, f_vars_needed, c, head):
         interpretation = []  # interpretation-list
         interpretation_incomplete = []  # uncomplete; without removed vars
         nnv = []  # not needed vars
@@ -324,38 +323,14 @@ class MainTransformer(Transformer):
 
         head_interpretation = ",".join(interpretation)  # can include vars
 
-        nnv = list(dict.fromkeys(nnv))
-
-        if len(nnv) > 0:
-            dom_list = [
-                self.sub_doms[v] if v in self.sub_doms else self.terms for v in nnv
-            ]
-            combs_left_out = [
-                p for p in itertools.product(*dom_list)
-            ]  # combinations for vars left out in head
-            # create combinations covered for later use in constraints
-            for clo in combs_left_out:
-                covered = interpretation.copy()
-                for id, item in enumerate(covered):
-                    if item in nnv:
-                        covered[id] = clo[nnv.index(item)]
-                if (
-                    head.name in self.facts
-                    and len(h_args) in self.facts[head.name]
-                    and ",".join(covered) in self.facts[head.name][len(h_args)]
-                ):
-                    # no foundation check for this combination, its a fact!
-                    continue
-                combs_covered.append(covered)
-        else:
-            if (
-                head.name in self.facts
-                and len(h_args) in self.facts[head.name]
-                and head_interpretation in self.facts[head.name][len(h_args)]
-            ):
-                # no foundation check for this combination, its a fact!
-                return None, None, None, None
-            combs_covered.append(interpretation)
+        if (
+            head.name in self.facts
+            and len(h_args) in self.facts[head.name]
+            and head_interpretation in self.facts[head.name][len(h_args)]
+        ):
+            # no foundation check for this combination, its a fact!
+            return None, None, None, None
+        combs_covered.append(interpretation)
 
         index_vars = [
             str(h_args.index(v))
@@ -365,7 +340,7 @@ class MainTransformer(Transformer):
 
         return interpretation, interpretation_incomplete, combs_covered, index_vars
 
-    def _addToFoundednessCheck(self, pred, arity, combinations, rule, indices):
+    def _add_to_foundedness_check(self, pred, arity, combinations, rule, indices):
         indices = tuple(indices)
 
         for c in combinations:
@@ -387,7 +362,7 @@ class MainTransformer(Transformer):
             else:
                 self.f[pred][arity][c][rule].add(indices)
 
-    def _outputNodeFormatConform(self, rule):
+    def _output_node_format_conform(self, rule):
         """
         Custom print rule according to universal format,
         i.e. replacing certain parts of the head/body (e.g. certain ';' by ',' or '#false :- [...]' by ':- [...]').
@@ -409,7 +384,7 @@ class MainTransformer(Transformer):
             else:
                 self.printer.custom_print(f"{head_string}.")
 
-    def _outputNodeFormatConformLevelMappings(
+    def _output_node_format_conform_level_mappings(
         self, rule, relevant_heads, relevant_bodies
     ):
         """
@@ -528,7 +503,7 @@ class MainTransformer(Transformer):
                 CyclicStrategy.LEVEL_MAPPING,
                 CyclicStrategy.LEVEL_MAPPING_AAAI,
             ]:
-                self._outputNodeFormatConform(node)
+                self._output_node_format_conform(node)
                 self.current_rule_position += 1
                 return_from_parent_function = True
 
@@ -537,7 +512,7 @@ class MainTransformer(Transformer):
                 CyclicStrategy.LEVEL_MAPPING_AAAI,
             ]:
                 if node in self.rule_strongly_restricted_components:
-                    self._outputNodeFormatConformLevelMappings(
+                    self._output_node_format_conform_level_mappings(
                         node,
                         self.rule_strongly_connected_components_heads[node],
                         self.rule_strongly_restricted_components[node],
@@ -548,7 +523,7 @@ class MainTransformer(Transformer):
                     else:
                         return_from_parent_function = False
                 else:
-                    self._outputNodeFormatConform(node)
+                    self._output_node_format_conform(node)
                     self.current_rule_position += 1
                     return_from_parent_function = True
                 
@@ -663,10 +638,10 @@ class MainTransformer(Transformer):
                     f"r{self.g_counter}_unfound({arguments}) :- "
                     f"{ neg + str(body_atom)}."
                 )
-            self._addToFoundednessCheck(
+            self._add_to_foundedness_check(
                 pred, arity, [arguments.split(",")], self.g_counter, range(0, arity)
             )
             self.g_counter = chr(ord(self.g_counter) + 1)
         # print rule as it is
-        self._outputNodeFormatConform(node)
+        self._output_node_format_conform(node)
 
