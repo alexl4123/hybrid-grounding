@@ -1,16 +1,10 @@
-import os
-import sys
-
-import argparse
-
 import clingo
-
 from clingo.ast import Transformer, Variable, parse_string
 
 from .comparison_tools import ComparisonTools
 
-class DomainTransformer(Transformer):
 
+class DomainTransformer(Transformer):
     def __init__(self, safe_variables_rules, domain, comparisons):
         self.safe_variables_rules = safe_variables_rules
         self.domain = domain
@@ -27,11 +21,10 @@ class DomainTransformer(Transformer):
         self.current_rule_position = 0
 
     def visit_Rule(self, node):
-
         self.current_head = node.head
 
         head = node.head
-        if hasattr(node.head, "atom") and hasattr(node.head.atom,"symbol"):
+        if hasattr(node.head, "atom") and hasattr(node.head.atom, "symbol"):
             head = node.head.atom.symbol
         self.current_head_functions[str(node.head)] = head
 
@@ -42,7 +35,6 @@ class DomainTransformer(Transformer):
         return node
 
     def visit_Function(self, node):
-
         self.current_function = node
 
         if str(self.current_function) == str(self.current_head):
@@ -54,54 +46,58 @@ class DomainTransformer(Transformer):
         return node
 
     def visit_Aggregate(self, node):
-
         if str(node) == str(self.current_head):
             for elem in node.elements:
-                self.current_head_functions[str(elem.literal)] = elem.literal.atom.symbol # is the function
-                
+                self.current_head_functions[
+                    str(elem.literal)
+                ] = elem.literal.atom.symbol  # is the function
+
         self.visit_children(node)
 
         return node
 
-
     def visit_Variable(self, node):
-        
-        rule_is_in_safe_variables = str(self.current_rule_position) in self.safe_variables_rules
-        if rule_is_in_safe_variables: #and str(node) not in self.variables_visited:
+        rule_is_in_safe_variables = (
+            str(self.current_rule_position) in self.safe_variables_rules
+        )
+        if rule_is_in_safe_variables:  # and str(node) not in self.variables_visited:
             self.variables_visited[str(node)] = 0
 
-
             if str(node) in self.safe_variables_rules[str(self.current_rule_position)]:
-                safe_positions = self.safe_variables_rules[str(self.current_rule_position)][str(node)]
+                safe_positions = self.safe_variables_rules[
+                    str(self.current_rule_position)
+                ][str(node)]
 
-                if len(safe_positions) > 1: 
-                    
-                    for safe_position_index in range(len(safe_positions)): # Remove terms if len > 1
+                if len(safe_positions) > 1:
+                    for safe_position_index in range(
+                        len(safe_positions)
+                    ):  # Remove terms if len > 1
                         safe_position = safe_positions[safe_position_index]
 
-                        if safe_position['type'] == 'term':
+                        if safe_position["type"] == "term":
                             del safe_positions[safe_position_index]
 
                         safe_position_index -= 1
-
 
                 new_domain = None
                 all_variables_present = True
 
                 for safe_position in safe_positions:
-
                     if safe_position["signum"] == 1:
                         # ''not''
                         continue
 
                     if safe_position["type"] == "function":
-                        safe_pos_name = safe_position['name']
-                        safe_pos_position = safe_position['position']
+                        safe_pos_name = safe_position["name"]
+                        safe_pos_position = safe_position["position"]
 
-
-                        if safe_pos_name in self.domain and safe_pos_position in self.domain[safe_pos_name]:
-
-                            cur_domain = set(self.domain[safe_pos_name][safe_pos_position])
+                        if (
+                            safe_pos_name in self.domain
+                            and safe_pos_position in self.domain[safe_pos_name]
+                        ):
+                            cur_domain = set(
+                                self.domain[safe_pos_name][safe_pos_position]
+                            )
 
                             if new_domain:
                                 new_domain = new_domain.intersection(cur_domain)
@@ -111,59 +107,80 @@ class DomainTransformer(Transformer):
                             all_variables_present = False
                             break
                     elif safe_position["type"] == "term":
-
                         rule_name = str(self.current_rule_position)
                         variable_name = str(node)
 
                         variable_assignments = {}
-            
+
                         all_variables_present = True
 
-
                         for variable in safe_position["variables"]:
-                            new_domain_variable_name = f"term_rule_{rule_name}_variable_{variable}"
+                            new_domain_variable_name = (
+                                f"term_rule_{rule_name}_variable_{variable}"
+                            )
                             if new_domain_variable_name in self.domain:
-                                variable_assignments[variable] = self.domain[new_domain_variable_name]['0']
+                                variable_assignments[variable] = self.domain[
+                                    new_domain_variable_name
+                                ]["0"]
                             else:
                                 all_variables_present = False
                                 break
 
                         if all_variables_present:
-                            new_domain = ComparisonTools.generate_domain(variable_assignments, safe_position["operation"])                       
+                            new_domain = ComparisonTools.generate_domain(
+                                variable_assignments, safe_position["operation"]
+                            )
                     else:
                         # not implemented
-                        assert(False)
+                        assert False
 
                 # If there is a comparison like X < 5 one can make the domain smaller...
-                if all_variables_present and str(self.current_rule_position) in self.comparisons and str(node) in self.comparisons[str(self.current_rule_position)]:
-                    comparisons = self.comparisons[str(self.current_rule_position)][str(node)]
+                if (
+                    all_variables_present
+                    and str(self.current_rule_position) in self.comparisons
+                    and str(node) in self.comparisons[str(self.current_rule_position)]
+                ):
+                    comparisons = self.comparisons[str(self.current_rule_position)][
+                        str(node)
+                    ]
 
                     for comparison in comparisons:
-
                         if len(comparison.guards) >= 2:
-                            assert(False) # Not implemented (only e.g. A = B implemented, not A = B = C)
+                            assert False  # Not implemented (only e.g. A = B implemented, not A = B = C)
                         left = comparison.term
                         right = comparison.guards[0].term
                         comparison_operator = comparison.guards[0].comparison
 
-                        if str(node) == str(left) and str(right).isdigit() and (comparison_operator == int(clingo.ast.ComparisonOperator.LessThan) or comparison_operator == int(clingo.ast.ComparisonOperator.LessEqual)):
+                        if (
+                            str(node) == str(left)
+                            and str(right).isdigit()
+                            and (
+                                comparison_operator
+                                == int(clingo.ast.ComparisonOperator.LessThan)
+                                or comparison_operator
+                                == int(clingo.ast.ComparisonOperator.LessEqual)
+                            )
+                        ):
                             new_domain = list(new_domain)
 
                             new_domain_index = 0
 
                             while new_domain_index < len(new_domain):
-
                                 domain_element = new_domain[new_domain_index]
-   
+
                                 violates = False
- 
-                                if comparison_operator == int(clingo.ast.ComparisonOperator.LessEqual):
+
+                                if comparison_operator == int(
+                                    clingo.ast.ComparisonOperator.LessEqual
+                                ):
                                     if int(domain_element) > int(str(right)):
                                         violates = True
-  
-                                if comparison_operator == int(clingo.ast.ComparisonOperator.LessThan):
+
+                                if comparison_operator == int(
+                                    clingo.ast.ComparisonOperator.LessThan
+                                ):
                                     if int(domain_element) >= int(str(right)):
-                                        violates = True          
+                                        violates = True
 
                                 if violates:
                                     del new_domain[new_domain_index]
@@ -171,29 +188,39 @@ class DomainTransformer(Transformer):
                                     new_domain_index -= 1
 
                                 new_domain_index += 1
-                            
 
                             new_domain = set(new_domain)
 
-
-                        if str(node) == str(right) and str(left).isdigit() and (comparison_operator == int(clingo.ast.ComparisonOperator.GreaterThan) or comparison_operator == int(clingo.ast.ComparisonOperator.GreaterEqual)):
+                        if (
+                            str(node) == str(right)
+                            and str(left).isdigit()
+                            and (
+                                comparison_operator
+                                == int(clingo.ast.ComparisonOperator.GreaterThan)
+                                or comparison_operator
+                                == int(clingo.ast.ComparisonOperator.GreaterEqual)
+                            )
+                        ):
                             new_domain = list(new_domain)
 
                             new_domain_index = 0
 
                             while new_domain_index < len(new_domain):
-
                                 domain_element = new_domain[new_domain_index]
-   
+
                                 violates = False
- 
-                                if comparison_operator == int(clingo.ast.ComparisonOperator.GreaterEqual):
+
+                                if comparison_operator == int(
+                                    clingo.ast.ComparisonOperator.GreaterEqual
+                                ):
                                     if int(domain_element) > int(str(left)):
                                         violates = True
-  
-                                if comparison_operator == int(clingo.ast.ComparisonOperator.GreaterThan):
+
+                                if comparison_operator == int(
+                                    clingo.ast.ComparisonOperator.GreaterThan
+                                ):
                                     if int(domain_element) >= int(str(left)):
-                                        violates = True          
+                                        violates = True
 
                                 if violates:
                                     del new_domain[new_domain_index]
@@ -201,12 +228,14 @@ class DomainTransformer(Transformer):
                                     new_domain_index -= 1
 
                                 new_domain_index += 1
-                            
 
                             new_domain = set(new_domain)
 
                 if all_variables_present:
-                    variable_is_in_head = self.current_function and str(self.current_function) in self.current_head_functions
+                    variable_is_in_head = (
+                        self.current_function
+                        and str(self.current_function) in self.current_head_functions
+                    )
 
                     new_position = self.current_function_position
 
@@ -216,32 +245,37 @@ class DomainTransformer(Transformer):
 
                     rule_name = str(self.current_rule_position)
                     variable_name = str(node)
-                    new_domain_variable_name = f"term_rule_{rule_name}_variable_{variable_name}"
+                    new_domain_variable_name = (
+                        f"term_rule_{rule_name}_variable_{variable_name}"
+                    )
 
                     for new_value in new_domain:
                         if variable_is_in_head:
-                            self._add_symbolic_term_to_domain(new_name, new_position, new_value)
-                       
-                        self._add_symbolic_term_to_domain(new_domain_variable_name, '0', new_value)
+                            self._add_symbolic_term_to_domain(
+                                new_name, new_position, new_value
+                            )
+
+                        self._add_symbolic_term_to_domain(
+                            new_domain_variable_name, "0", new_value
+                        )
 
         if self.current_function:
             self.current_function_position += 1
 
         return node
 
-
     def _add_symbolic_term_to_domain(self, identifier, position, value):
         """
-            e.g. consider p(1,2).
-            then one has to call this method twice:
-            First Call:
-                - p is the identifier
-                - 0 is the position
-                - 1 is the value
-            Second Call:
-                - p is the identifier
-                - 1 is the position
-                - 2 is the value
+        e.g. consider p(1,2).
+        then one has to call this method twice:
+        First Call:
+            - p is the identifier
+            - 0 is the position
+            - 1 is the value
+        Second Call:
+            - p is the identifier
+            - 1 is the position
+            - 2 is the value
         """
         if str(identifier) not in self.domain:
             self.domain[str(identifier)] = {}
@@ -259,12 +293,10 @@ class DomainTransformer(Transformer):
             self.domain["0_terms"].append(str(value))
 
     def visit_SymbolicTerm(self, node):
-       
-        if self.current_function: 
+        if self.current_function:
             self.current_function_position += 1
 
         return node
-
 
     def _reset_temporary_rule_variables(self):
         self.current_head = None
@@ -275,5 +307,3 @@ class DomainTransformer(Transformer):
         self.current_function = None
         self.current_function_position = 0
         self.current_head_function = None
-
-

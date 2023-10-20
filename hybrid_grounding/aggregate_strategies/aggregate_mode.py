@@ -1,5 +1,5 @@
-
 from enum import Enum
+
 
 class AggregateMode(Enum):
     RS_STAR = 1
@@ -7,4 +7,3 @@ class AggregateMode(Enum):
     RS_PLUS = 3
     RS = 4
     RECURSIVE = 5
-    

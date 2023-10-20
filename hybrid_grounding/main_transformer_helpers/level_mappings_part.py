@@ -4,35 +4,45 @@ from clingo import Function
 
 from ..cyclic_strategy import CyclicStrategy
 
-class LevelMappingsPart:
 
-    def __init__(self, custom_printer, domain_lookup_dict, strongly_connected_components_predicates, ground_guess, cyclic_strategy, scc_rule_functions_scc_lookup):
-                 
+class LevelMappingsPart:
+    def __init__(
+        self,
+        custom_printer,
+        domain_lookup_dict,
+        strongly_connected_components_predicates,
+        ground_guess,
+        cyclic_strategy,
+        scc_rule_functions_scc_lookup,
+    ):
         self.printer = custom_printer
         self.domain_lookup_dict = domain_lookup_dict
-        self.strongly_connected_components_predicates = strongly_connected_components_predicates
+        self.strongly_connected_components_predicates = (
+            strongly_connected_components_predicates
+        )
         self.ground_guess = ground_guess
         self.cyclic_strategy = cyclic_strategy
         self.scc_rule_functions_scc_lookup = scc_rule_functions_scc_lookup
 
     def generate_level_mappings(self):
-        if self.cyclic_strategy == CyclicStrategy.LEVEL_MAPPING or self.cyclic_strategy == CyclicStrategy.LEVEL_MAPPING_AAAI:
-
+        if (
+            self.cyclic_strategy == CyclicStrategy.LEVEL_MAPPING
+            or self.cyclic_strategy == CyclicStrategy.LEVEL_MAPPING_AAAI
+        ):
             generated_domains = {}
 
             scc_predicates_per_scc_key = {}
             for rule in self.scc_rule_functions_scc_lookup.keys():
                 dic = self.scc_rule_functions_scc_lookup[rule]
-                if dic['scc_key'] not in scc_predicates_per_scc_key:
-                    scc_predicates_per_scc_key[dic['scc_key']] = []
+                if dic["scc_key"] not in scc_predicates_per_scc_key:
+                    scc_predicates_per_scc_key[dic["scc_key"]] = []
 
-                scc_predicates_per_scc_key[dic['scc_key']] += dic['body']
-                scc_predicates_per_scc_key[dic['scc_key']] += dic['head']
+                scc_predicates_per_scc_key[dic["scc_key"]] += dic["body"]
+                scc_predicates_per_scc_key[dic["scc_key"]] += dic["head"]
 
-            #for scc_key in self.strongly_connected_components_predicates.keys():
+            # for scc_key in self.strongly_connected_components_predicates.keys():
             for scc_key in scc_predicates_per_scc_key.keys():
-
-                #scc = self.strongly_connected_components_predicates[scc_key]
+                # scc = self.strongly_connected_components_predicates[scc_key]
 
                 # The following few lines make the nodes unique according to their name
                 # Sort them
@@ -54,9 +64,9 @@ class LevelMappingsPart:
                     arguments = []
                     for arg_index in range(len(item.arguments)):
                         arguments.append(Function("X" + str(arg_index)))
-                    
+
                     if len(arguments) > 0:
-                        new_scc.append(Function(name=head_name,arguments=arguments))
+                        new_scc.append(Function(name=head_name, arguments=arguments))
                     else:
                         new_scc.append(Function(name=head_name))
 
@@ -68,7 +78,9 @@ class LevelMappingsPart:
                         if self.ground_guess:
                             self.generate_ground_precs(scc, index_1, index_2)
                         else:
-                            self.generate_non_ground_precs(generated_domains, scc, index_1, index_2)
+                            self.generate_non_ground_precs(
+                                generated_domains, scc, index_1, index_2
+                            )
 
                 # Create rules (21)
                 for index_1 in range(len(scc)):
@@ -79,28 +91,30 @@ class LevelMappingsPart:
                         for index_3 in range(len(scc)):
                             if index_1 == index_3 or index_2 == index_3:
                                 continue
-                            
-                            if self.ground_guess:
-                                self.generate_ground_transitivity(scc, index_1, index_2, index_3)
-                            else:
-                                self.generate_non_ground_transitivity(generated_domains, scc, index_1, index_2, index_3)
 
-                            
+                            if self.ground_guess:
+                                self.generate_ground_transitivity(
+                                    scc, index_1, index_2, index_3
+                                )
+                            else:
+                                self.generate_non_ground_transitivity(
+                                    generated_domains, scc, index_1, index_2, index_3
+                                )
+
     def generate_ground_precs(self, scc, index_1, index_2):
         p1 = scc[index_1]
         p2 = scc[index_2]
 
         dom_list = []
-        
+
         self.add_predicate_domains_to_dom_list(p1, dom_list)
         self.add_predicate_domains_to_dom_list(p2, dom_list)
-        
+
         combinations = [p for p in itertools.product(*dom_list)]
 
         p1_arg_length = len(p1.arguments)
 
         for combination in combinations:
-
             p1_arguments = []
             p2_arguments = []
             for index in range(len(combination)):
@@ -121,8 +135,9 @@ class LevelMappingsPart:
                 p2_parsed_arguments = ""
             p2_string = p2.name + p2_parsed_arguments
 
-            self.printer.custom_print(f"1 <= {{prec({p1_string},{p2_string});prec({p2_string},{p1_string})}} <= 1.")
-               
+            self.printer.custom_print(
+                f"1 <= {{prec({p1_string},{p2_string});prec({p2_string},{p1_string})}} <= 1."
+            )
 
     def add_predicate_domains_to_dom_list(self, predicate, dom_list):
         if predicate.name in self.domain_lookup_dict:
@@ -131,31 +146,28 @@ class LevelMappingsPart:
                 dom_list.append(domain_dict[str(index)])
         else:
             for argument in predicate.arguments:
-                
                 if "0_terms" in self.domain_lookup_dict:
                     dom_list.append(self.domain_lookup_dict["0_terms"])
                 else:
                     dom_list.append([])
 
     def generate_ground_transitivity(self, scc, index_1, index_2, index_3):
-        
         p1 = scc[index_1]
         p2 = scc[index_2]
         p3 = scc[index_3]
 
         dom_list = []
-        
+
         self.add_predicate_domains_to_dom_list(p1, dom_list)
         self.add_predicate_domains_to_dom_list(p2, dom_list)
         self.add_predicate_domains_to_dom_list(p3, dom_list)
-        
+
         combinations = [p for p in itertools.product(*dom_list)]
 
         p1_arg_length = len(p1.arguments)
         p2_arg_length = len(p2.arguments)
 
         for combination in combinations:
-
             p1_arguments = []
             p2_arguments = []
             p3_arguments = []
@@ -179,17 +191,20 @@ class LevelMappingsPart:
             else:
                 p2_parsed_arguments = ""
             p2_string = p2.name + p2_parsed_arguments
-            
+
             if len(p3_arguments) > 0:
                 p3_parsed_arguments = "(" + ",".join(p3_arguments) + ")"
             else:
                 p3_parsed_arguments = ""
             p3_string = p3.name + p3_parsed_arguments
 
-            self.printer.custom_print(f":- prec({p1_string},{p2_string}), prec({p2_string},{p3_string}), prec({p3_string},{p1_string}).")
+            self.printer.custom_print(
+                f":- prec({p1_string},{p2_string}), prec({p2_string},{p3_string}), prec({p3_string},{p1_string})."
+            )
 
-    def generate_non_ground_transitivity(self, generated_domains, scc, index_1, index_2, index_3):
-
+    def generate_non_ground_transitivity(
+        self, generated_domains, scc, index_1, index_2, index_3
+    ):
         p1 = scc[index_1]
         p2 = scc[index_2]
         p3 = scc[index_3]
@@ -219,7 +234,9 @@ class LevelMappingsPart:
         else:
             domain_body = f" "
 
-        self.printer.custom_print(f":-{domain_body}prec({predicate_1},{predicate_2}), prec({predicate_2},{predicate_3}), prec({predicate_3},{predicate_1}).")
+        self.printer.custom_print(
+            f":-{domain_body}prec({predicate_1},{predicate_2}), prec({predicate_2},{predicate_3}), prec({predicate_3},{predicate_1})."
+        )
 
     def generate_non_ground_precs(self, generated_domains, scc, index_1, index_2):
         p1 = scc[index_1]
@@ -240,8 +257,9 @@ class LevelMappingsPart:
         else:
             body = "."
 
-    
-        self.printer.custom_print(f"1 <= {{prec({predicate_1},{predicate_2});prec({predicate_2},{predicate_1})}} <= 1{body}")
+        self.printer.custom_print(
+            f"1 <= {{prec({predicate_1},{predicate_2});prec({predicate_2},{predicate_1})}} <= 1{body}"
+        )
 
     def generate_doms_predicate(self, predicate, string_postfix):
         doms = []
@@ -259,16 +277,21 @@ class LevelMappingsPart:
             index += 1
 
         if len(new_variables_predicate) > 0:
-            string_predicate = predicate.name + "(" + ",".join(new_variables_predicate) + ")"
+            string_predicate = (
+                predicate.name + "(" + ",".join(new_variables_predicate) + ")"
+            )
         else:
             string_predicate = predicate.name
 
-        return doms,string_predicate
+        return doms, string_predicate
 
     def generate_domain_for_predicate(self, generated_domains, predicate):
-        if predicate.name in self.domain_lookup_dict and predicate.name not in generated_domains:
+        if (
+            predicate.name in self.domain_lookup_dict
+            and predicate.name not in generated_domains
+        ):
             generated_domains[predicate.name] = True
-                                
+
             dom_dict = self.domain_lookup_dict[predicate.name]
             for index in range(len(dom_dict.keys())):
                 variable_domain = dom_dict[str(index)]

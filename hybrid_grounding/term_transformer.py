@@ -1,20 +1,16 @@
-import os
-import sys
 import re
-
-import argparse
-
-from networkx import DiGraph
 
 import clingo
 from clingo.ast import Transformer, Variable, parse_string
+from networkx import DiGraph
 
 from .comparison_tools import ComparisonTools
+
 
 class TermTransformer(Transformer):
     def __init__(self, printer, no_show=False):
         self.terms = []
-        #self.sub_doms = sub_doms
+        # self.sub_doms = sub_doms
         self.facts = {}
         self.ng_heads = {}
         self.ng = False
@@ -67,45 +63,77 @@ class TermTransformer(Transformer):
         if self._node_signum == 1:
             # Only looking at positive cycles (node_signum 1 -> not)
             return
-        
-        if predicate_name not in self.dependency_graph_node_rules_part_lookup:
-            self.dependency_graph_node_rules_part_lookup[predicate_name] = [self.in_program_rules_part]
 
-        if self.in_program_rules_part not in self.dependency_graph_node_rules_part_lookup[predicate_name]:
-            self.dependency_graph_node_rules_part_lookup[predicate_name].append(self.in_program_rules_part)       
+        if predicate_name not in self.dependency_graph_node_rules_part_lookup:
+            self.dependency_graph_node_rules_part_lookup[predicate_name] = [
+                self.in_program_rules_part
+            ]
+
+        if (
+            self.in_program_rules_part
+            not in self.dependency_graph_node_rules_part_lookup[predicate_name]
+        ):
+            self.dependency_graph_node_rules_part_lookup[predicate_name].append(
+                self.in_program_rules_part
+            )
 
         if predicate_name not in self.dependency_graph_rule_node_lookup:
-            self.dependency_graph_rule_node_lookup[predicate_name] = self.dependency_graph_node_counter
-            self.dependency_graph_node_rule_lookup[self.dependency_graph_node_counter] = [rule]
+            self.dependency_graph_rule_node_lookup[
+                predicate_name
+            ] = self.dependency_graph_node_counter
+            self.dependency_graph_node_rule_lookup[
+                self.dependency_graph_node_counter
+            ] = [rule]
 
             self.dependency_graph.add_node(self.dependency_graph_node_counter)
 
             if self.in_body == True or self._head_aggregate_element == True:
-                self.dependency_graph_node_rule_bodies_lookup[self.dependency_graph_node_counter] = {}
-                self.dependency_graph_node_rule_bodies_lookup[self.dependency_graph_node_counter][rule] = [predicate]
+                self.dependency_graph_node_rule_bodies_lookup[
+                    self.dependency_graph_node_counter
+                ] = {}
+                self.dependency_graph_node_rule_bodies_lookup[
+                    self.dependency_graph_node_counter
+                ][rule] = [predicate]
 
                 temp_node_counter = self.dependency_graph_node_counter
                 # This position is important!
                 self.dependency_graph_node_counter += 1
 
                 for head_predicate_name in self.current_head_predicate_names:
-                    #TODO -> Could FAIL!
-                    if head_predicate_name not in self.dependency_graph_rule_node_lookup:
-                        self.dependency_graph_rule_node_lookup[head_predicate_name] = self.dependency_graph_node_counter
-                        self.dependency_graph_node_rule_lookup[self.dependency_graph_node_counter] = [rule]
+                    # TODO -> Could FAIL!
+                    if (
+                        head_predicate_name
+                        not in self.dependency_graph_rule_node_lookup
+                    ):
+                        self.dependency_graph_rule_node_lookup[
+                            head_predicate_name
+                        ] = self.dependency_graph_node_counter
+                        self.dependency_graph_node_rule_lookup[
+                            self.dependency_graph_node_counter
+                        ] = [rule]
 
-                        self.dependency_graph.add_node(self.dependency_graph_node_counter)
+                        self.dependency_graph.add_node(
+                            self.dependency_graph_node_counter
+                        )
                         self.dependency_graph_node_counter += 1
 
-                    head_counter = self.dependency_graph_rule_node_lookup[head_predicate_name]
-                    if not self.dependency_graph.has_edge(temp_node_counter, head_counter):
+                    head_counter = self.dependency_graph_rule_node_lookup[
+                        head_predicate_name
+                    ]
+                    if not self.dependency_graph.has_edge(
+                        temp_node_counter, head_counter
+                    ):
                         self.dependency_graph.add_edge(temp_node_counter, head_counter)
             elif self.in_head == True:
-                self.dependency_graph_node_rule_heads_lookup[self.dependency_graph_node_counter] = {}
-                self.dependency_graph_node_rule_heads_lookup[self.dependency_graph_node_counter][rule] = [predicate]
+                self.dependency_graph_node_rule_heads_lookup[
+                    self.dependency_graph_node_counter
+                ] = {}
+                self.dependency_graph_node_rule_heads_lookup[
+                    self.dependency_graph_node_counter
+                ][rule] = [predicate]
 
                 self.dependency_graph_node_counter += 1
-            
+
         elif predicate_name in self.dependency_graph_rule_node_lookup:
             node_counter = self.dependency_graph_rule_node_lookup[predicate_name]
 
@@ -116,24 +144,45 @@ class TermTransformer(Transformer):
                 if node_counter not in self.dependency_graph_node_rule_bodies_lookup:
                     self.dependency_graph_node_rule_bodies_lookup[node_counter] = {}
 
-                if rule not in self.dependency_graph_node_rule_bodies_lookup[node_counter]:
-                    self.dependency_graph_node_rule_bodies_lookup[node_counter][rule] = []
+                if (
+                    rule
+                    not in self.dependency_graph_node_rule_bodies_lookup[node_counter]
+                ):
+                    self.dependency_graph_node_rule_bodies_lookup[node_counter][
+                        rule
+                    ] = []
 
-                if predicate not in self.dependency_graph_node_rule_bodies_lookup[node_counter][rule]:
-                    self.dependency_graph_node_rule_bodies_lookup[node_counter][rule].append(predicate)
+                if (
+                    predicate
+                    not in self.dependency_graph_node_rule_bodies_lookup[node_counter][
+                        rule
+                    ]
+                ):
+                    self.dependency_graph_node_rule_bodies_lookup[node_counter][
+                        rule
+                    ].append(predicate)
 
                 for head_predicate_name in self.current_head_predicate_names:
+                    # TODO -> Could FAIL!
+                    if (
+                        head_predicate_name
+                        not in self.dependency_graph_rule_node_lookup
+                    ):
+                        self.dependency_graph_rule_node_lookup[
+                            head_predicate_name
+                        ] = self.dependency_graph_node_counter
+                        self.dependency_graph_node_rule_lookup[
+                            self.dependency_graph_node_counter
+                        ] = [rule]
 
-                    #TODO -> Could FAIL!
-                    if head_predicate_name not in self.dependency_graph_rule_node_lookup:
-                        self.dependency_graph_rule_node_lookup[head_predicate_name] = self.dependency_graph_node_counter
-                        self.dependency_graph_node_rule_lookup[self.dependency_graph_node_counter] = [rule]
-
-                        self.dependency_graph.add_node(self.dependency_graph_node_counter)
+                        self.dependency_graph.add_node(
+                            self.dependency_graph_node_counter
+                        )
                         self.dependency_graph_node_counter += 1
 
-
-                    head_counter = self.dependency_graph_rule_node_lookup[head_predicate_name]
+                    head_counter = self.dependency_graph_rule_node_lookup[
+                        head_predicate_name
+                    ]
                     if not self.dependency_graph.has_edge(node_counter, head_counter):
                         self.dependency_graph.add_edge(node_counter, head_counter)
 
@@ -141,34 +190,45 @@ class TermTransformer(Transformer):
                 if node_counter not in self.dependency_graph_node_rule_heads_lookup:
                     self.dependency_graph_node_rule_heads_lookup[node_counter] = {}
 
-                if rule not in self.dependency_graph_node_rule_heads_lookup[node_counter]:
-                    self.dependency_graph_node_rule_heads_lookup[node_counter][rule] = []
+                if (
+                    rule
+                    not in self.dependency_graph_node_rule_heads_lookup[node_counter]
+                ):
+                    self.dependency_graph_node_rule_heads_lookup[node_counter][
+                        rule
+                    ] = []
 
-                if predicate not in self.dependency_graph_node_rule_heads_lookup[node_counter][rule]:
-                    self.dependency_graph_node_rule_heads_lookup[node_counter][rule].append(predicate)
+                if (
+                    predicate
+                    not in self.dependency_graph_node_rule_heads_lookup[node_counter][
+                        rule
+                    ]
+                ):
+                    self.dependency_graph_node_rule_heads_lookup[node_counter][
+                        rule
+                    ].append(predicate)
 
     def visit_Rule(self, node):
-
         self.current_head = node.head
         self.current_head_functions.append(str(node.head))
 
         self.current_rule = node
 
-        if 'head' in node.child_keys:
+        if "head" in node.child_keys:
             self.in_head = True
-            old = getattr(node, 'head')
-            new = self._dispatch(old)
-            #self.visit_children(node.head)
+            old = getattr(node, "head")
+            self._dispatch(old)
+            # self.visit_children(node.head)
             self.in_head = False
 
-        if 'body' in node.child_keys:
-            self.in_body = True 
-            old = getattr(node, 'body')
-            new = self._dispatch(old)
+        if "body" in node.child_keys:
+            self.in_body = True
+            old = getattr(node, "body")
+            self._dispatch(old)
             self.in_body = False
 
-        pred = str(node.head).split('(', 1)[0]
-        arguments = re.sub(r'^.*?\(', '', str(node.head))[:-1].split(',')
+        pred = str(node.head).split("(", 1)[0]
+        arguments = re.sub(r"^.*?\(", "", str(node.head))[:-1].split(",")
         arity = len(arguments)
 
         if self.ng:
@@ -180,7 +240,7 @@ class TermTransformer(Transformer):
                 else:
                     self.ng_heads[pred].add(arity)
         elif node.body.__len__() == 0:
-            arguments = ','.join(arguments)
+            arguments = ",".join(arguments)
             if pred not in self.facts:
                 self.facts[pred] = {}
                 self.facts[pred][arity] = {arguments}
@@ -195,7 +255,6 @@ class TermTransformer(Transformer):
         return node
 
     def visit_Aggregate(self, node):
-
         if self.in_head:
             for elem in node.elements:
                 self.current_head_functions.append(str(elem.literal))
@@ -207,7 +266,6 @@ class TermTransformer(Transformer):
                 self._head_aggregate_element = False
 
         return node
-
 
     def _reset_temporary_rule_variables(self):
         self.current_head = None
@@ -224,16 +282,16 @@ class TermTransformer(Transformer):
 
     def _add_symbolic_term_to_domain(self, identifier, position, value):
         """
-            e.g. consider p(1,2).
-            then one has to call this method twice:
-            First Call:
-                - p is the identifier
-                - 0 is the position
-                - 1 is the value
-            Second Call:
-                - p is the identifier
-                - 1 is the position
-                - 2 is the value
+        e.g. consider p(1,2).
+        then one has to call this method twice:
+        First Call:
+            - p is the identifier
+            - 0 is the position
+            - 1 is the value
+        Second Call:
+            - p is the identifier
+            - 1 is the position
+            - 2 is the value
         """
         if str(identifier) not in self.domain:
             self.domain[str(identifier)] = {}
@@ -251,8 +309,6 @@ class TermTransformer(Transformer):
             self.domain["0_terms"].append(str(value))
 
     def _add_safe_variable(self, identifier, position, value, safe_type):
-
-
         rule = str(self.current_rule_position)
         if rule not in self.safe_variable_rules:
             self.safe_variable_rules[rule] = {}
@@ -269,7 +325,6 @@ class TermTransformer(Transformer):
         self.safe_variable_rules[rule][str(value)].append(to_add_dict)
 
     def _add_comparison_to_safe_variables(self, value, operation):
-
         arguments = ComparisonTools.get_arguments_from_operation(operation)
         variables = []
         for argument in arguments:
@@ -291,12 +346,10 @@ class TermTransformer(Transformer):
 
         self.safe_variable_rules[rule][str(value)].append(to_add_dict)
 
-
     def visit_Function(self, node):
-
         self.current_function = node
 
-        #if not str(node.name).startswith('_dom_'):
+        # if not str(node.name).startswith('_dom_'):
         if node.name in self.shown_predicates:
             self.shown_predicates[node.name].add(len(node.arguments))
         else:
@@ -312,30 +365,29 @@ class TermTransformer(Transformer):
 
         if self.current_rule is not None:
             if self.current_rule not in self.rules_functions_lookup:
-                self.rules_functions_lookup[self.current_rule] = {'head':[],'body':[]}
+                self.rules_functions_lookup[self.current_rule] = {
+                    "head": [],
+                    "body": [],
+                }
 
             if self.in_head == True and self._head_aggregate_element == False:
-                self.rules_functions_lookup[self.current_rule]['head'].append(node)
+                self.rules_functions_lookup[self.current_rule]["head"].append(node)
 
             if self.in_body == True or self._head_aggregate_element == True:
                 if self._node_signum == 0:
-                    self.rules_functions_lookup[self.current_rule]['body'].append(node)
-
+                    self.rules_functions_lookup[self.current_rule]["body"].append(node)
 
         self._reset_temporary_function_variables()
 
         return node
-    
-    def visit_Literal(self, node):
 
+    def visit_Literal(self, node):
         self._node_signum = node.sign
         self.visit_children(node)
 
         return node
-    
-    
-    def visit_HeadAggregateElement(self, node):
 
+    def visit_HeadAggregateElement(self, node):
         self._head_aggregate_element = True
         self.visit_children(node)
         self._head_aggregate_element = False
@@ -343,11 +395,10 @@ class TermTransformer(Transformer):
         return node
 
     def visit_Comparison(self, node):
-
         self.current_comparison = node
 
         if len(node.guards) >= 2:
-            assert(False) # Not implemented (only e.g. A = B implemented, not A = B = C)
+            assert False  # Not implemented (only e.g. A = B implemented, not A = B = C)
 
         left = node.term
 
@@ -360,7 +411,7 @@ class TermTransformer(Transformer):
             if left.ast_type == clingo.ast.ASTType.Variable:
                 self._add_comparison_to_safe_variables(str(left), right)
 
-            if right.ast_type == clingo.ast.ASTType.Variable: 
+            if right.ast_type == clingo.ast.ASTType.Variable:
                 self._add_comparison_to_safe_variables(str(right), left)
 
         """
@@ -371,7 +422,7 @@ class TermTransformer(Transformer):
             if node.right.ast_type == clingo.ast.ASTType.Variable: 
                 self._add_comparison_to_safe_variables(str(node.right), node.left)
         """
-   
+
         self.visit_children(node)
 
         self._reset_temporary_comparison_variables()
@@ -379,7 +430,6 @@ class TermTransformer(Transformer):
         return node
 
     def _add_comparison(self, rule_name, variable, comparison):
-        
         if rule_name not in self.comparison_operators_variables:
             self.comparison_operators_variables[rule_name] = {}
 
@@ -389,39 +439,51 @@ class TermTransformer(Transformer):
         self.comparison_operators_variables[rule_name][variable].append(comparison)
 
     def visit_Variable(self, node):
-
-        if self.current_function and str(self.current_function) not in self.current_head_functions:
-            self._add_safe_variable(self.current_function.name, self.current_function_position, str(node), "function")
+        if (
+            self.current_function
+            and str(self.current_function) not in self.current_head_functions
+        ):
+            self._add_safe_variable(
+                self.current_function.name,
+                self.current_function_position,
+                str(node),
+                "function",
+            )
             self.current_function_position += 1
 
         if self.current_comparison:
-
-            self._add_comparison(str(self.current_rule_position), str(node), self.current_comparison)
+            self._add_comparison(
+                str(self.current_rule_position), str(node), self.current_comparison
+            )
 
         self.ng = True
         return node
 
     def visit_Interval(self, node):
-
-        if self.current_function: 
+        if self.current_function:
             for value in range(int(str(node.left)), int(str(node.right)) + 1):
-                self._add_symbolic_term_to_domain(self.current_function.name, self.current_function_position, str(value))
+                self._add_symbolic_term_to_domain(
+                    self.current_function.name,
+                    self.current_function_position,
+                    str(value),
+                )
 
             self.current_function_position += 1
 
-        for i in range(int(str(node.left)), int(str(node.right))+1):
-            if (str(i) not in self.terms):
+        for i in range(int(str(node.left)), int(str(node.right)) + 1):
+            if str(i) not in self.terms:
                 self.terms.append(str(i))
 
         return node
 
     def visit_SymbolicTerm(self, node):
-       
-        if self.current_function: 
-            self._add_symbolic_term_to_domain(self.current_function.name, self.current_function_position, str(node))
+        if self.current_function:
+            self._add_symbolic_term_to_domain(
+                self.current_function.name, self.current_function_position, str(node)
+            )
             self.current_function_position += 1
 
-        if (str(node) not in self.terms):
+        if str(node) not in self.terms:
             self.terms.append(str(node))
 
         return node
@@ -433,7 +495,6 @@ class TermTransformer(Transformer):
         return node
 
     def visit_Program(self, node):
-
         keyword_dict = {}
         keyword_dict["rules"] = "rules"
         keyword_dict["max"] = "max"
@@ -442,7 +503,6 @@ class TermTransformer(Transformer):
         keyword_dict["sum"] = "sum"
 
         self.in_program_rules_part = False
-        
+
         if str(node.name) in keyword_dict:
             self.in_program_rules_part = True
-

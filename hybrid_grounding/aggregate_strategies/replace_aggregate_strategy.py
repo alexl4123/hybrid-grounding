@@ -1,20 +1,19 @@
-
 from ..comparison_tools import ComparisonTools
 from ..grounding_modes import GroundingModes
 
 
 class ReplaceAggregateStrategy:
-
     @classmethod
-    def replace_aggregate_strategy(cls, aggregate, variables_dependencies_aggregate, grounding_mode):
-
-        new_program_list = [] 
+    def replace_aggregate_strategy(
+        cls, aggregate, variables_dependencies_aggregate, grounding_mode
+    ):
+        new_program_list = []
         new_program_set = []
 
         elements = aggregate["elements"]
 
         str_type = aggregate["function"][1]
-        str_id = aggregate["id"] 
+        str_id = aggregate["id"]
 
         element_dependent_variables_list = []
 
@@ -44,7 +43,9 @@ class ReplaceAggregateStrategy:
         for element_index in range(len(elements)):
             element = aggregate["elements"][element_index]
 
-            element_dependent_variables = element_dependent_variables_list[element_index]
+            element_dependent_variables = element_dependent_variables_list[
+                element_index
+            ]
             terms = element["terms"]
 
             element_predicate_name = f"body_{str_type}_ag{str_id}_{element_index}"
@@ -77,9 +78,7 @@ class ReplaceAggregateStrategy:
 
             new_aggregate += f" {operator} {right_guard_term}"
 
-
         if grounding_mode != GroundingModes.RewriteAggregatesNoGround:
             new_program_list.append("#program no_rules.")
 
         return (new_program_list, [new_aggregate], list(set(new_program_set)))
-

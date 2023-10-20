@@ -1,14 +1,20 @@
-
 import clingo
 
 from ..comparison_tools import ComparisonTools
 from .count_aggregate_helper import CountAggregateHelper
 
+
 class RMCase:
-
     @classmethod
-    def _handle_rm_case(cls, aggregate_dict, variable_dependencies, aggregate_mode, cur_variable_dependencies, guard_domain, operator_type):
-
+    def _handle_rm_case(
+        cls,
+        aggregate_dict,
+        variable_dependencies,
+        aggregate_mode,
+        cur_variable_dependencies,
+        guard_domain,
+        operator_type,
+    ):
         element = aggregate_dict["elements"][0]
 
         all_diff_list_terms = []
@@ -22,9 +28,8 @@ class RMCase:
             upper += 1
 
         new_body_list = []
-        
-        for index in range(upper):        
 
+        for index in range(upper):
             cur_term_list = []
             for term in terms:
                 if term in variable_dependencies:
@@ -33,10 +38,12 @@ class RMCase:
                     cur_term_list.append(term + "_" + str(index))
             all_diff_list_terms.append(cur_term_list)
 
-
             for condition in conditions:
-                if hasattr(condition, "atom") and hasattr(condition.atom, "symbol") and condition.atom.symbol.ast_type == clingo.ast.ASTType.Function:
-                    
+                if (
+                    hasattr(condition, "atom")
+                    and hasattr(condition.atom, "symbol")
+                    and condition.atom.symbol.ast_type == clingo.ast.ASTType.Function
+                ):
                     cur_condition = condition.atom.symbol
 
                     arg_list = []
@@ -47,19 +54,23 @@ class RMCase:
                         else:
                             arg_list.append(str(argument) + "_" + str(index))
 
-                    new_function = (cur_condition.name + "(" + ",".join(arg_list) + ")")
-                    
+                    new_function = cur_condition.name + "(" + ",".join(arg_list) + ")"
+
                     new_body_list.append(new_function)
 
-                elif hasattr(condition, "atom") and condition.atom.ast_type == clingo.ast.ASTType.Comparison:
-
+                elif (
+                    hasattr(condition, "atom")
+                    and condition.atom.ast_type == clingo.ast.ASTType.Comparison
+                ):
                     cur_comparison = condition.atom
 
                     left = cur_comparison.term
-                    assert(len(cur_comparison.guards) <= 1)
+                    assert len(cur_comparison.guards) <= 1
                     right = cur_comparison.guards[0].term
 
-                    arguments = ComparisonTools.get_arguments_from_operation(left) + ComparisonTools.get_arguments_from_operation(right)
+                    arguments = ComparisonTools.get_arguments_from_operation(
+                        left
+                    ) + ComparisonTools.get_arguments_from_operation(right)
 
                     arg_dict = {}
 
@@ -69,16 +80,18 @@ class RMCase:
                         else:
                             arg_dict[str(argument)] = str(argument) + "_" + str(index)
 
-                    new_left = ComparisonTools.instantiate_operation(left, arg_dict) 
-                    new_right = ComparisonTools.instantiate_operation(right, arg_dict) 
-                    new_comparison = ComparisonTools.comparison_handlings(cur_comparison.guards[0].comparison, new_left, new_right)
-
+                    new_left = ComparisonTools.instantiate_operation(left, arg_dict)
+                    new_right = ComparisonTools.instantiate_operation(right, arg_dict)
+                    new_comparison = ComparisonTools.comparison_handlings(
+                        cur_comparison.guards[0].comparison, new_left, new_right
+                    )
 
                     new_body_list.append(new_comparison)
 
-        all_diff_list = CountAggregateHelper.all_diff_generator(all_diff_list_terms, upper)
+        all_diff_list = CountAggregateHelper.all_diff_generator(
+            all_diff_list_terms, upper
+        )
 
         new_body_list += all_diff_list
 
         return new_body_list
-    
