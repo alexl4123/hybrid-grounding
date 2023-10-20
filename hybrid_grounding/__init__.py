@@ -1,3 +1,8 @@
+"""
+Main Entry Point into the prototype.
+Parses arguments and calls HybridGrounding class.
+"""
+
 import argparse
 import sys
 
@@ -9,6 +14,11 @@ from .hybrid_grounding import HybridGrounding
 
 
 def main():
+    """
+    Main Entry Point into the prototype.
+    Parses arguments and calls HybridGrounding class.
+    """
+
     cyclic_choices = {
         "TIGHT": {"cmd_line": "assume-tight", "enum_mode": CyclicStrategy.ASSUME_TIGHT},
         "LVL-MAP": {

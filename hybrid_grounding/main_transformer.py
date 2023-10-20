@@ -1,3 +1,7 @@
+"""
+Transforms a program according to hybrid-grounding.
+"""
+
 import itertools
 import re
 
@@ -15,6 +19,10 @@ from .main_transformer_helpers.guess_head_part import GuessHeadPart
 
 
 class MainTransformer(Transformer):
+    """
+    Transforms a program according to hybrid-grounding.
+    """
+
     def __init__(
         self,
         bld,
@@ -99,40 +107,22 @@ class MainTransformer(Transformer):
         self.current_predicate_variable_position = 0
 
     def visit_Minimize(self, node):
+        """
+        Visit minimize-stmt. in clingo-AST.
+        """
         self.printer.custom_print(f"{str(node)}")
 
         return node
 
     def visit_Rule(self, node):
-        if not self.program_rules:
-            self._reset_after_rule()
-            if self.cyclic_strategy not in [
-                CyclicStrategy.LEVEL_MAPPING,
-                CyclicStrategy.LEVEL_MAPPING_AAAI,
-            ]:
-                self._outputNodeFormatConform(node)
-                self.current_rule_position += 1
-                return node
-            elif self.cyclic_strategy in [
-                CyclicStrategy.LEVEL_MAPPING,
-                CyclicStrategy.LEVEL_MAPPING_AAAI,
-            ]:
-                if node in self.rule_strongly_restricted_components:
-                    self._outputNodeFormatConformLevelMappings(
-                        node,
-                        self.rule_strongly_connected_components_heads[node],
-                        self.rule_strongly_restricted_components[node],
-                    )
-                    if self.cyclic_strategy == CyclicStrategy.LEVEL_MAPPING_AAAI:
-                        self.current_rule_position += 1
-                        return node
-                    else:
-                        # NO-RETURN -> Need for additional foundedness checks
-                        pass
-                else:
-                    self._outputNodeFormatConform(node)
-                    self.current_rule_position += 1
-                    return node
+        """
+        Visit Rule in clingo-AST.
+        """
+
+        return_from_method = self.handle_no_rewrite_rule(node)
+
+        if return_from_method is True:
+            return node
 
         if (
             (
@@ -153,120 +143,19 @@ class MainTransformer(Transformer):
         self.visit_children(node)
 
         if self.rule_is_non_ground:
-            # if so: handle grounding
-
-            if len(self.domain.keys()) == 0:
-                self._reset_after_rule()
-                self.current_rule_position += 1
-                return node
-
-            if self.program_rules:
-                self.non_ground_rules[
-                    self.current_rule_position
-                ] = self.current_rule_position
-
-            if str(node.head) != "#false":
-                head = self.rule_predicate_functions[0]
-            else:
-                head = None
-
-            if self.program_rules:
-                satisfiability_generator = GenerateSatisfiabilityPart(
-                    head,
-                    self.current_rule_position,
-                    self.printer,
-                    self.domain,
-                    self.safe_variables_rules,
-                    self.rule_variables,
-                    self.rule_comparisons,
-                    self.rule_predicate_functions,
-                    self.rule_literals_signums,
-                    self.rule_variables_predicates,
-                )
-                satisfiability_generator.generate_sat_part()
-
-            if head is not None:
-                # FOUND AND GUESS HEAD
-                if self.program_rules:
-                    guess_head_generator = GuessHeadPart(
-                        head,
-                        self.current_rule_position,
-                        self.printer,
-                        self.domain,
-                        self.safe_variables_rules,
-                        self.rule_variables,
-                        self.rule_comparisons,
-                        self.rule_predicate_functions,
-                        self.rule_literals_signums,
-                        self.current_rule,
-                        self.rule_strongly_restricted_components,
-                        self.ground_entire_output,
-                        self.unfounded_rules,
-                        self.cyclic_strategy,
-                        self.predicates_strongly_connected_comps,
-                        self.scc_rule_functions_scc_lookup,
-                        self.rule_variables_predicates,
-                    )
-                    guess_head_generator.guess_head()
-
-                foundedness_generator = GenerateFoundednessPart(
-                    head,
-                    self.current_rule_position,
-                    self.printer,
-                    self.domain,
-                    self.safe_variables_rules,
-                    self.rule_variables,
-                    self.rule_comparisons,
-                    self.rule_predicate_functions,
-                    self.rule_literals_signums,
-                    self.current_rule,
-                    self.rule_strongly_restricted_components,
-                    self.ground_entire_output,
-                    self.unfounded_rules,
-                    self.cyclic_strategy,
-                    self.rule_strongly_connected_components_heads,
-                    self.program_rules,
-                    self.additional_foundedness_part,
-                    self.rule_variables_predicates,
-                )
-                foundedness_generator.generate_foundedness_part()
-
-        else:  # found-check for ground-rules (if needed) (pred, arity, combinations, rule, indices)
-            pred = str(node.head).split("(", 1)[0]
-            arguments = re.sub(r"^.*?\(", "", str(node.head))[:-1].split(",")
-            arity = len(arguments)
-            arguments = ",".join(arguments)
-
-            if (
-                pred in self.ng_heads
-                and arity in self.ng_heads[pred]
-                and not (
-                    pred in self.facts
-                    and arity in self.facts[pred]
-                    and arguments in self.facts[pred][arity]
-                )
-            ):
-                for body_atom in node.body:
-                    if str(body_atom).startswith("not "):
-                        neg = ""
-                    else:
-                        neg = "not "
-                    self.printer.custom_print(
-                        f"r{self.g_counter}_unfound({arguments}) :- "
-                        f"{ neg + str(body_atom)}."
-                    )
-                self._addToFoundednessCheck(
-                    pred, arity, [arguments.split(",")], self.g_counter, range(0, arity)
-                )
-                self.g_counter = chr(ord(self.g_counter) + 1)
-            # print rule as it is
-            self._outputNodeFormatConform(node)
+            self.handle_non_ground_rule(node)
+        else: 
+            self.handle_ground_rule(node)
 
         self.current_rule_position += 1
         self._reset_after_rule()
+
         return node
 
     def visit_Literal(self, node):
+        """
+        Visits a clingo-AST literal.
+        """
         if str(node) != "#false":
             if (
                 node.atom.ast_type is clingo.ast.ASTType.SymbolicAtom
@@ -281,6 +170,9 @@ class MainTransformer(Transformer):
         return node
 
     def visit_Function(self, node):
+        """
+        Visits a clingo-AST function.
+        """
         if not self.current_comparison:
             self.current_predicate = node
             if node.name in self.shown_predicates:
@@ -296,6 +188,9 @@ class MainTransformer(Transformer):
         return node
 
     def visit_Variable(self, node):
+        """
+        Visits a clingo-AST variable.
+        """
         self.rule_is_non_ground = True
 
         if str(node) == "_":
@@ -320,12 +215,18 @@ class MainTransformer(Transformer):
         return node
 
     def visit_SymbolicTerm(self, node):
+        """
+        Visits a clingo-AST symbolic term (constant)
+        """
         if self.current_predicate is not None:
             self.current_predicate_variable_position += 1
 
         return node
 
     def visit_Program(self, node):
+        """
+        Visits a clingo-AST program stmt. (important for distinction for aggregates)
+        """
         keyword_dict = {}
         keyword_dict["rules"] = "rules"
         keyword_dict["max"] = "max"
@@ -357,7 +258,12 @@ class MainTransformer(Transformer):
         return node
 
     def visit_Comparison(self, node):
-        # currently implements only terms/variables
+        """
+        Visits a clinto-AST comparison.
+        Left and right site of a comparison only supports a subset of possibilities,
+        i.e., Variables, Constants, Binary-Operations, Unary-Operations and functions.
+        """
+
         supported_types = [
             clingo.ast.ASTType.Variable,
             clingo.ast.ASTType.SymbolicTerm,
@@ -607,3 +513,160 @@ class MainTransformer(Transformer):
 
             # Add satisfiability check for both method
             self.printer.custom_print(f":- {body_string}, not {head_string}.")
+
+    def handle_no_rewrite_rule(self, node):
+        """
+        Handle rule which shall not be rewritten.
+        """
+
+        return_from_parent_function = False
+
+        if not self.program_rules:
+
+            self._reset_after_rule()
+            if self.cyclic_strategy not in [
+                CyclicStrategy.LEVEL_MAPPING,
+                CyclicStrategy.LEVEL_MAPPING_AAAI,
+            ]:
+                self._outputNodeFormatConform(node)
+                self.current_rule_position += 1
+                return_from_parent_function = True
+
+            elif self.cyclic_strategy in [
+                CyclicStrategy.LEVEL_MAPPING,
+                CyclicStrategy.LEVEL_MAPPING_AAAI,
+            ]:
+                if node in self.rule_strongly_restricted_components:
+                    self._outputNodeFormatConformLevelMappings(
+                        node,
+                        self.rule_strongly_connected_components_heads[node],
+                        self.rule_strongly_restricted_components[node],
+                    )
+                    if self.cyclic_strategy == CyclicStrategy.LEVEL_MAPPING_AAAI:
+                        self.current_rule_position += 1
+                        return_from_parent_function = True
+                    else:
+                        return_from_parent_function = False
+                else:
+                    self._outputNodeFormatConform(node)
+                    self.current_rule_position += 1
+                    return_from_parent_function = True
+                
+        return return_from_parent_function
+
+    def handle_non_ground_rule(self, node):
+        """
+        Handle rule which shall be rewritten and is non-ground.
+        """
+
+        if len(self.domain.keys()) == 0:
+            self._reset_after_rule()
+            self.current_rule_position += 1
+            return node
+
+        if self.program_rules:
+            self.non_ground_rules[
+                self.current_rule_position
+            ] = self.current_rule_position
+
+        if str(node.head) != "#false":
+            head = self.rule_predicate_functions[0]
+        else:
+            head = None
+
+        if self.program_rules:
+            satisfiability_generator = GenerateSatisfiabilityPart(
+                head,
+                self.current_rule_position,
+                self.printer,
+                self.domain,
+                self.safe_variables_rules,
+                self.rule_variables,
+                self.rule_comparisons,
+                self.rule_predicate_functions,
+                self.rule_literals_signums,
+                self.rule_variables_predicates,
+            )
+            satisfiability_generator.generate_sat_part()
+
+        if head is not None:
+            # FOUND AND GUESS HEAD
+            if self.program_rules:
+                guess_head_generator = GuessHeadPart(
+                    head,
+                    self.current_rule_position,
+                    self.printer,
+                    self.domain,
+                    self.safe_variables_rules,
+                    self.rule_variables,
+                    self.rule_comparisons,
+                    self.rule_predicate_functions,
+                    self.rule_literals_signums,
+                    self.current_rule,
+                    self.rule_strongly_restricted_components,
+                    self.ground_entire_output,
+                    self.unfounded_rules,
+                    self.cyclic_strategy,
+                    self.predicates_strongly_connected_comps,
+                    self.scc_rule_functions_scc_lookup,
+                    self.rule_variables_predicates,
+                )
+                guess_head_generator.guess_head()
+
+            foundedness_generator = GenerateFoundednessPart(
+                head,
+                self.current_rule_position,
+                self.printer,
+                self.domain,
+                self.safe_variables_rules,
+                self.rule_variables,
+                self.rule_comparisons,
+                self.rule_predicate_functions,
+                self.rule_literals_signums,
+                self.current_rule,
+                self.rule_strongly_restricted_components,
+                self.ground_entire_output,
+                self.unfounded_rules,
+                self.cyclic_strategy,
+                self.rule_strongly_connected_components_heads,
+                self.program_rules,
+                self.additional_foundedness_part,
+                self.rule_variables_predicates,
+            )
+            foundedness_generator.generate_foundedness_part()
+
+    def handle_ground_rule(self,node):
+        """
+        Handle rule which shall be rewritten and is ground.
+        """
+
+        pred = str(node.head).split("(", 1)[0]
+        arguments = re.sub(r"^.*?\(", "", str(node.head))[:-1].split(",")
+        arity = len(arguments)
+        arguments = ",".join(arguments)
+
+        if (
+            pred in self.ng_heads
+            and arity in self.ng_heads[pred]
+            and not (
+                pred in self.facts
+                and arity in self.facts[pred]
+                and arguments in self.facts[pred][arity]
+            )
+        ):
+            for body_atom in node.body:
+                if str(body_atom).startswith("not "):
+                    neg = ""
+                else:
+                    neg = "not "
+                self.printer.custom_print(
+                    f"r{self.g_counter}_unfound({arguments}) :- "
+                    f"{ neg + str(body_atom)}."
+                )
+            self._addToFoundednessCheck(
+                pred, arity, [arguments.split(",")], self.g_counter, range(0, arity)
+            )
+            self.g_counter = chr(ord(self.g_counter) + 1)
+        # print rule as it is
+        self._outputNodeFormatConform(node)
+

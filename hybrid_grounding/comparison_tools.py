@@ -181,6 +181,13 @@ class ComparisonTools:
 
     @classmethod
     def generate_domain(cls, variable_assignments, operation):
+        """
+        variable_assignments, corresponds to the domains of the variables,
+        and operation is the actual comparison operation.
+
+        If a variable is inducing in a comparison,
+        this method creates its domain.
+        """
         if operation.ast_type == clingo.ast.ASTType.SymbolicAtom:
             return [str(operation.symbol)]
         elif operation.ast_type == clingo.ast.ASTType.SymbolicTerm:
