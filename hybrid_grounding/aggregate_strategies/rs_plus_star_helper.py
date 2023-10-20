@@ -1,3 +1,7 @@
+"""
+Helper module for the rs-plus-star.
+"""
+
 import itertools
 
 import clingo
@@ -9,6 +13,10 @@ from .sum_aggregate_helper import SumAggregateHelper
 
 
 class RSPlusStarHelper:
+    """
+    Helper class for the rs-plus-star..
+    """
+
     @classmethod
     def add_rs_star_tuple_predicate_rules(
         cls,
@@ -19,6 +27,10 @@ class RSPlusStarHelper:
         new_prg_part_set,
         always_add_variable_dependencies,
     ):
+        """
+        Method for adding the rs-star tuple predicates.
+        """
+
         for element_index in range(len(aggregate_dict["elements"])):
             element = aggregate_dict["elements"][element_index]
 
@@ -88,7 +100,7 @@ class RSPlusStarHelper:
             helper_bodies = CountAggregateHelper.generate_all_diff_predicates(terms)
 
             if str_type == "sum":
-                helper_bodies += SumAggregateHelper._generate_sum_up_predicates(
+                helper_bodies += SumAggregateHelper.generate_sum_up_predicates(
                     terms, count, total_count
                 )
 
@@ -127,6 +139,9 @@ class RSPlusStarHelper:
         combination,
         combination_variables,
     ):
+        """
+        Method for the rs-plus-star alldiff predicate.
+        """
         bodies = []
         terms = []
 

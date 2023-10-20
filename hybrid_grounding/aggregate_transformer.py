@@ -11,7 +11,7 @@ from clingo.ast import Transformer
 from .aggregate_strategies.aggregate_mode import AggregateMode
 from .aggregate_strategies.recursive_mode import RecursiveAggregateRewriting
 from .aggregate_strategies.replace_aggregate_strategy import ReplaceAggregateStrategy
-from .aggregate_strategies.rewriting_aggregate_strategy import RSPlusStarRewriting
+from .aggregate_strategies.rewriting_aggregate_strategy import RSRewriting
 from .comparison_tools import ComparisonTools
 from .grounding_modes import GroundingModes
 
@@ -373,7 +373,7 @@ class AggregateTransformer(Transformer):
                 program_list,
                 remaining_body_part,
                 program_set,
-            ) = RSPlusStarRewriting.rewriting_aggregate_strategy(
+            ) = RSRewriting.rewriting_aggregate_strategy(
                 aggregate_index,
                 aggregate,
                 variables_dependencies_aggregate,
@@ -392,7 +392,7 @@ class AggregateTransformer(Transformer):
                 program_list,
                 remaining_body_part,
                 program_set,
-            ) = RSPlusStarRewriting.rewriting_no_body_aggregate_strategy(
+            ) = RSRewriting.rewriting_no_body_aggregate_strategy(
                 aggregate_index,
                 aggregate,
                 variables_dependencies_aggregate,
@@ -423,7 +423,7 @@ class AggregateTransformer(Transformer):
                 program_list,
                 remaining_body_part,
                 program_set,
-            ) = RSPlusStarRewriting.rewriting_aggregate_strategy(
+            ) = RSRewriting.rewriting_aggregate_strategy(
                 aggregate_index,
                 aggregate,
                 variables_dependencies_aggregate,

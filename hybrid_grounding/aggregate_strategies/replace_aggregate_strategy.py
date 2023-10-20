@@ -1,12 +1,23 @@
+"""
+Module for the RA-strategy.
+"""
+
 from ..comparison_tools import ComparisonTools
 from ..grounding_modes import GroundingModes
 
 
 class ReplaceAggregateStrategy:
+    """
+    Class for the RA-strategy.
+    """
+
     @classmethod
     def replace_aggregate_strategy(
         cls, aggregate, variables_dependencies_aggregate, grounding_mode
     ):
+        """
+        Method which generates all necessary rules/etc. for the RA-strategy.
+        """
         new_program_list = []
         new_program_set = []
 

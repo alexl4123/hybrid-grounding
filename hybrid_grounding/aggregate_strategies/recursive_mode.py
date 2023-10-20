@@ -1,14 +1,15 @@
-import itertools
-
-import clingo
+"""
+Module for the recursive strategies.
+"""
 
 from ..comparison_tools import ComparisonTools
-from .aggregate_mode import AggregateMode
 from .count_aggregate_helper import CountAggregateHelper
-from .rm_case import RMCase
 
 
 class RecursiveAggregateRewriting:
+    """
+    Class for the recursive strategies.
+    """
     @classmethod
     def recursive_strategy(
         cls,
@@ -21,33 +22,28 @@ class RecursiveAggregateRewriting:
         rule_positive_body,
         grounding_mode,
     ):
-        new_rules, remaining_body_part, new_rules_set = cls.sum_aggregate(
-            aggregate_index,
+        """
+        Wrapper method for the recursive aggregate generator.
+        """
+        new_rules, remaining_body_part, new_rules_set = cls.generate_aggregate(
             aggregate_dict,
             variables_dependencies_aggregate,
-            aggregate_mode,
-            cur_variable_dependencies,
             domain,
             rule_positive_body,
-            grounding_mode,
         )
 
         return (new_rules, remaining_body_part, new_rules_set)
 
     @classmethod
-    def sum_aggregate(
+    def generate_aggregate(
         cls,
-        aggregate_index,
         aggregate_dict,
         variable_dependencies,
-        aggregate_mode,
-        cur_variable_dependencies,
         domain,
         rule_positive_body,
-        grounding_mode,
     ):
         """
-        Adds the necessary rules for the recursive sum aggregate.
+        Adds the necessary rules for the recursive aggregate.
         """
 
         new_prg_part = []
@@ -57,8 +53,60 @@ class RecursiveAggregateRewriting:
         str_type = aggregate_dict["function"][1]
         str_id = aggregate_dict["id"]
 
-        # -------------------------------------------
-        # Add tuple predicates
+        skolem_constants, element_dependent_variables = cls.generate_tuple_predicate_rules(aggregate_dict, variable_dependencies, domain, rule_positive_body, new_prg_part_set, str_type, str_id)
+
+        body_heads, body_heads_tuple_vars, body_heads_tuple_vars_first, joined_variable_dependencies, first_tuple_predicate_arguments, second_tuple_predicate_arguments = cls.generate_helper_variables(variable_dependencies, str_type, str_id, skolem_constants, element_dependent_variables)
+
+        cls.added_to_original_body(str_id, str_type, joined_variable_dependencies, remaining_body_part, aggregate_dict)
+        
+        cls.add_partial_predicate_rules(str_type, str_id, joined_variable_dependencies, first_tuple_predicate_arguments, body_heads_tuple_vars, second_tuple_predicate_arguments, body_heads_tuple_vars_first, new_prg_part)
+
+        cls.generate_ordering_predicate_rules(body_heads, str_id, joined_variable_dependencies, first_tuple_predicate_arguments, body_heads_tuple_vars, second_tuple_predicate_arguments, new_prg_part)
+
+        return (new_prg_part, remaining_body_part, new_prg_part_set)
+
+    @classmethod
+    def generate_helper_variables(cls, variable_dependencies, str_type, str_id, skolem_constants, element_dependent_variables):
+        """
+        Generate the helper variables, needed by the other construction methods.
+        """
+
+        body_heads = []
+        body_heads_tuple_vars = []
+        body_heads_tuple_vars_first = []
+        for index in range(3):
+            element_tuples = []
+            for tuple_index in range(len(skolem_constants)):
+                cur_variable = f"TUPLEVARIABLE_{index}_{tuple_index}"
+                element_tuples.append(cur_variable)
+
+                if tuple_index == 0:
+                    body_heads_tuple_vars_first.append(cur_variable)
+
+            term_string = f"{','.join(element_tuples + element_dependent_variables)}"
+
+            body_heads_tuple_vars.append(",".join(element_tuples))
+            body_heads.append(f"body_{str_type}_ag{str_id}({term_string})")
+
+        if len(variable_dependencies) > 0:
+            joined_variable_dependencies = "," + ",".join(variable_dependencies)
+            first_tuple_predicate_arguments = (
+                f"{body_heads_tuple_vars[0]}{joined_variable_dependencies}"
+            )
+            second_tuple_predicate_arguments = (
+                f"{body_heads_tuple_vars[1]}{joined_variable_dependencies}"
+            )
+        else:
+            joined_variable_dependencies = ""
+            first_tuple_predicate_arguments = f"{body_heads_tuple_vars[0]}"
+            second_tuple_predicate_arguments = f"{body_heads_tuple_vars[1]}"
+        return body_heads,body_heads_tuple_vars,body_heads_tuple_vars_first,joined_variable_dependencies,first_tuple_predicate_arguments,second_tuple_predicate_arguments
+
+    @classmethod
+    def generate_tuple_predicate_rules(cls, aggregate_dict, variable_dependencies, domain, rule_positive_body, new_prg_part_set, str_type, str_id):
+        """
+        Generate the tuple predicates and rules.
+        """
 
         max_number_element_head = 0
         skolem_constants = []
@@ -102,39 +150,13 @@ class RecursiveAggregateRewriting:
 
             body_string = f"body_{str_type}_ag{str_id}({term_string}) :- {positive_body_string} {','.join(element['condition'])}."
             new_prg_part_set.append(body_string)
+        return skolem_constants,element_dependent_variables
 
-        body_heads = []
-        body_heads_tuple_vars = []
-        body_heads_tuple_vars_first = []
-        for index in range(3):
-            element_tuples = []
-            for tuple_index in range(len(skolem_constants)):
-                cur_variable = f"TUPLEVARIABLE_{index}_{tuple_index}"
-                element_tuples.append(cur_variable)
-
-                if tuple_index == 0:
-                    body_heads_tuple_vars_first.append(cur_variable)
-
-            term_string = f"{','.join(element_tuples + element_dependent_variables)}"
-
-            body_heads_tuple_vars.append(",".join(element_tuples))
-            body_heads.append(f"body_{str_type}_ag{str_id}({term_string})")
-
-        if len(variable_dependencies) > 0:
-            joined_variable_dependencies = "," + ",".join(variable_dependencies)
-            first_tuple_predicate_arguments = (
-                f"{body_heads_tuple_vars[0]}{joined_variable_dependencies}"
-            )
-            second_tuple_predicate_arguments = (
-                f"{body_heads_tuple_vars[1]}{joined_variable_dependencies}"
-            )
-        else:
-            joined_variable_dependencies = ""
-            first_tuple_predicate_arguments = f"{body_heads_tuple_vars[0]}"
-            second_tuple_predicate_arguments = f"{body_heads_tuple_vars[1]}"
-
-        # -------------------------------------------
-        # ADDED TO ORIGINAL BODY
+    @classmethod
+    def added_to_original_body(cls, str_id, str_type, joined_variable_dependencies, remaining_body_part, aggregate_dict):
+        """
+        Handle the rewriting of the original rule.
+        """
         original_rule_aggregate_variable = f"S{str_id}"
         original_rule_aggregate = f"{str_type}_ag{str_id}({original_rule_aggregate_variable}{joined_variable_dependencies})"
         remaining_body_part.append(original_rule_aggregate)
@@ -155,9 +177,12 @@ class RecursiveAggregateRewriting:
                 f"{original_rule_aggregate_variable} {right_operator} {right_guard_string}"
             )
 
-        # -------------------------------------------
-        # ADD RECURSIVE STUFF
-        # Partial Last
+
+    @classmethod
+    def add_partial_predicate_rules(cls, str_type, str_id, joined_variable_dependencies, first_tuple_predicate_arguments, body_heads_tuple_vars, second_tuple_predicate_arguments, body_heads_tuple_vars_first, new_prg_part):
+        """
+        Add all 'partial' predicate rules.
+        """
 
         aggregate_head = f"{str_type}_ag{str_id}(S{joined_variable_dependencies})"
         rule_string = f"{aggregate_head} :- last_ag{str_id}({first_tuple_predicate_arguments}), partial_{str_type}_ag{str_id}({first_tuple_predicate_arguments},S)."
@@ -218,6 +243,12 @@ class RecursiveAggregateRewriting:
         rule_string = f"{partial_head} :- {first_predicate}, {first_expression}."
         new_prg_part.append(rule_string)
 
+    @classmethod
+    def generate_ordering_predicate_rules(cls, body_heads, str_id, joined_variable_dependencies, first_tuple_predicate_arguments, body_heads_tuple_vars, second_tuple_predicate_arguments, new_prg_part):
+        """
+        Generate all predicates/rules which are needed for the ordering.
+        """
+
         # not_last
         not_last_head = f"not_last_ag{str_id}({first_tuple_predicate_arguments})"
         rule_string = f"{not_last_head} :- {body_heads[0]}, {body_heads[1]}, {body_heads[0]} < {body_heads[1]}."
@@ -251,4 +282,3 @@ class RecursiveAggregateRewriting:
         rule_string = f"{first_head} :- {body_heads[0]}, not not_first_ag{str_id}({first_tuple_predicate_arguments})."
         new_prg_part.append(rule_string)
 
-        return (new_prg_part, remaining_body_part, new_prg_part_set)

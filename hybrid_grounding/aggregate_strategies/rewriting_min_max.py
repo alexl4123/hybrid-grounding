@@ -1,14 +1,15 @@
-import itertools
+"""
+Rewriting min-max aggregates.
+"""
 
-import clingo
-
-from ..comparison_tools import ComparisonTools
 from .aggregate_mode import AggregateMode
 
-
 class RewritingMinMax:
+    """
+    Class for rewriting-min-max aggregates.
+    """
     @classmethod
-    def _add_min_max_aggregate_rules(
+    def add_min_max_aggregate_rules(
         cls,
         str_type,
         aggregate_dict,
@@ -21,6 +22,9 @@ class RewritingMinMax:
         guard_string,
         rule_positive_body,
     ):
+        """
+        Add min-max aggregate rules.
+        """
         new_prg_part_list = []
         new_prg_part_set = []
 
@@ -321,15 +325,3 @@ class RewritingMinMax:
 
         else:
             raise Exception("Not Implemented")
-
-        """
-        elif str_type == "min" and operator_type == "=":
-            original_rule_additional_body_literals.append(f"{head_name}_1{original_rule_head_terms_string}")
-            original_rule_additional_body_literals.append(f"not {head_name}_2{original_rule_head_terms_string}")
-
-        elif str_type == "min" and operator_type == "!=":
-            intermediate_rule = f"not_{head} :- {head_name}_1{original_rule_head_terms_string}, not {head_name}_2{original_rule_head_terms_string}."
-            new_prg_part_list.append(intermediate_rule)
-
-            original_rule_additional_body_literals.append(f"not not_{head}")
-        """

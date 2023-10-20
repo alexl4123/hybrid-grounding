@@ -1,4 +1,13 @@
+"""
+Helper class for the count and RELATED aggregates.
+I.e., it implements some commonly used methods, used also by other aggregates.
+"""
+
 class CountAggregateHelper:
+    """
+    Helper class for the count aggregate.
+    """
+
     @classmethod
     def generate_all_diff_predicates(cls, terms):
         helper_bodies = []
@@ -29,6 +38,10 @@ class CountAggregateHelper:
 
     @classmethod
     def all_diff_generator(cls, all_diff_list_terms, upper):
+        """
+        Method that generates all helper literals/comparisons for the alldiff/all_diff predicate.
+        """
+
         all_diff_list = []
         for index_1 in range(upper):
             for index_2 in range(index_1 + 1, upper):
@@ -45,6 +58,9 @@ class CountAggregateHelper:
 
     @classmethod
     def check_string_is_int(cls, string):
+        """
+        Method that checks whether a string can be converted to an integer.
+        """
         try:
             int(string, 10)
             return True

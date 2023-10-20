@@ -1,3 +1,7 @@
+"""
+Rewriting Count/Sum module.
+"""
+
 from .aggregate_mode import AggregateMode
 from .rewriting_count_helper import RewritingCountHelper
 from .rewriting_sum_helper import RewritingSumHelper
@@ -7,6 +11,9 @@ from .rs_plus_star_helper import RSPlusStarHelper
 
 
 class RewritingCountSum:
+    """
+    Rewriting count/sum class.
+    """
     @classmethod
     def _add_count_sum_aggregate_rules(
         cls,
@@ -37,7 +44,7 @@ class RewritingCountSum:
             and len(list(guard_domain)) == 1
         ):
             # Handle special case RM (RM from paper)
-            original_rule_additional_body_literals += RMCase._handle_rm_case(
+            original_rule_additional_body_literals += RMCase.handle_rm_case(
                 aggregate_dict,
                 variable_dependencies,
                 aggregate_mode,
@@ -225,6 +232,9 @@ class RewritingCountSum:
         count,
         predicate_name,
     ):
+        """
+        How to handle equality comparisons.
+        """
         str_type = aggregate_dict["function"][1]
 
         if len(always_add_variable_dependencies) == 0:
@@ -384,6 +394,9 @@ class RewritingCountSum:
         count,
         predicate_name,
     ):
+        """
+        How to handle the "!=" operator.
+        """
         str_type = aggregate_dict["function"][1]
 
         if len(always_add_variable_dependencies) == 0:
@@ -548,6 +561,9 @@ class RewritingCountSum:
         count,
         predicate_name,
     ):
+        """
+        General method for handling monotone & anti-monotone aggregates.
+        """
         str_type = aggregate_dict["function"][1]
 
         if len(always_add_variable_dependencies) == 0:

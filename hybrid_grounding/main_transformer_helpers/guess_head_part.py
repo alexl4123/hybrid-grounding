@@ -1,3 +1,7 @@
+"""
+Module for guessing the head part.
+"""
+
 import itertools
 import re
 
@@ -8,6 +12,9 @@ from .helper_part import HelperPart
 
 
 class GuessHeadPart:
+    """
+    Class for guessing the head part.
+    """
     def __init__(
         self,
         rule_head,
@@ -47,8 +54,10 @@ class GuessHeadPart:
         self.rule_variables_predicates = rule_variables_predicates
 
     def guess_head(self):
+        """
+        Method for guessing the head part.
+        """
         new_head_name = f"{self.rule_head.name}{self.current_rule_position}"
-        # new_head_name = f"{self.rule_head.name}'"
         new_arguments = ",".join(
             [str(argument) for argument in self.rule_head.arguments]
         )
@@ -61,7 +70,7 @@ class GuessHeadPart:
         if self.ground_guess:
             self.do_ground_guess(new_head_name)
         else:
-            self.non_ground_guess(new_head_name, new_head)
+            self._non_ground_guess(new_head_name, new_head)
 
         if self.current_rule in self.scc_rule_functions_scc_lookup:
             if len(new_arguments) > 0:
@@ -80,6 +89,9 @@ class GuessHeadPart:
             )
 
     def do_ground_guess(self, new_head_name):
+        """
+        Method for doing a ground guess.
+        """
         body_dom_dict = {}
         if (
             self.current_rule in self.rule_strongly_connected_components
@@ -112,7 +124,7 @@ class GuessHeadPart:
         body_combinations = [p for p in itertools.product(*body_dom_list)]
 
         for body_combination in body_combinations:
-            possible_head_guesses = self.generate_grounded_head_guesses(
+            possible_head_guesses = self._generate_grounded_head_guesses(
                 new_head_name, body_dom_list_lookup, body_combination
             )
 
@@ -120,14 +132,14 @@ class GuessHeadPart:
                 self.current_rule in self.rule_strongly_connected_components
                 and self.cyclic_strategy == CyclicStrategy.SHARED_CYCLE_BODY_PREDICATES
             ):
-                self.print_grounded_head_guess_for_shared_cycle_body_predicates(
+                self._print_grounded_head_guess_for_shared_cycle_body_predicates(
                     body_dom_list_lookup, body_combination, possible_head_guesses
                 )
 
             else:
                 self.printer.custom_print(f"{{{';'.join(possible_head_guesses)}}}.")
 
-    def print_grounded_head_guess_for_shared_cycle_body_predicates(
+    def _print_grounded_head_guess_for_shared_cycle_body_predicates(
         self, body_dom_list_lookup, body_combination, possible_head_guesses
     ):
         grounded_predicates = []
@@ -157,7 +169,7 @@ class GuessHeadPart:
             f"{{{';'.join(possible_head_guesses)}}} {parsed_grounded_predicates}"
         )
 
-    def generate_grounded_head_guesses(
+    def _generate_grounded_head_guesses(
         self, new_head_name, body_dom_list_lookup, body_combination
     ):
         head_dom_dict = {}
@@ -230,7 +242,7 @@ class GuessHeadPart:
             )
         return possible_head_guesses
 
-    def non_ground_guess(self, new_head_name, new_head):
+    def _non_ground_guess(self, new_head_name, new_head):
         h_args = re.sub(r"^.*?\(", "", str(self.rule_head))[:-1].split(
             ","
         )  # all arguments (incl. duplicates / terms)

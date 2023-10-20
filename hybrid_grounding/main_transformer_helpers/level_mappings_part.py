@@ -1,3 +1,6 @@
+"""
+Module for generating the level-mappings.
+"""
 import itertools
 
 from clingo import Function
@@ -6,6 +9,9 @@ from ..cyclic_strategy import CyclicStrategy
 
 
 class LevelMappingsPart:
+    """
+    Class for generating the level mappings.
+    """
     def __init__(
         self,
         custom_printer,
@@ -25,6 +31,9 @@ class LevelMappingsPart:
         self.scc_rule_functions_scc_lookup = scc_rule_functions_scc_lookup
 
     def generate_level_mappings(self):
+        """
+        Method that generates the level mappings.
+        """
         if (
             self.cyclic_strategy == CyclicStrategy.LEVEL_MAPPING
             or self.cyclic_strategy == CyclicStrategy.LEVEL_MAPPING_AAAI
@@ -102,13 +111,17 @@ class LevelMappingsPart:
                                 )
 
     def generate_ground_precs(self, scc, index_1, index_2):
+        """
+        Generate the predecessor-guess rules (prec(p1,p2)|prec(p2,p1) - so p1 is before p2),
+        for grounded predicates.
+        """
         p1 = scc[index_1]
         p2 = scc[index_2]
 
         dom_list = []
 
-        self.add_predicate_domains_to_dom_list(p1, dom_list)
-        self.add_predicate_domains_to_dom_list(p2, dom_list)
+        self._add_predicate_domains_to_dom_list(p1, dom_list)
+        self._add_predicate_domains_to_dom_list(p2, dom_list)
 
         combinations = [p for p in itertools.product(*dom_list)]
 
@@ -139,7 +152,7 @@ class LevelMappingsPart:
                 f"1 <= {{prec({p1_string},{p2_string});prec({p2_string},{p1_string})}} <= 1."
             )
 
-    def add_predicate_domains_to_dom_list(self, predicate, dom_list):
+    def _add_predicate_domains_to_dom_list(self, predicate, dom_list):
         if predicate.name in self.domain_lookup_dict:
             domain_dict = self.domain_lookup_dict[predicate.name]
             for index in range(len(domain_dict.keys())):
@@ -152,15 +165,18 @@ class LevelMappingsPart:
                     dom_list.append([])
 
     def generate_ground_transitivity(self, scc, index_1, index_2, index_3):
+        """
+        Generate the transitivity-constraints for the grounded-case.
+        """
         p1 = scc[index_1]
         p2 = scc[index_2]
         p3 = scc[index_3]
 
         dom_list = []
 
-        self.add_predicate_domains_to_dom_list(p1, dom_list)
-        self.add_predicate_domains_to_dom_list(p2, dom_list)
-        self.add_predicate_domains_to_dom_list(p3, dom_list)
+        self._add_predicate_domains_to_dom_list(p1, dom_list)
+        self._add_predicate_domains_to_dom_list(p2, dom_list)
+        self._add_predicate_domains_to_dom_list(p3, dom_list)
 
         combinations = [p for p in itertools.product(*dom_list)]
 
@@ -205,17 +221,20 @@ class LevelMappingsPart:
     def generate_non_ground_transitivity(
         self, generated_domains, scc, index_1, index_2, index_3
     ):
+        """
+        Generate the transitivity-constraints for the partly-grounded case.
+        """
         p1 = scc[index_1]
         p2 = scc[index_2]
         p3 = scc[index_3]
 
-        doms1, predicate_1 = self.generate_doms_predicate(p1, "1")
-        doms2, predicate_2 = self.generate_doms_predicate(p2, "2")
-        doms3, predicate_3 = self.generate_doms_predicate(p3, "3")
+        doms1, predicate_1 = self._generate_doms_predicate(p1, "1")
+        doms2, predicate_2 = self._generate_doms_predicate(p2, "2")
+        doms3, predicate_3 = self._generate_doms_predicate(p3, "3")
 
-        self.generate_domain_for_predicate(generated_domains, p1)
-        self.generate_domain_for_predicate(generated_domains, p2)
-        self.generate_domain_for_predicate(generated_domains, p3)
+        self._generate_domain_for_predicate(generated_domains, p1)
+        self._generate_domain_for_predicate(generated_domains, p2)
+        self._generate_domain_for_predicate(generated_domains, p3)
 
         if len(doms1) > 0 and len(doms2) > 0 and len(doms3) > 0:
             domain_body = f" {','.join(doms1)}, {','.join(doms2)}, {','.join(doms3)}, "
@@ -239,14 +258,18 @@ class LevelMappingsPart:
         )
 
     def generate_non_ground_precs(self, generated_domains, scc, index_1, index_2):
+        """
+        Generate the guesses for the precs in the non-ground case.
+        """
+
         p1 = scc[index_1]
         p2 = scc[index_2]
 
-        doms1, predicate_1 = self.generate_doms_predicate(p1, "1")
-        doms2, predicate_2 = self.generate_doms_predicate(p2, "2")
+        doms1, predicate_1 = self._generate_doms_predicate(p1, "1")
+        doms2, predicate_2 = self._generate_doms_predicate(p2, "2")
 
-        self.generate_domain_for_predicate(generated_domains, p1)
-        self.generate_domain_for_predicate(generated_domains, p2)
+        self._generate_domain_for_predicate(generated_domains, p1)
+        self._generate_domain_for_predicate(generated_domains, p2)
 
         if len(doms1) > 0 and len(doms2) > 0:
             body = f" :- {','.join(doms1)}, {','.join(doms2)}."
@@ -261,7 +284,7 @@ class LevelMappingsPart:
             f"1 <= {{prec({predicate_1},{predicate_2});prec({predicate_2},{predicate_1})}} <= 1{body}"
         )
 
-    def generate_doms_predicate(self, predicate, string_postfix):
+    def _generate_doms_predicate(self, predicate, string_postfix):
         doms = []
         new_variables_predicate = []
         index = 0
@@ -285,7 +308,7 @@ class LevelMappingsPart:
 
         return doms, string_predicate
 
-    def generate_domain_for_predicate(self, generated_domains, predicate):
+    def _generate_domain_for_predicate(self, generated_domains, predicate):
         if (
             predicate.name in self.domain_lookup_dict
             and predicate.name not in generated_domains

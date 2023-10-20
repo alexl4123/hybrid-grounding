@@ -1,8 +1,16 @@
+"""
+Helper module for the count aggregate.
+"""
+
 from .rs_helper import RSHelper
 from .rs_plus_star_helper import RSPlusStarHelper
 
 
 class RewritingCountHelper:
+    """
+    Helper class for the count aggregate.
+    """
+
     @classmethod
     def rs_count_generate_alldiff_rules_helper(
         cls,
@@ -18,7 +26,10 @@ class RewritingCountHelper:
         skolem_constants,
         total_count=0,
     ):
-        rules_strings = RSHelper._rs_count_generate_count_rule(
+        """
+        Wrapper for the alldiff generation.
+        """
+        rules_strings = RSHelper.rs_count_generate_count_rule(
             rule_head_name,
             count,
             elements,
@@ -48,6 +59,9 @@ class RewritingCountHelper:
         always_add_variable_dependencies,
         total_count=0,
     ):
+        """
+        Special wrapper for the alldiff-predicate for the RS-Plus-Star method.
+        """
         (
             rules_strings,
             rules_head_strings,

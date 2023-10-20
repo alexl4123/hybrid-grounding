@@ -1,3 +1,6 @@
+"""
+Module for ensuring satisfiability.
+"""
 import itertools
 import re
 
@@ -6,6 +9,9 @@ from .helper_part import HelperPart
 
 
 class GenerateSatisfiabilityPart:
+    """
+    Class for ensuring satisfiability.
+    """
     def __init__(
         self,
         rule_head,
@@ -31,6 +37,9 @@ class GenerateSatisfiabilityPart:
         self.rule_variables_predicates = rule_variables_predicates
 
     def generate_sat_part(self):
+        """
+        Generates the SAT-part.
+        """
         self._generate_sat_variable_possibilities()
 
         covered_subsets = self._generate_sat_comparisons()

@@ -1,15 +1,16 @@
-import itertools
+"""
+Module for rewriting sum-aggregates.
+"""
 
-import clingo
-
-from ..comparison_tools import ComparisonTools
-from .aggregate_mode import AggregateMode
-from .count_aggregate_helper import CountAggregateHelper
 from .rs_helper import RSHelper
 from .rs_plus_star_helper import RSPlusStarHelper
 
 
 class RewritingSumHelper:
+    """
+    Class for rewriting sum-aggregates.
+    """
+
     @classmethod
     def rs_sum_generate_alldiff_rules_helper(
         cls,
@@ -24,10 +25,13 @@ class RewritingSumHelper:
         always_add_variable_dependencies,
         skolem_constants,
     ):
+        """
+        Method for generating the alldiff-predicate for the sum-aggregate.
+        """
         rules_strings = []
 
         for secondary_guard_value in range(1, sum + 1):
-            tmp_rules_strings = RSHelper._rs_count_generate_count_rule(
+            tmp_rules_strings = RSHelper.rs_count_generate_count_rule(
                 rule_head_name,
                 secondary_guard_value,
                 elements,
@@ -58,6 +62,9 @@ class RewritingSumHelper:
         cur_variable_dependencies,
         always_add_variable_dependencies,
     ):
+        """
+        Method for generating the alldiff-predicate for rs-plus-star.
+        """
         rules_strings = []
         rules_head_strings = []
 

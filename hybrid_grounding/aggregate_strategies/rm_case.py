@@ -1,3 +1,6 @@
+"""
+Module which handles the RM-Case.
+"""
 import clingo
 
 from ..comparison_tools import ComparisonTools
@@ -5,8 +8,11 @@ from .count_aggregate_helper import CountAggregateHelper
 
 
 class RMCase:
+    """
+    Class which handles the RM-Case.
+    """
     @classmethod
-    def _handle_rm_case(
+    def handle_rm_case(
         cls,
         aggregate_dict,
         variable_dependencies,
@@ -15,6 +21,9 @@ class RMCase:
         guard_domain,
         operator_type,
     ):
+        """
+        Method which handles the RM-Case.
+        """
         element = aggregate_dict["elements"][0]
 
         all_diff_list_terms = []
