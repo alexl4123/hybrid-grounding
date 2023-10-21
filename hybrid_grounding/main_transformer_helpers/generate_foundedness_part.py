@@ -1,4 +1,4 @@
-# pylint: disable=R0913,R1721
+# pylint: disable=R0913,R1721,R1728
 """
 Module for ensuring foundedness.
 """
@@ -211,36 +211,39 @@ class GenerateFoundednessPart:
                         head,
                     )
                 else:
-                    head_interpretation = f"{head.name}"
-                    if length_of_head_arguments > 0:
-                        argument_list = []
-                        for argument in head_arguments:
-                            if (
+                    self._generate_foundedness_head_ground(head, reachable_head_variables_from_not_head_variable, head_variables, head_arguments, length_of_head_arguments, head_arguments_no_duplicates, not_head_variable, dom_list_lookup, combination)
+
+    def _generate_foundedness_head_ground(self, head, reachable_head_variables_from_not_head_variable, head_variables, head_arguments, length_of_head_arguments, head_arguments_no_duplicates, not_head_variable, dom_list_lookup, combination):
+        head_interpretation = f"{head.name}"
+        if length_of_head_arguments > 0:
+            argument_list = []
+            for argument in head_arguments:
+                if (
                                 argument
                                 in reachable_head_variables_from_not_head_variable[
                                     not_head_variable
                                 ]
                             ):
-                                argument_list.append(
+                    argument_list.append(
                                     combination[dom_list_lookup[argument]]
                                 )
-                            else:
-                                argument_list.append(argument)
-                        head_interpretation += f"({','.join(argument_list)})"
+                else:
+                    argument_list.append(argument)
+            head_interpretation += f"({','.join(argument_list)})"
 
-                    remaining_head_values = []
-                    for variable in head_arguments_no_duplicates:
-                        if (
+        remaining_head_values = []
+        for variable in head_arguments_no_duplicates:
+            if (
                             variable
                             in reachable_head_variables_from_not_head_variable[
                                 not_head_variable
                             ]
                         ):
-                            remaining_head_values.append(
+                remaining_head_values.append(
                                 combination[dom_list_lookup[variable]]
                             )
 
-                    not_head_variable_values = (
+        not_head_variable_values = (
                         HelperPart.get_domain_values_from_rule_variable(
                             self.current_rule_position,
                             not_head_variable,
@@ -250,39 +253,39 @@ class GenerateFoundednessPart:
                         )
                     )
 
-                    not_variable_interpretations = []
-                    for value in not_head_variable_values:
-                        name = f"r{self.current_rule_position}f_{not_head_variable}"
-                        if len(remaining_head_values) > 0:
-                            arguments = f"({value},{','.join(remaining_head_values)})"
-                        else:
-                            arguments = f"({value})"
+        not_variable_interpretations = []
+        for value in not_head_variable_values:
+            name = f"r{self.current_rule_position}f_{not_head_variable}"
+            if len(remaining_head_values) > 0:
+                arguments = f"({value},{','.join(remaining_head_values)})"
+            else:
+                arguments = f"({value})"
 
-                        not_variable_interpretations.append(f"{name}{arguments}")
+            not_variable_interpretations.append(f"{name}{arguments}")
 
-                    not_variable_interpretations = ";".join(
+        not_variable_interpretations = ";".join(
                         not_variable_interpretations
                     )
 
-                    not_reached_head_variables = []
-                    for variable in head_variables:
-                        if (
+        not_reached_head_variables = []
+        for variable in head_variables:
+            if (
                             variable
                             not in reachable_head_variables_from_not_head_variable[
                                 not_head_variable
                             ]
                         ):
-                            not_reached_head_variables.append(variable)
+                not_reached_head_variables.append(variable)
 
-                    if len(head_variables) == len(
+        if len(head_variables) == len(
                         reachable_head_variables_from_not_head_variable[
                             not_head_variable
                         ]
                     ):  # removed none
-                        self.printer.custom_print(
+            self.printer.custom_print(
                             f"1{{{not_variable_interpretations}}}1 :- {head_interpretation}."
                         )
-                    elif (
+        elif (
                         len(
                             reachable_head_variables_from_not_head_variable[
                                 not_head_variable
@@ -290,55 +293,53 @@ class GenerateFoundednessPart:
                         )
                         == 0
                     ):  # removed all
-                        self.printer.custom_print(
+            self.printer.custom_print(
                             f"1{{{not_variable_interpretations}}}1."
                         )
-                    else:  # removed some
-                        dom_list = []
-                        dom_list_lookup = {}
+        else:  # removed some
+            dom_list = []
+            dom_list_lookup = {}
 
-                        index = 0
-                        for variable in not_reached_head_variables:
-                            values = HelperPart.get_domain_values_from_rule_variable(
+            index = 0
+            for variable in not_reached_head_variables:
+                values = HelperPart.get_domain_values_from_rule_variable(
                                 self.current_rule_position,
                                 not_head_variable,
                                 self.domain_lookup_dict,
                                 self.safe_variables_rules,
                                 self.rule_variables_predicates,
                             )
-                            dom_list.append(values)
-                            dom_list_lookup[variable] = index
-                            index += 1
+                dom_list.append(values)
+                dom_list_lookup[variable] = index
+                index += 1
 
-                        combinations_for_not_reached_variables = [
+            combinations_for_not_reached_variables = [
                             p for p in itertools.product(*dom_list)
                         ]
 
-                        head_interpretations = []
-                        for (
-                            combination_not_reached_variable
-                        ) in combinations_for_not_reached_variables:
-                            head_arguments_not_reached = []
+            head_interpretations = []
+            for combination_not_reached_variable in combinations_for_not_reached_variables:
+                head_arguments_not_reached = []
 
-                            for argument in head_arguments:
-                                if argument in not_reached_head_variables:
-                                    head_arguments_not_reached.append(
+                for argument in head_arguments:
+                    if argument in not_reached_head_variables:
+                        head_arguments_not_reached.append(
                                         combination_not_reached_variable[
                                             dom_list_lookup[variable]
                                         ]
                                     )
-                                else:
-                                    head_arguments_not_reached.append(
+                    else:
+                        head_arguments_not_reached.append(
                                         combination[dom_list_lookup[variable]]
                                     )
 
-                            current_head_interpretation = (
+                current_head_interpretation = (
                                 f"{head.name}({','.join(head_arguments_not_reached)})"
                             )
-                            head_interpretations.append(current_head_interpretation)
+                head_interpretations.append(current_head_interpretation)
 
-                        for head_interpretation in head_interpretations:
-                            self.printer.custom_print(
+            for head_interpretation in head_interpretations:
+                self.printer.custom_print(
                                 f"1{{{not_variable_interpretations}}}1 :- {head_interpretation}."
                             )
 
@@ -456,7 +457,7 @@ class GenerateFoundednessPart:
                 v for v in f_vars if v in rem
             ]  # remaining vars for current function (not in head)
 
-            f_vars_needed = self._getVarsNeeded(h_vars, f_vars, f_rem, g)
+            f_vars_needed = self._get_vars_needed(h_vars, f_vars, f_rem, g)
             combination_variables = f_vars_needed + f_rem
 
             associated_variables = {}
@@ -625,7 +626,7 @@ class GenerateFoundednessPart:
                     v for v in f_vars if v in rem
                 ]  # remaining vars for current function (not in head)
 
-                f_vars_needed = self._getVarsNeeded(h_vars, f_vars, f_rem, g)
+                f_vars_needed = self._get_vars_needed(h_vars, f_vars, f_rem, g)
                 # f_vars_needed = h_vars
 
                 associated_variables = {}
@@ -646,6 +647,7 @@ class GenerateFoundednessPart:
                 combinations = [p for p in itertools.product(*dom_list)]
 
                 for combination in combinations:
+
                     (
                         head_combination,
                         head_combination_list_2,
@@ -710,7 +712,7 @@ class GenerateFoundednessPart:
                     unfound_predicate_name = rule_predicate_function.name
                     unfound_predicate = unfound_predicate_name
                     if len(f_args) > 0:
-                        unfound_predicate += f"("
+                        unfound_predicate += "("
 
                         unfound_predicate_args = []
                         for f_arg in f_args:
@@ -839,7 +841,7 @@ class GenerateFoundednessPart:
 
                         self._add_atom_to_unfoundedness_check(head_string, unfound_atom)
 
-    def _checkForCoveredSubsets(self, base, current, c_varset):
+    def _check_for_covered_subsets(self, base, current, c_varset):
         for key in base:
             if key.issubset(current):
                 c = tuple([c_varset[current.index(p)] for p in list(key)])
@@ -848,7 +850,7 @@ class GenerateFoundednessPart:
 
         return False
 
-    def _getVarsNeeded(self, h_vars, f_vars, f_rem, g):
+    def _get_vars_needed(self, h_vars, f_vars, f_rem, g):
         f_vars_needed = [
             f for f in f_vars if f in h_vars
         ]  # bounded head vars which are needed for foundation
@@ -872,8 +874,6 @@ class GenerateFoundednessPart:
         full_head_args = []
 
         if len(h_vars) > 0:
-            head_combination_list = list(combination[: len(h_vars)])
-
             head_counter = 0
             for h_arg in h_args:
                 if h_arg in h_vars and h_arg in f_vars_needed:
