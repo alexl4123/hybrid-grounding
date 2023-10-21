@@ -31,7 +31,9 @@ class HelperPart:
                 respective_predicates = rule_variables_predicates[variable]
                 total_domain = None
 
-                total_domain = cls._get_variable_domain_from_occurrences(domain, respective_predicates, total_domain)
+                total_domain = cls._get_variable_domain_from_occurrences(
+                    domain, respective_predicates, total_domain
+                )
 
                 if total_domain is not None:
                     return list(total_domain)
@@ -39,8 +41,7 @@ class HelperPart:
         return cls._get_alternative_domain(safe_variables_rules, rule, domain, variable)
 
     @classmethod
-    def _get_alternative_domain(cls,safe_variables_rules, rule, domain, variable):
-
+    def _get_alternative_domain(cls, safe_variables_rules, rule, domain, variable):
         if str(rule) not in safe_variables_rules:
             return domain["0_terms"]
 
@@ -73,21 +74,23 @@ class HelperPart:
         return list(total_domain)
 
     @classmethod
-    def _get_variable_domain_from_occurrences(cls, domain, respective_predicates, total_domain):
+    def _get_variable_domain_from_occurrences(
+        cls, domain, respective_predicates, total_domain
+    ):
         for respective_predicate in respective_predicates:
             respective_predicate_name = respective_predicate[0].name
             respective_predicate_position = respective_predicate[1]
 
             if (
-                        respective_predicate_name not in domain
-                        or str(respective_predicate_position)
-                        not in domain[respective_predicate_name]
-                    ):
+                respective_predicate_name not in domain
+                or str(respective_predicate_position)
+                not in domain[respective_predicate_name]
+            ):
                 continue
 
             cur_domain = domain[respective_predicate_name][
-                        str(respective_predicate_position)
-                    ]
+                str(respective_predicate_position)
+            ]
 
             if total_domain:
                 total_domain = total_domain.intersection(set(cur_domain))

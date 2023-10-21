@@ -36,7 +36,10 @@ class LevelMappingsPart:
         """
         Method that generates the level mappings.
         """
-        if self.cyclic_strategy in [CyclicStrategy.LEVEL_MAPPING, CyclicStrategy.LEVEL_MAPPING_AAAI]:
+        if self.cyclic_strategy in [
+            CyclicStrategy.LEVEL_MAPPING,
+            CyclicStrategy.LEVEL_MAPPING_AAAI,
+        ]:
             generated_domains = {}
 
             scc_predicates_per_scc_key = {}
@@ -53,7 +56,7 @@ class LevelMappingsPart:
                 scc = list(set(scc_predicates_per_scc_key[scc_key]))
                 self._generate_level_mappings_scc(scc, generated_domains)
 
-    def _generate_level_mappings_scc(self, scc, generated_domains):                
+    def _generate_level_mappings_scc(self, scc, generated_domains):
         scc_ = {}
         for predicate in scc:
             scc_[predicate.name] = predicate
@@ -80,7 +83,6 @@ class LevelMappingsPart:
 
         self._generate_precs(generated_domains, scc)
         self._generate_transitivities(generated_domains, scc)
-
 
     def _generate_transitivities(self, generated_domains, scc):
         # Create rules (21)
@@ -161,7 +163,7 @@ class LevelMappingsPart:
             for index in range(len(domain_dict.keys())):
                 dom_list.append(domain_dict[str(index)])
         else:
-            for argument in predicate.arguments:
+            for _ in predicate.arguments:
                 if "0_terms" in self.domain_lookup_dict:
                     dom_list.append(self.domain_lookup_dict["0_terms"])
                 else:
@@ -257,8 +259,8 @@ class LevelMappingsPart:
             domain_body = " "
 
         self.printer.custom_print(
-            f":-{domain_body}prec({predicate_1},{predicate_2}), prec({predicate_2},{predicate_3}), " +\
-                f"prec({predicate_3},{predicate_1})."
+            f":-{domain_body}prec({predicate_1},{predicate_2}), prec({predicate_2},{predicate_3}), "
+            + f"prec({predicate_3},{predicate_1})."
         )
 
     def generate_non_ground_precs(self, generated_domains, scc, index_1, index_2):

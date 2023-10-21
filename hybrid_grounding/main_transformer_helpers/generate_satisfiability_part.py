@@ -178,7 +178,9 @@ class GenerateSatisfiabilityPart:
             if args_len == 0:
                 signum_string = "not"
                 if (
-                    self.rule_literals_signums[self.rule_literals.index(current_function_symbol)]
+                    self.rule_literals_signums[
+                        self.rule_literals.index(current_function_symbol)
+                    ]
                     or current_function_symbol is head
                 ):
                     signum_string = ""
@@ -216,12 +218,32 @@ class GenerateSatisfiabilityPart:
 
                 sat_atom = f"sat_r{self.current_rule_position}"
 
-                sat_body_list, sat_body_dict,current_function_arguments_string = self._generate_body_list(arguments, variable_associations, current_combination, current_function_arguments_string)
+                (
+                    sat_body_list,
+                    sat_body_dict,
+                    current_function_arguments_string,
+                ) = self._generate_body_list(
+                    arguments,
+                    variable_associations,
+                    current_combination,
+                    current_function_arguments_string,
+                )
 
-                if self._check_covered_subsets(sat_atom, covered_subsets, sat_body_dict) is True:
+                if (
+                    self._check_covered_subsets(
+                        sat_atom, covered_subsets, sat_body_dict
+                    )
+                    is True
+                ):
                     continue
 
-                self._print_sat_function_guess(head, current_function_symbol, current_function_arguments_string, sat_atom, sat_body_list)
+                self._print_sat_function_guess(
+                    head,
+                    current_function_symbol,
+                    current_function_arguments_string,
+                    sat_atom,
+                    sat_body_list,
+                )
 
     def _check_covered_subsets(self, sat_atom, covered_subsets, sat_body_dict):
         if sat_atom in covered_subsets:  # Check for covered subsets
@@ -241,25 +263,33 @@ class GenerateSatisfiabilityPart:
 
             if found is True:
                 return True
-            
+
         return False
 
-    def _print_sat_function_guess(self, head, current_function_symbol, current_function_arguments_string, sat_atom, sat_body_list):
-
+    def _print_sat_function_guess(
+        self,
+        head,
+        current_function_symbol,
+        current_function_arguments_string,
+        sat_atom,
+        sat_body_list,
+    ):
         current_function_name = f"{current_function_symbol.name}"
 
         if len(current_function_arguments_string) > 0:
-            current_function_string_representation = f"{current_function_name}" +\
-                        f"({current_function_arguments_string[:-1]})"
+            current_function_string_representation = (
+                f"{current_function_name}"
+                + f"({current_function_arguments_string[:-1]})"
+            )
         else:
             current_function_string_representation = f"{current_function_name}"
 
         if (
-                    self.rule_literals_signums[
-                        self.rule_literals.index(current_function_symbol)
-                    ]
-                    or current_function_symbol is head
-                ):
+            self.rule_literals_signums[
+                self.rule_literals.index(current_function_symbol)
+            ]
+            or current_function_symbol is head
+        ):
             sat_predicate = f"{current_function_string_representation}"
         else:
             sat_predicate = f"not {current_function_string_representation}"
@@ -270,25 +300,33 @@ class GenerateSatisfiabilityPart:
             body_interpretation = ""
 
         self.printer.custom_print(
-                    f"{sat_atom} :- {body_interpretation}{sat_predicate}."
-                )
+            f"{sat_atom} :- {body_interpretation}{sat_predicate}."
+        )
 
-    def _generate_body_list(self, arguments, variable_associations, current_combination, current_function_arguments_string):
+    def _generate_body_list(
+        self,
+        arguments,
+        variable_associations,
+        current_combination,
+        current_function_arguments_string,
+    ):
         sat_body_list = []
         sat_body_dict = {}
         for argument in arguments:
             if argument in self.rule_variables:
                 variable_index_combination = variable_associations[argument]
-                body_sat_predicate = f"r{self.current_rule_position}_{argument}" +\
-                            f"({current_combination[variable_index_combination]})"
+                body_sat_predicate = (
+                    f"r{self.current_rule_position}_{argument}"
+                    + f"({current_combination[variable_index_combination]})"
+                )
                 sat_body_list.append(body_sat_predicate)
                 sat_body_dict[body_sat_predicate] = body_sat_predicate
 
                 current_function_arguments_string += (
-                            f"{current_combination[variable_index_combination]},"
-                        )
+                    f"{current_combination[variable_index_combination]},"
+                )
             else:
                 current_function_arguments_string += f"{argument},"
 
         sat_body_list = list(set(sat_body_list))
-        return sat_body_list,sat_body_dict,current_function_arguments_string
+        return sat_body_list, sat_body_dict, current_function_arguments_string
