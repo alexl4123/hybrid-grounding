@@ -190,10 +190,22 @@ class RSPlusStarHelper:
 
         for condition in element["condition"]:
             if "arguments" in condition:
-                cls._handle_function(element_dependent_variables, element_index, index, new_conditions, condition)
+                cls._handle_function(
+                    element_dependent_variables,
+                    element_index,
+                    index,
+                    new_conditions,
+                    condition,
+                )
 
             elif "comparison" in condition:
-                cls._handle_comparison(element_dependent_variables, element_index, index, new_conditions, condition)
+                cls._handle_comparison(
+                    element_dependent_variables,
+                    element_index,
+                    index,
+                    new_conditions,
+                    condition,
+                )
 
             else:
                 assert False  # Not implemented
@@ -201,7 +213,14 @@ class RSPlusStarHelper:
         return new_conditions
 
     @classmethod
-    def _handle_function(cls, element_dependent_variables, element_index, index, new_conditions, condition):
+    def _handle_function(
+        cls,
+        element_dependent_variables,
+        element_index,
+        index,
+        new_conditions,
+        condition,
+    ):
         new_condition = condition["name"]
 
         new_args = []
@@ -212,9 +231,7 @@ class RSPlusStarHelper:
                 if variable in element_dependent_variables:
                     new_args.append(f"{variable}")
                 else:
-                    new_args.append(
-                                f"{variable}_{str(element_index)}_{str(index)}"
-                            )
+                    new_args.append(f"{variable}_{str(element_index)}_{str(index)}")
             elif "term" in argument:
                 new_args.append(f"{argument['term']}")
 
@@ -224,7 +241,14 @@ class RSPlusStarHelper:
         new_conditions.append(new_condition)
 
     @classmethod
-    def _handle_comparison(cls, element_dependent_variables, element_index, index, new_conditions, condition):
+    def _handle_comparison(
+        cls,
+        element_dependent_variables,
+        element_index,
+        index,
+        new_conditions,
+        condition,
+    ):
         comparison = condition["comparison"]
 
         variable_assignments = {}
@@ -240,8 +264,8 @@ class RSPlusStarHelper:
                     variable_assignments[str(argument)] = f"{str(argument)}"
                 else:
                     variable_assignments[
-                                str(argument)
-                            ] = f"{str(argument)}_{str(element_index)}_{str(index)}"
+                        str(argument)
+                    ] = f"{str(argument)}_{str(element_index)}_{str(index)}"
 
         for argument in ComparisonTools.get_arguments_from_operation(right):
             if argument.ast_type == clingo.ast.ASTType.Variable:
@@ -249,18 +273,18 @@ class RSPlusStarHelper:
                     variable_assignments[str(argument)] = f"{str(argument)}"
                 else:
                     variable_assignments[
-                                str(argument)
-                            ] = f"{str(argument)}_{str(element_index)}_{str(index)}"
+                        str(argument)
+                    ] = f"{str(argument)}_{str(element_index)}_{str(index)}"
 
         instantiated_left = ComparisonTools.instantiate_operation(
-                    left, variable_assignments
-                )
+            left, variable_assignments
+        )
         instantiated_right = ComparisonTools.instantiate_operation(
-                    right, variable_assignments
-                )
+            right, variable_assignments
+        )
 
         new_conditions.append(
-                    ComparisonTools.comparison_handlings(
-                        comparison_operator, instantiated_left, instantiated_right
-                    )
-                )
+            ComparisonTools.comparison_handlings(
+                comparison_operator, instantiated_left, instantiated_right
+            )
+        )

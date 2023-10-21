@@ -1,4 +1,3 @@
-# pylint: disable=W0108,R1721
 """
 Module for generating the level-mappings.
 """
@@ -36,7 +35,10 @@ class LevelMappingsPart:
         """
         Method that generates the level mappings.
         """
-        if self.cyclic_strategy in [CyclicStrategy.LEVEL_MAPPING, CyclicStrategy.LEVEL_MAPPING_AAAI]:
+        if (
+            self.cyclic_strategy == CyclicStrategy.LEVEL_MAPPING
+            or self.cyclic_strategy == CyclicStrategy.LEVEL_MAPPING_AAAI
+        ):
             generated_domains = {}
 
             scc_predicates_per_scc_key = {}
@@ -97,7 +99,7 @@ class LevelMappingsPart:
                             continue
 
                         for index_3 in range(len(scc)):
-                            if index_3 in [index_1, index_2]: 
+                            if index_1 == index_3 or index_2 == index_3:
                                 continue
 
                             if self.ground_guess:
@@ -157,7 +159,7 @@ class LevelMappingsPart:
             for index in range(len(domain_dict.keys())):
                 dom_list.append(domain_dict[str(index)])
         else:
-            for _ in predicate.arguments:
+            for argument in predicate.arguments:
                 if "0_terms" in self.domain_lookup_dict:
                     dom_list.append(self.domain_lookup_dict["0_terms"])
                 else:
@@ -250,11 +252,10 @@ class LevelMappingsPart:
         elif len(doms3) > 0:
             domain_body = f" {','.join(doms3)}, "
         else:
-            domain_body = " "
+            domain_body = f" "
 
         self.printer.custom_print(
-            f":-{domain_body}prec({predicate_1},{predicate_2}), prec({predicate_2},{predicate_3}), " +\
-                f"prec({predicate_3},{predicate_1})."
+            f":-{domain_body}prec({predicate_1},{predicate_2}), prec({predicate_2},{predicate_3}), prec({predicate_3},{predicate_1})."
         )
 
     def generate_non_ground_precs(self, generated_domains, scc, index_1, index_2):

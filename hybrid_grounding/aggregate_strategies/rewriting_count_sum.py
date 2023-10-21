@@ -407,11 +407,30 @@ class RewritingCountSum:
         count2 = count + 1
 
         if aggregate_mode == AggregateMode.RS:
-            rules_strings = cls._not_equal_handle_rs(str_type, str_id, variable_dependencies, always_add_variable_dependencies, skolem_constants, predicate_name, count1, count2)
+            rules_strings = cls._not_equal_handle_rs(
+                str_type,
+                str_id,
+                variable_dependencies,
+                always_add_variable_dependencies,
+                skolem_constants,
+                predicate_name,
+                count1,
+                count2,
+            )
 
         elif aggregate_mode in [AggregateMode.RS_PLUS, AggregateMode.RS_STAR]:
-
-            rules_strings = cls._not_equal_handle_rs_star_plus(aggregate_dict, aggregate_mode, str_type, str_id, variable_dependencies, cur_variable_dependencies, always_add_variable_dependencies, predicate_name, count1, count2)
+            rules_strings = cls._not_equal_handle_rs_star_plus(
+                aggregate_dict,
+                aggregate_mode,
+                str_type,
+                str_id,
+                variable_dependencies,
+                cur_variable_dependencies,
+                always_add_variable_dependencies,
+                predicate_name,
+                count1,
+                count2,
+            )
 
         if len(always_add_variable_dependencies) == 0:
             arguments = ""
@@ -439,9 +458,22 @@ class RewritingCountSum:
         return rules_strings
 
     @classmethod
-    def _not_equal_handle_rs_star_plus(cls, aggregate_dict, aggregate_mode, str_type, str_id, variable_dependencies, cur_variable_dependencies, always_add_variable_dependencies, predicate_name, count1, count2):
+    def _not_equal_handle_rs_star_plus(
+        cls,
+        aggregate_dict,
+        aggregate_mode,
+        str_type,
+        str_id,
+        variable_dependencies,
+        cur_variable_dependencies,
+        always_add_variable_dependencies,
+        predicate_name,
+        count1,
+        count2,
+    ):
         if str_type == "count":
-            rules_strings = RewritingCountHelper.rs_plus_star_count_generate_alldiff_rules_helper(
+            rules_strings = (
+                RewritingCountHelper.rs_plus_star_count_generate_alldiff_rules_helper(
                     predicate_name + "_1",
                     count1,
                     aggregate_dict["elements"],
@@ -452,7 +484,9 @@ class RewritingCountSum:
                     cur_variable_dependencies,
                     always_add_variable_dependencies,
                 )
-            rules_strings += RewritingCountHelper.rs_plus_star_count_generate_alldiff_rules_helper(
+            )
+            rules_strings += (
+                RewritingCountHelper.rs_plus_star_count_generate_alldiff_rules_helper(
                     predicate_name + "_2",
                     count2,
                     aggregate_dict["elements"],
@@ -463,83 +497,90 @@ class RewritingCountSum:
                     cur_variable_dependencies,
                     always_add_variable_dependencies,
                 )
+            )
         elif str_type == "sum":
             rules_strings = (
-                    RewritingSumHelper.rs_plus_star_sum_generate_alldiff_rules_helper(
-                        predicate_name + "_1",
-                        count1,
-                        aggregate_dict["elements"],
-                        str_type,
-                        str_id,
-                        variable_dependencies,
-                        aggregate_mode,
-                        cur_variable_dependencies,
-                        always_add_variable_dependencies,
-                    )
+                RewritingSumHelper.rs_plus_star_sum_generate_alldiff_rules_helper(
+                    predicate_name + "_1",
+                    count1,
+                    aggregate_dict["elements"],
+                    str_type,
+                    str_id,
+                    variable_dependencies,
+                    aggregate_mode,
+                    cur_variable_dependencies,
+                    always_add_variable_dependencies,
                 )
+            )
             rules_strings += (
-                    RewritingSumHelper.rs_plus_star_sum_generate_alldiff_rules_helper(
-                        predicate_name + "_2",
-                        count2,
-                        aggregate_dict["elements"],
-                        str_type,
-                        str_id,
-                        variable_dependencies,
-                        aggregate_mode,
-                        cur_variable_dependencies,
-                        always_add_variable_dependencies,
-                    )
+                RewritingSumHelper.rs_plus_star_sum_generate_alldiff_rules_helper(
+                    predicate_name + "_2",
+                    count2,
+                    aggregate_dict["elements"],
+                    str_type,
+                    str_id,
+                    variable_dependencies,
+                    aggregate_mode,
+                    cur_variable_dependencies,
+                    always_add_variable_dependencies,
                 )
-            
+            )
+
         return rules_strings
 
     @classmethod
-    def _not_equal_handle_rs(cls, str_type, str_id, variable_dependencies, always_add_variable_dependencies, skolem_constants, predicate_name, count1, count2):
+    def _not_equal_handle_rs(
+        cls,
+        str_type,
+        str_id,
+        variable_dependencies,
+        always_add_variable_dependencies,
+        skolem_constants,
+        predicate_name,
+        count1,
+        count2,
+    ):
         if str_type == "count":
-            rules_strings = (
-                    RewritingCountHelper.rs_count_generate_alldiff_rules_helper(
-                        predicate_name + "_1",
-                        count1,
-                        str_type,
-                        str_id,
-                        variable_dependencies,
-                        always_add_variable_dependencies,
-                        skolem_constants,
-                    )
-                )
+            rules_strings = RewritingCountHelper.rs_count_generate_alldiff_rules_helper(
+                predicate_name + "_1",
+                count1,
+                str_type,
+                str_id,
+                variable_dependencies,
+                always_add_variable_dependencies,
+                skolem_constants,
+            )
             rules_strings += (
-                    RewritingCountHelper.rs_count_generate_alldiff_rules_helper(
-                        predicate_name + "_2",
-                        count2,
-                        str_type,
-                        str_id,
-                        variable_dependencies,
-                        always_add_variable_dependencies,
-                        skolem_constants,
-                    )
-                )
-        elif str_type == "sum":
-            rules_strings = RewritingSumHelper.rs_sum_generate_alldiff_rules_helper(
-                    predicate_name + "_1",
-                    count1,
+                RewritingCountHelper.rs_count_generate_alldiff_rules_helper(
+                    predicate_name + "_2",
+                    count2,
                     str_type,
                     str_id,
                     variable_dependencies,
                     always_add_variable_dependencies,
                     skolem_constants,
                 )
-            rules_strings += (
-                    RewritingSumHelper.rs_sum_generate_alldiff_rules_helper(
-                        predicate_name + "_2",
-                        count2,
-                        str_type,
-                        str_id,
-                        variable_dependencies,
-                        always_add_variable_dependencies,
-                        skolem_constants,
-                    )
-                )
-            
+            )
+        elif str_type == "sum":
+            rules_strings = RewritingSumHelper.rs_sum_generate_alldiff_rules_helper(
+                predicate_name + "_1",
+                count1,
+                str_type,
+                str_id,
+                variable_dependencies,
+                always_add_variable_dependencies,
+                skolem_constants,
+            )
+            rules_strings += RewritingSumHelper.rs_sum_generate_alldiff_rules_helper(
+                predicate_name + "_2",
+                count2,
+                str_type,
+                str_id,
+                variable_dependencies,
+                always_add_variable_dependencies,
+                skolem_constants,
+            )
+
         return rules_strings
 
     @classmethod
@@ -574,14 +615,45 @@ class RewritingCountSum:
             # Special case if guard is variable
             arguments = f"({','.join(variable_dependencies + [guard_string])})"
 
-        cls._monotone_antimonotone_handle_original_rule(aggregate_mode, operator_type, original_rule_additional_body_literals, predicate_name, arguments)
+        cls._monotone_antimonotone_handle_original_rule(
+            aggregate_mode,
+            operator_type,
+            original_rule_additional_body_literals,
+            predicate_name,
+            arguments,
+        )
 
-        rules_strings = cls._monotone_antimonotone_create_new_rules(aggregate_dict, aggregate_mode, str_type, str_id, variable_dependencies, operator_type, cur_variable_dependencies, always_add_variable_dependencies, skolem_constants, count, predicate_name)
+        rules_strings = cls._monotone_antimonotone_create_new_rules(
+            aggregate_dict,
+            aggregate_mode,
+            str_type,
+            str_id,
+            variable_dependencies,
+            operator_type,
+            cur_variable_dependencies,
+            always_add_variable_dependencies,
+            skolem_constants,
+            count,
+            predicate_name,
+        )
 
         return rules_strings
 
     @classmethod
-    def _monotone_antimonotone_create_new_rules(cls, aggregate_dict, aggregate_mode, str_type, str_id, variable_dependencies, operator_type, cur_variable_dependencies, always_add_variable_dependencies, skolem_constants, count, predicate_name):
+    def _monotone_antimonotone_create_new_rules(
+        cls,
+        aggregate_dict,
+        aggregate_mode,
+        str_type,
+        str_id,
+        variable_dependencies,
+        operator_type,
+        cur_variable_dependencies,
+        always_add_variable_dependencies,
+        skolem_constants,
+        count,
+        predicate_name,
+    ):
         if operator_type in ["<", ">="]:
             # count = count
             pass
@@ -640,11 +712,18 @@ class RewritingCountSum:
                         always_add_variable_dependencies,
                     )
                 )
-                
+
         return rules_strings
 
     @classmethod
-    def _monotone_antimonotone_handle_original_rule(cls, aggregate_mode, operator_type, original_rule_additional_body_literals, predicate_name, arguments):
+    def _monotone_antimonotone_handle_original_rule(
+        cls,
+        aggregate_mode,
+        operator_type,
+        original_rule_additional_body_literals,
+        predicate_name,
+        arguments,
+    ):
         if operator_type in [">=", ">"]:
             # Monotone
             if aggregate_mode == AggregateMode.RS:

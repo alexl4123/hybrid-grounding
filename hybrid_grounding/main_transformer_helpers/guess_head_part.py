@@ -1,4 +1,3 @@
-# pylint: disable=R0913,R1721
 """
 Module for guessing the head part.
 """
@@ -72,7 +71,7 @@ class GuessHeadPart:
         if self.ground_guess:
             self.do_ground_guess(new_head_name)
         else:
-            self._non_ground_guess(new_head)
+            self._non_ground_guess(new_head_name, new_head)
 
         if self.current_rule in self.scc_rule_functions_scc_lookup:
             if len(new_arguments) > 0:
@@ -215,7 +214,7 @@ class GuessHeadPart:
                     print(
                         "FATAL in guess head, could not find argument in current combination!"
                     )
-                    raise Exception
+                    raise (Exception)
 
                 if argument in head_dom_list_lookup:
                     combination_argument_position = head_dom_list_lookup[argument]
@@ -240,12 +239,11 @@ class GuessHeadPart:
             )
 
             self.printer.custom_print(
-                f"{self.rule_head.name}{parsed_current_head_guess_arguments} :- " +\
-                f"{new_head_name}{parsed_current_head_guess_arguments}."
+                f"{self.rule_head.name}{parsed_current_head_guess_arguments} :- {new_head_name}{parsed_current_head_guess_arguments}."
             )
         return possible_head_guesses
 
-    def _non_ground_guess(self, new_head):
+    def _non_ground_guess(self, new_head_name, new_head):
         h_args = re.sub(r"^.*?\(", "", str(self.rule_head))[:-1].split(
             ","
         )  # all arguments (incl. duplicates / terms)

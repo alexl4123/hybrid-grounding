@@ -1,4 +1,3 @@
-# pylint: disable=R0913
 """
 Module for ensuring foundedness.
 """
@@ -93,6 +92,7 @@ class GenerateFoundednessPart:
                 ","
             )  # all arguments (incl. duplicates / terms)
             if literal != self.rule_head and literal_arguments_length > 0:
+                # f_vars = list(dict.fromkeys([a for a in f_args if a in self.rule_variables]))  # which have to be grounded per combination
                 literal_variables = []
                 for argument in literal_arguments:
                     if argument in self.rule_variables:
@@ -216,6 +216,7 @@ class GenerateFoundednessPart:
                                     not_head_variable
                                 ]
                             ):
+                                # argument_list.append(combination[reachable_head_variables_from_not_head_variable[not_head_variable].index(argument)])
                                 argument_list.append(
                                     combination[dom_list_lookup[argument]]
                                 )
@@ -388,8 +389,7 @@ class GenerateFoundednessPart:
                     f"domain_rule_{self.current_rule_position}_variable_{not_head_variable}({value})."
                 )
 
-            domain_string = \
-                f"domain_rule_{self.current_rule_position}_variable_{not_head_variable}({not_head_variable})"
+            domain_string = f"domain_rule_{self.current_rule_position}_variable_{not_head_variable}({not_head_variable})"
         else:
             domain_string = f"dom({not_head_variable})"
 
@@ -409,16 +409,11 @@ class GenerateFoundednessPart:
 
         if len(graph_variable_dict[not_head_variable]) == 0:
             self.printer.custom_print(
-                "1<=" +\
-                f"{{r{self.current_rule_position}f_{not_head_variable}{rem_tuple_interpretation}:{domain_string}}}" +\
-                "<=1."
-
+                f"1<={{r{self.current_rule_position}f_{not_head_variable}{rem_tuple_interpretation}:{domain_string}}}<=1."
             )
         else:
             self.printer.custom_print(
-                "1<=" +\
-                f"{{r{self.current_rule_position}f_{not_head_variable}{rem_tuple_interpretation}:{domain_string}}}" +\
-                f"<=1 :- {head_interpretation}."
+                f"1<={{r{self.current_rule_position}f_{not_head_variable}{rem_tuple_interpretation}:{domain_string}}}<=1 :- {head_interpretation}."
             )
 
     def _generate_foundedness_comparisons(self, head, rem, h_vars, h_args, g):
@@ -518,7 +513,7 @@ class GenerateFoundednessPart:
                 left_eval = sint(left_eval)
                 right_eval = sint(right_eval)
 
-                safe_checks = left_eval is not None and right_eval is not None
+                safe_checks = left_eval != None and right_eval != None
                 evaluation = safe_checks and not ComparisonTools.compare_terms(
                     comparison_operator, int(left_eval), int(right_eval)
                 )
@@ -696,11 +691,11 @@ class GenerateFoundednessPart:
                                     temp_found = False
                                     break
 
-                            if temp_found is True:
+                            if temp_found == True:
                                 found = True
                                 break
 
-                        if found is True:
+                        if found == True:
                             continue
 
                     unfound_predicate_name = rule_predicate_function.name
@@ -767,8 +762,7 @@ class GenerateFoundednessPart:
                                 else:
                                     head_predicate = f"{new_head_name}"
 
-                                unfound_level_mapping = f"{unfound_atom} :-" +\
-                                    f"{unfound_body} not prec({unfound_predicate},{head_predicate})."
+                                unfound_level_mapping = f"{unfound_atom} :-{unfound_body} not prec({unfound_predicate},{head_predicate})."
                                 self.printer.custom_print(unfound_level_mapping)
 
                                 if len(full_head_args) > 0:
@@ -784,15 +778,11 @@ class GenerateFoundednessPart:
                                     if argument != "_"
                                 ]
                                 if len(unfound_predicate_args) > 0:
-                                    new_unfound_atom = \
-                                        f"r{self.current_rule_position}_{self.current_rule_position}_unfound" +\
-                                        f"({','.join(unfound_predicate_args)})"
+                                    new_unfound_atom = f"r{self.current_rule_position}_{self.current_rule_position}_unfound({','.join(unfound_predicate_args)})"
                                 else:
-                                    new_unfound_atom = \
-                                        f"r{self.current_rule_position}_{self.current_rule_position}_unfound_"
+                                    new_unfound_atom = f"r{self.current_rule_position}_{self.current_rule_position}_unfound_"
 
-                                unfound_level_mapping = f"{new_unfound_atom} :-" +\
-                                    f"{unfound_body} not prec({head_predicate},{original_head_predicate})."
+                                unfound_level_mapping = f"{new_unfound_atom} :-{unfound_body} not prec({head_predicate},{original_head_predicate})."
                                 self.printer.custom_print(unfound_level_mapping)
 
                                 # self._add_atom_to_unfoundedness_check(head_predicate, new_unfound_atom)
