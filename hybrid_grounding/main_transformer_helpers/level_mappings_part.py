@@ -1,3 +1,4 @@
+# pylint: disable=W0102,R1721,W0108
 """
 Module for generating the level-mappings.
 """
@@ -35,10 +36,7 @@ class LevelMappingsPart:
         """
         Method that generates the level mappings.
         """
-        if (
-            self.cyclic_strategy == CyclicStrategy.LEVEL_MAPPING
-            or self.cyclic_strategy == CyclicStrategy.LEVEL_MAPPING_AAAI
-        ):
+        if self.cyclic_strategy in [CyclicStrategy.LEVEL_MAPPING, CyclicStrategy.LEVEL_MAPPING_AAAI]:
             generated_domains = {}
 
             scc_predicates_per_scc_key = {}
@@ -52,64 +50,68 @@ class LevelMappingsPart:
 
             # for scc_key in self.strongly_connected_components_predicates.keys():
             for scc_key in scc_predicates_per_scc_key.keys():
-                # scc = self.strongly_connected_components_predicates[scc_key]
-
-                # The following few lines make the nodes unique according to their name
-                # Sort them
-                # And create unique variable names
                 scc = list(set(scc_predicates_per_scc_key[scc_key]))
-                scc_ = {}
-                for predicate in scc:
-                    scc_[predicate.name] = predicate
-                scc = []
-                for key in scc_.keys():
-                    scc.append(scc_[key])
+                self._generate_level_mappings_scc(scc, generated_domains)
 
-                scc.sort(key=lambda element: str(element))
+    def _generate_level_mappings_scc(self, scc, generated_domains):                
+        scc_ = {}
+        for predicate in scc:
+            scc_[predicate.name] = predicate
+        scc = []
+        for key in scc_.keys():
+            scc.append(scc_[key])
 
-                new_scc = []
-                for item in scc:
-                    head_name = item.name
+        scc.sort(key=lambda element: str(element))
 
-                    arguments = []
-                    for arg_index in range(len(item.arguments)):
-                        arguments.append(Function("X" + str(arg_index)))
+        new_scc = []
+        for item in scc:
+            head_name = item.name
 
-                    if len(arguments) > 0:
-                        new_scc.append(Function(name=head_name, arguments=arguments))
+            arguments = []
+            for arg_index in range(len(item.arguments)):
+                arguments.append(Function("X" + str(arg_index)))
+
+            if len(arguments) > 0:
+                new_scc.append(Function(name=head_name, arguments=arguments))
+            else:
+                new_scc.append(Function(name=head_name))
+
+        scc = new_scc
+
+        self._generate_precs(generated_domains, scc)
+        self._generate_transitivities(generated_domains, scc)
+
+
+    def _generate_transitivities(self, generated_domains, scc):
+        # Create rules (21)
+        for index_1 in range(len(scc)):
+            for index_2 in range(len(scc)):
+                if index_1 == index_2:
+                    continue
+
+                for index_3 in range(len(scc)):
+                    if index_3 in [index_1, index_2]:
+                        continue
+
+                    if self.ground_guess:
+                        self.generate_ground_transitivity(
+                            scc, index_1, index_2, index_3
+                        )
                     else:
-                        new_scc.append(Function(name=head_name))
+                        self.generate_non_ground_transitivity(
+                            generated_domains, scc, index_1, index_2, index_3
+                        )
 
-                scc = new_scc
-
-                # Create rules (20)
-                for index_1 in range(len(scc)):
-                    for index_2 in range(index_1 + 1, len(scc)):
-                        if self.ground_guess:
-                            self.generate_ground_precs(scc, index_1, index_2)
-                        else:
-                            self.generate_non_ground_precs(
-                                generated_domains, scc, index_1, index_2
-                            )
-
-                # Create rules (21)
-                for index_1 in range(len(scc)):
-                    for index_2 in range(len(scc)):
-                        if index_1 == index_2:
-                            continue
-
-                        for index_3 in range(len(scc)):
-                            if index_1 == index_3 or index_2 == index_3:
-                                continue
-
-                            if self.ground_guess:
-                                self.generate_ground_transitivity(
-                                    scc, index_1, index_2, index_3
-                                )
-                            else:
-                                self.generate_non_ground_transitivity(
-                                    generated_domains, scc, index_1, index_2, index_3
-                                )
+    def _generate_precs(self, generated_domains, scc):
+        # Create rules (20)
+        for index_1 in range(len(scc)):
+            for index_2 in range(index_1 + 1, len(scc)):
+                if self.ground_guess:
+                    self.generate_ground_precs(scc, index_1, index_2)
+                else:
+                    self.generate_non_ground_precs(
+                        generated_domains, scc, index_1, index_2
+                    )
 
     def generate_ground_precs(self, scc, index_1, index_2):
         """
@@ -252,10 +254,11 @@ class LevelMappingsPart:
         elif len(doms3) > 0:
             domain_body = f" {','.join(doms3)}, "
         else:
-            domain_body = f" "
+            domain_body = " "
 
         self.printer.custom_print(
-            f":-{domain_body}prec({predicate_1},{predicate_2}), prec({predicate_2},{predicate_3}), prec({predicate_3},{predicate_1})."
+            f":-{domain_body}prec({predicate_1},{predicate_2}), prec({predicate_2},{predicate_3}), " +\
+                f"prec({predicate_3},{predicate_1})."
         )
 
     def generate_non_ground_precs(self, generated_domains, scc, index_1, index_2):

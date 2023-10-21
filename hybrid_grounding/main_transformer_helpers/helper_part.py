@@ -1,3 +1,4 @@
+# pylint: disable=W0102
 """
 General helper module for the reduction.
 """
@@ -29,28 +30,16 @@ class HelperPart:
             if variable in rule_variables_predicates:
                 respective_predicates = rule_variables_predicates[variable]
                 total_domain = None
-                for respective_predicate in respective_predicates:
-                    respective_predicate_name = respective_predicate[0].name
-                    respective_predicate_position = respective_predicate[1]
 
-                    if (
-                        respective_predicate_name not in domain
-                        or str(respective_predicate_position)
-                        not in domain[respective_predicate_name]
-                    ):
-                        continue
-
-                    cur_domain = domain[respective_predicate_name][
-                        str(respective_predicate_position)
-                    ]
-
-                    if total_domain:
-                        total_domain = total_domain.intersection(set(cur_domain))
-                    else:
-                        total_domain = set(cur_domain)
+                total_domain = cls._get_variable_domain_from_occurrences(domain, respective_predicates, total_domain)
 
                 if total_domain is not None:
                     return list(total_domain)
+
+        return cls._get_alternative_domain(safe_variables_rules, rule, domain, variable)
+
+    @classmethod
+    def _get_alternative_domain(cls,safe_variables_rules, rule, domain, variable):
 
         if str(rule) not in safe_variables_rules:
             return domain["0_terms"]
@@ -78,10 +67,36 @@ class HelperPart:
                 else:
                     total_domain = set(cur_domain)
 
+        if total_domain is None:
+            return domain["0_terms"]
+
         return list(total_domain)
 
     @classmethod
-    def ignore_exception(cls, IgnoreException=Exception, DefaultVal=None):
+    def _get_variable_domain_from_occurrences(cls, domain, respective_predicates, total_domain):
+        for respective_predicate in respective_predicates:
+            respective_predicate_name = respective_predicate[0].name
+            respective_predicate_position = respective_predicate[1]
+
+            if (
+                        respective_predicate_name not in domain
+                        or str(respective_predicate_position)
+                        not in domain[respective_predicate_name]
+                    ):
+                continue
+
+            cur_domain = domain[respective_predicate_name][
+                        str(respective_predicate_position)
+                    ]
+
+            if total_domain:
+                total_domain = total_domain.intersection(set(cur_domain))
+            else:
+                total_domain = set(cur_domain)
+        return total_domain
+
+    @classmethod
+    def ignore_exception(cls, ignore_exception=Exception, default_value=None):
         """Decorator for ignoring exception from a function
         e.g.   @ignore_exception(DivideByZero)
         e.g.2. ignore_exception(DivideByZero)(Divide)(2/0)
@@ -91,8 +106,8 @@ class HelperPart:
             def _dec(*args, **kwargs):
                 try:
                     return function(*args, **kwargs)
-                except IgnoreException:
-                    return DefaultVal
+                except ignore_exception:
+                    return default_value
 
             return _dec
 

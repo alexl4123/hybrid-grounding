@@ -1,3 +1,4 @@
+# pylint: disable=R0913,R1721
 """
 Module for ensuring satisfiability.
 """
@@ -89,14 +90,14 @@ class GenerateSatisfiabilityPart:
             for symbolic_argument in symbolic_arguments:
                 arguments.append(str(symbolic_argument))
 
-            var = list(
+            arguments_list = list(
                 dict.fromkeys(arguments)
             )  # arguments (without duplicates / incl. terms)
-            vars = list(
+            variables_list = list(
                 dict.fromkeys([a for a in arguments if a in self.rule_variables])
             )  # which have to be grounded per combination
             dom_list = []
-            for variable in vars:
+            for variable in variables_list:
                 if (
                     str(self.current_rule_position) in self.safe_variables_rules
                     and variable
@@ -119,15 +120,15 @@ class GenerateSatisfiabilityPart:
             for c in combinations:
                 variable_assignments = {}
 
-                for variable_index in range(len(vars)):
-                    variable = vars[variable_index]
+                for variable_index in range(len(variables_list)):
+                    variable = variables_list[variable_index]
                     value = c[variable_index]
 
                     variable_assignments[variable] = value
 
                 interpretation_list = []
-                for variable in var:
-                    if variable in vars:
+                for variable in arguments_list:
+                    if variable in variables_list:
                         interpretation_list.append(
                             f"r{self.current_rule_position}_{variable}({variable_assignments[variable]})"
                         )
@@ -143,7 +144,7 @@ class GenerateSatisfiabilityPart:
                 left_eval = sint(left_eval)
                 right_eval = sint(right_eval)
 
-                safe_checks = left_eval != None and right_eval != None
+                safe_checks = left_eval is not None and right_eval is not None
                 evaluation = safe_checks and not ComparisonTools.compare_terms(
                     comparison_operator, int(left_eval), int(right_eval)
                 )
@@ -175,8 +176,14 @@ class GenerateSatisfiabilityPart:
         for current_function_symbol in self.rule_literals:
             args_len = len(current_function_symbol.arguments)
             if args_len == 0:
+                signum_string = "not"
+                if (
+                    self.rule_literals_signums[self.rule_literals.index(current_function_symbol)]
+                    or current_function_symbol is head
+                ):
+                    signum_string = ""
                 self.printer.custom_print(
-                    f"sat_r{self.current_rule_position} :-{'' if (self.rule_literals_signums[self.rule_literals.index(current_function_symbol)] or current_function_symbol is head) else ' not'} {current_function_symbol}."
+                    f"sat_r{self.current_rule_position} :- {signum_string} {current_function_symbol}."
                 )
                 continue
 
@@ -209,69 +216,79 @@ class GenerateSatisfiabilityPart:
 
                 sat_atom = f"sat_r{self.current_rule_position}"
 
-                sat_body_list = []
-                sat_body_dict = {}
-                for argument in arguments:
-                    if argument in self.rule_variables:
-                        variable_index_combination = variable_associations[argument]
-                        body_sat_predicate = f"r{self.current_rule_position}_{argument}({current_combination[variable_index_combination]})"
-                        sat_body_list.append(body_sat_predicate)
-                        sat_body_dict[body_sat_predicate] = body_sat_predicate
+                sat_body_list, sat_body_dict,current_function_arguments_string = self._generate_body_list(arguments, variable_associations, current_combination, current_function_arguments_string)
 
-                        current_function_arguments_string += (
-                            f"{current_combination[variable_index_combination]},"
-                        )
-                    else:
-                        current_function_arguments_string += f"{argument},"
+                if self._check_covered_subsets(sat_atom, covered_subsets, sat_body_dict) is True:
+                    continue
 
-                sat_body_list = list(set(sat_body_list))
+                self._print_sat_function_guess(head, current_function_symbol, current_function_arguments_string, sat_atom, sat_body_list)
 
-                if sat_atom in covered_subsets:  # Check for covered subsets
-                    possible_subsets = covered_subsets[sat_atom]
-                    found = False
+    def _check_covered_subsets(self, sat_atom, covered_subsets, sat_body_dict):
+        if sat_atom in covered_subsets:  # Check for covered subsets
+            possible_subsets = covered_subsets[sat_atom]
+            found = False
 
-                    for possible_subset in possible_subsets:
-                        temp_found = True
-                        for possible_subset_predicate in possible_subset:
-                            if possible_subset_predicate not in sat_body_dict:
-                                temp_found = False
-                                break
+            for possible_subset in possible_subsets:
+                temp_found = True
+                for possible_subset_predicate in possible_subset:
+                    if possible_subset_predicate not in sat_body_dict:
+                        temp_found = False
+                        break
 
-                        if temp_found == True:
-                            found = True
-                            break
+                if temp_found is True:
+                    found = True
+                    break
 
-                    if found == True:
-                        continue
+            if found is True:
+                return True
+            
+        return False
 
-                if current_function_symbol is head:
-                    # For not deriving stuff two times:
-                    # current_function_name = f"{current_function_symbol.name}{self.current_rule_position}"
-                    # Else:
-                    current_function_name = f"{current_function_symbol.name}"
-                else:
-                    current_function_name = f"{current_function_symbol.name}"
+    def _print_sat_function_guess(self, head, current_function_symbol, current_function_arguments_string, sat_atom, sat_body_list):
 
-                if len(current_function_arguments_string) > 0:
-                    current_function_string_representation = f"{current_function_name}({current_function_arguments_string[:-1]})"
-                else:
-                    current_function_string_representation = f"{current_function_name}"
+        current_function_name = f"{current_function_symbol.name}"
 
-                if (
+        if len(current_function_arguments_string) > 0:
+            current_function_string_representation = f"{current_function_name}" +\
+                        f"({current_function_arguments_string[:-1]})"
+        else:
+            current_function_string_representation = f"{current_function_name}"
+
+        if (
                     self.rule_literals_signums[
                         self.rule_literals.index(current_function_symbol)
                     ]
                     or current_function_symbol is head
                 ):
-                    sat_predicate = f"{current_function_string_representation}"
-                else:
-                    sat_predicate = f"not {current_function_string_representation}"
+            sat_predicate = f"{current_function_string_representation}"
+        else:
+            sat_predicate = f"not {current_function_string_representation}"
 
-                if len(sat_body_list) > 0:
-                    body_interpretation = ",".join(sat_body_list) + ","
-                else:
-                    body_interpretation = ""
+        if len(sat_body_list) > 0:
+            body_interpretation = ",".join(sat_body_list) + ","
+        else:
+            body_interpretation = ""
 
-                self.printer.custom_print(
+        self.printer.custom_print(
                     f"{sat_atom} :- {body_interpretation}{sat_predicate}."
                 )
+
+    def _generate_body_list(self, arguments, variable_associations, current_combination, current_function_arguments_string):
+        sat_body_list = []
+        sat_body_dict = {}
+        for argument in arguments:
+            if argument in self.rule_variables:
+                variable_index_combination = variable_associations[argument]
+                body_sat_predicate = f"r{self.current_rule_position}_{argument}" +\
+                            f"({current_combination[variable_index_combination]})"
+                sat_body_list.append(body_sat_predicate)
+                sat_body_dict[body_sat_predicate] = body_sat_predicate
+
+                current_function_arguments_string += (
+                            f"{current_combination[variable_index_combination]},"
+                        )
+            else:
+                current_function_arguments_string += f"{argument},"
+
+        sat_body_list = list(set(sat_body_list))
+        return sat_body_list,sat_body_dict,current_function_arguments_string
