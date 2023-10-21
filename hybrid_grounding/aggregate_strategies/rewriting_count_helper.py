@@ -1,3 +1,4 @@
+# pylint: disable=R0913
 """
 Helper module for the count aggregate.
 """
@@ -67,7 +68,6 @@ class RewritingCountHelper:
             str_id,
             variable_dependencies,
             aggregate_mode,
-            cur_variable_dependencies,
             always_add_variable_dependencies,
             total_count=total_count,
         )
@@ -92,7 +92,8 @@ class RewritingCountHelper:
         for head_string in rules_head_strings:
             negated_head_strings.append(f"not {head_string}")
 
-        helper_rule = f"not_{rule_head_name}{count_name_ending} :- {','.join(spawner_functions + negated_head_strings)}."
+        helper_rule = f"not_{rule_head_name}{count_name_ending} :- " +\
+            f"{','.join(spawner_functions + negated_head_strings)}."
 
         rules_strings.append(helper_rule)
 

@@ -1,3 +1,4 @@
+# pylint: disable=E1124
 """
 Main Entry Point into the prototype.
 Parses arguments and calls HybridGrounding class.
@@ -98,7 +99,10 @@ def main():
         if args.mode == grounding_modes_choices[key]["cmd_line"]:
             grounding_mode = grounding_modes_choices[key]["enum_mode"]
 
-    if grounding_mode and grounding_mode == GroundingModes.REWRITE_AGGREGATES_GROUND_FULLY:
+    if (
+        grounding_mode
+        and grounding_mode == GroundingModes.REWRITE_AGGREGATES_GROUND_FULLY
+    ):
         ground_guess = True
 
     aggregate_strategy = None

@@ -47,7 +47,9 @@ class RMCase:
             all_diff_list_terms.append(cur_term_list)
 
             for condition in conditions:
-                cls._for_each_condition(variable_dependencies, new_body_list, index, condition)
+                cls._for_each_condition(
+                    variable_dependencies, new_body_list, index, condition
+                )
 
         all_diff_list = CountAggregateHelper.all_diff_generator(
             all_diff_list_terms, upper
@@ -58,19 +60,23 @@ class RMCase:
         return new_body_list
 
     @classmethod
-    def _for_each_condition(cls, variable_dependencies, new_body_list, index, condition):
+    def _for_each_condition(
+        cls, variable_dependencies, new_body_list, index, condition
+    ):
         if (
-                    hasattr(condition, "atom")
-                    and hasattr(condition.atom, "symbol")
-                    and condition.atom.symbol.ast_type == clingo.ast.ASTType.Function
-                ):
+            hasattr(condition, "atom")
+            and hasattr(condition.atom, "symbol")
+            and condition.atom.symbol.ast_type == clingo.ast.ASTType.Function
+        ):
             cls._handle_function(variable_dependencies, new_body_list, index, condition)
 
         elif (
-                    hasattr(condition, "atom")
-                    and condition.atom.ast_type == clingo.ast.ASTType.Comparison
-                ):
-            cls._handle_comparison(variable_dependencies, new_body_list, index, condition)
+            hasattr(condition, "atom")
+            and condition.atom.ast_type == clingo.ast.ASTType.Comparison
+        ):
+            cls._handle_comparison(
+                variable_dependencies, new_body_list, index, condition
+            )
 
     @classmethod
     def _handle_comparison(cls, variable_dependencies, new_body_list, index, condition):
@@ -81,8 +87,8 @@ class RMCase:
         right = cur_comparison.guards[0].term
 
         arguments = ComparisonTools.get_arguments_from_operation(
-                        left
-                    ) + ComparisonTools.get_arguments_from_operation(right)
+            left
+        ) + ComparisonTools.get_arguments_from_operation(right)
 
         arg_dict = {}
 
@@ -95,8 +101,8 @@ class RMCase:
         new_left = ComparisonTools.instantiate_operation(left, arg_dict)
         new_right = ComparisonTools.instantiate_operation(right, arg_dict)
         new_comparison = ComparisonTools.comparison_handlings(
-                        cur_comparison.guards[0].comparison, new_left, new_right
-                    )
+            cur_comparison.guards[0].comparison, new_left, new_right
+        )
 
         new_body_list.append(new_comparison)
 

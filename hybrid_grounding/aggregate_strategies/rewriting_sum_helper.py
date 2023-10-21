@@ -17,12 +17,9 @@ class RewritingSumHelper:
         cls,
         rule_head_name,
         local_cum,
-        elements,
         str_type,
         str_id,
         variable_dependencies,
-        aggregate_mode,
-        cur_variable_dependencies,
         always_add_variable_dependencies,
         skolem_constants,
     ):
@@ -78,7 +75,6 @@ class RewritingSumHelper:
                 str_id,
                 variable_dependencies,
                 aggregate_mode,
-                cur_variable_dependencies,
                 always_add_variable_dependencies,
                 local_sum,
             )

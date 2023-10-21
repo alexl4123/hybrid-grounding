@@ -52,8 +52,10 @@ class RSHelper:
             else:
                 positive_body_string = ""
 
-            body_string = f"body_{str_type}_ag{str_id}({term_string}) :- " +\
-                f"{positive_body_string} {','.join(element['condition'])}."
+            body_string = (
+                f"body_{str_type}_ag{str_id}({term_string}) :- "
+                + f"{positive_body_string} {','.join(element['condition'])}."
+            )
             new_prg_part_set.append(body_string)
 
     @classmethod
@@ -123,7 +125,7 @@ class RSHelper:
 
         highest_integer_value = 0
         for domain_value in domain["0_terms"]:
-            if CountAggregateHelper.check_string_is_int(str(domain_value)) == True:
+            if CountAggregateHelper.check_string_is_int(str(domain_value)) is True:
                 if int(domain_value) > highest_integer_value:
                     highest_integer_value = int(domain_value)
 

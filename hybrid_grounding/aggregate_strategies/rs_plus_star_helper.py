@@ -45,8 +45,10 @@ class RSPlusStarHelper:
 
             term_string = f"{','.join(element['terms'] + element_dependent_variables)}"
 
-            body_string = f"body_{str_type}_ag{str_id}_{element_index}({term_string}) :- " +\
-                f"{','.join(element['condition'])}."
+            body_string = (
+                f"body_{str_type}_ag{str_id}_{element_index}({term_string}) :- "
+                + f"{','.join(element['condition'])}."
+            )
             new_prg_part_set.append(body_string)
 
     @classmethod
@@ -59,7 +61,6 @@ class RSPlusStarHelper:
         str_id,
         variable_dependencies,
         aggregate_mode,
-        cur_variable_dependencies,
         always_add_variable_dependencies,
         total_count=0,
     ):
@@ -70,7 +71,7 @@ class RSPlusStarHelper:
         rules_head_strings = []
 
         combination_lists = []
-        for index in range(count):
+        for _ in range(count):
             combination_lists.append(list(range(len(elements))))
 
         combination_list = list(itertools.product(*combination_lists))
@@ -160,7 +161,7 @@ class RSPlusStarHelper:
 
             new_terms = []
             for term in element["terms"]:
-                if CountAggregateHelper.check_string_is_int(str(term)) == True:
+                if CountAggregateHelper.check_string_is_int(str(term)) is True:
                     new_terms.append(str(term))
                 else:
                     new_terms.append(f"{str(term)}_{str(element_index)}_{str(index)}")
@@ -189,67 +190,77 @@ class RSPlusStarHelper:
 
         for condition in element["condition"]:
             if "arguments" in condition:
-                new_condition = condition["name"]
+                cls._handle_function(element_dependent_variables, element_index, index, new_conditions, condition)
 
-                new_args = []
-
-                for argument in condition["arguments"]:
-                    if "variable" in argument:
-                        variable = argument["variable"]
-                        if variable in element_dependent_variables:
-                            new_args.append(f"{variable}")
-                        else:
-                            new_args.append(
-                                f"{variable}_{str(element_index)}_{str(index)}"
-                            )
-                    elif "term" in argument:
-                        new_args.append(f"{argument['term']}")
-
-                if len(new_args) > 0:
-                    new_condition += f"({','.join(new_args)})"
-
-                new_conditions.append(new_condition)
             elif "comparison" in condition:
-                comparison = condition["comparison"]
+                cls._handle_comparison(element_dependent_variables, element_index, index, new_conditions, condition)
 
-                variable_assignments = {}
-
-                left = comparison.term
-                assert len(comparison.guards) <= 1
-                right = comparison.guards[0].term
-                comparison_operator = comparison.guards[0].comparison
-
-                for argument in ComparisonTools.get_arguments_from_operation(left):
-                    if argument.ast_type == clingo.ast.ASTType.Variable:
-                        if str(argument) in element_dependent_variables:
-                            variable_assignments[str(argument)] = f"{str(argument)}"
-                        else:
-                            variable_assignments[
-                                str(argument)
-                            ] = f"{str(argument)}_{str(element_index)}_{str(index)}"
-
-                for argument in ComparisonTools.get_arguments_from_operation(right):
-                    if argument.ast_type == clingo.ast.ASTType.Variable:
-                        if str(argument) in element_dependent_variables:
-                            variable_assignments[str(argument)] = f"{str(argument)}"
-                        else:
-                            variable_assignments[
-                                str(argument)
-                            ] = f"{str(argument)}_{str(element_index)}_{str(index)}"
-
-                instantiated_left = ComparisonTools.instantiate_operation(
-                    left, variable_assignments
-                )
-                instantiated_right = ComparisonTools.instantiate_operation(
-                    right, variable_assignments
-                )
-
-                new_conditions.append(
-                    ComparisonTools.comparison_handlings(
-                        comparison_operator, instantiated_left, instantiated_right
-                    )
-                )
             else:
                 assert False  # Not implemented
 
         return new_conditions
+
+    @classmethod
+    def _handle_function(cls, element_dependent_variables, element_index, index, new_conditions, condition):
+        new_condition = condition["name"]
+
+        new_args = []
+
+        for argument in condition["arguments"]:
+            if "variable" in argument:
+                variable = argument["variable"]
+                if variable in element_dependent_variables:
+                    new_args.append(f"{variable}")
+                else:
+                    new_args.append(
+                                f"{variable}_{str(element_index)}_{str(index)}"
+                            )
+            elif "term" in argument:
+                new_args.append(f"{argument['term']}")
+
+        if len(new_args) > 0:
+            new_condition += f"({','.join(new_args)})"
+
+        new_conditions.append(new_condition)
+
+    @classmethod
+    def _handle_comparison(cls, element_dependent_variables, element_index, index, new_conditions, condition):
+        comparison = condition["comparison"]
+
+        variable_assignments = {}
+
+        left = comparison.term
+        assert len(comparison.guards) <= 1
+        right = comparison.guards[0].term
+        comparison_operator = comparison.guards[0].comparison
+
+        for argument in ComparisonTools.get_arguments_from_operation(left):
+            if argument.ast_type == clingo.ast.ASTType.Variable:
+                if str(argument) in element_dependent_variables:
+                    variable_assignments[str(argument)] = f"{str(argument)}"
+                else:
+                    variable_assignments[
+                                str(argument)
+                            ] = f"{str(argument)}_{str(element_index)}_{str(index)}"
+
+        for argument in ComparisonTools.get_arguments_from_operation(right):
+            if argument.ast_type == clingo.ast.ASTType.Variable:
+                if str(argument) in element_dependent_variables:
+                    variable_assignments[str(argument)] = f"{str(argument)}"
+                else:
+                    variable_assignments[
+                                str(argument)
+                            ] = f"{str(argument)}_{str(element_index)}_{str(index)}"
+
+        instantiated_left = ComparisonTools.instantiate_operation(
+                    left, variable_assignments
+                )
+        instantiated_right = ComparisonTools.instantiate_operation(
+                    right, variable_assignments
+                )
+
+        new_conditions.append(
+                    ComparisonTools.comparison_handlings(
+                        comparison_operator, instantiated_left, instantiated_right
+                    )
+                )

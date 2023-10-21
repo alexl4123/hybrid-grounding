@@ -215,8 +215,10 @@ class RecursiveAggregateRewriting:
             else:
                 positive_body_string = ""
 
-            body_string = f"body_{str_type}_ag{str_id}({term_string}) :- " +\
-                f"{positive_body_string} {','.join(element['condition'])}."
+            body_string = (
+                f"body_{str_type}_ag{str_id}({term_string}) :- "
+                + f"{positive_body_string} {','.join(element['condition'])}."
+            )
             new_prg_part_set.append(body_string)
         return skolem_constants, element_dependent_variables
 
@@ -233,8 +235,10 @@ class RecursiveAggregateRewriting:
         Handle the rewriting of the original rule.
         """
         original_rule_aggregate_variable = f"S{str_id}"
-        original_rule_aggregate = f"{str_type}_ag{str_id}" +\
-            f"({original_rule_aggregate_variable}{joined_variable_dependencies})"
+        original_rule_aggregate = (
+            f"{str_type}_ag{str_id}"
+            + f"({original_rule_aggregate_variable}{joined_variable_dependencies})"
+        )
         remaining_body_part.append(original_rule_aggregate)
 
         left_guard = aggregate_dict["left_guard"]
@@ -270,14 +274,18 @@ class RecursiveAggregateRewriting:
         """
 
         aggregate_head = f"{str_type}_ag{str_id}(S{joined_variable_dependencies})"
-        rule_string = f"{aggregate_head} :- last_ag{str_id}({first_tuple_predicate_arguments}), " +\
-            f"partial_{str_type}_ag{str_id}({first_tuple_predicate_arguments},S)."
+        rule_string = (
+            f"{aggregate_head} :- last_ag{str_id}({first_tuple_predicate_arguments}), "
+            + f"partial_{str_type}_ag{str_id}({first_tuple_predicate_arguments},S)."
+        )
         new_prg_part.append(rule_string)
 
         # Partial Middle
 
-        next_predicate = f"next_ag{str_id}" +\
-            f"({body_heads_tuple_vars[0]},{body_heads_tuple_vars[1]}{joined_variable_dependencies})"
+        next_predicate = (
+            f"next_ag{str_id}"
+            + f"({body_heads_tuple_vars[0]},{body_heads_tuple_vars[1]}{joined_variable_dependencies})"
+        )
         body_partial_predicate = (
             f"partial_{str_type}_ag{str_id}({first_tuple_predicate_arguments},S1)"
         )
@@ -289,7 +297,7 @@ class RecursiveAggregateRewriting:
             if str_type == "sum":
                 aggregate_expression = f"S2 = S1 + {body_heads_tuple_vars_first[1]}"
             elif str_type == "count":
-                aggregate_expression = f"S2 = S1 + 1"
+                aggregate_expression = "S2 = S1 + 1"
 
             rule_string = f"{partial_head} :- {next_predicate}, {body_partial_predicate}, {aggregate_expression}."
             new_prg_part.append(rule_string)
@@ -297,8 +305,10 @@ class RecursiveAggregateRewriting:
             partial_head_1 = (
                 f"partial_{str_type}_ag{str_id}({second_tuple_predicate_arguments},S1)"
             )
-            partial_head_2 = f"partial_{str_type}_ag{str_id}" +\
-                f"({second_tuple_predicate_arguments},{body_heads_tuple_vars_first[1]})"
+            partial_head_2 = (
+                f"partial_{str_type}_ag{str_id}"
+                + f"({second_tuple_predicate_arguments},{body_heads_tuple_vars_first[1]})"
+            )
 
             if str_type == "max":
                 aggregate_expression_1 = f"S1 > {body_heads_tuple_vars_first[1]}"
@@ -307,10 +317,14 @@ class RecursiveAggregateRewriting:
                 aggregate_expression_1 = f"S1 < {body_heads_tuple_vars_first[1]}"
                 aggregate_expression_2 = f"S1 >= {body_heads_tuple_vars_first[1]}"
 
-            rule_string_1 = f"{partial_head_1} :- {next_predicate}, {body_partial_predicate}, " +\
-                f"{aggregate_expression_1}."
-            rule_string_2 = f"{partial_head_2} :- {next_predicate}, {body_partial_predicate}, " +\
-                f"{aggregate_expression_2}."
+            rule_string_1 = (
+                f"{partial_head_1} :- {next_predicate}, {body_partial_predicate}, "
+                + f"{aggregate_expression_1}."
+            )
+            rule_string_2 = (
+                f"{partial_head_2} :- {next_predicate}, {body_partial_predicate}, "
+                + f"{aggregate_expression_2}."
+            )
 
             new_prg_part.append(rule_string_1)
             new_prg_part.append(rule_string_2)
@@ -325,10 +339,10 @@ class RecursiveAggregateRewriting:
         )
         first_predicate = f"first_ag{str_id}({first_tuple_predicate_arguments})"
 
-        if str_type == "sum" or str_type == "min" or str_type == "max":
+        if str_type in ["sum", "min", "max"]:
             first_expression = f"S = {body_heads_tuple_vars_first[0]}"
         elif str_type == "count":
-            first_expression = f"S = 1"
+            first_expression = "S = 1"
 
         rule_string = f"{partial_head} :- {first_predicate}, {first_expression}."
         new_prg_part.append(rule_string)
@@ -359,8 +373,10 @@ class RecursiveAggregateRewriting:
         new_prg_part.append(rule_string)
 
         # not_next
-        not_next_head = f"not_next_ag{str_id}" +\
-            f"({body_heads_tuple_vars[0]}, {body_heads_tuple_vars[1]}{joined_variable_dependencies})"
+        not_next_head = (
+            f"not_next_ag{str_id}"
+            + f"({body_heads_tuple_vars[0]}, {body_heads_tuple_vars[1]}{joined_variable_dependencies})"
+        )
         not_next_comparisons = (
             f"{body_heads[0]} < {body_heads[2]}, {body_heads[2]} < {body_heads[1]}."
         )
@@ -368,11 +384,15 @@ class RecursiveAggregateRewriting:
         new_prg_part.append(rule_string)
 
         # next
-        next_head = f"next_ag{str_id}" +\
-            f"({body_heads_tuple_vars[0]}, {body_heads_tuple_vars[1]}{joined_variable_dependencies})"
-        rule_string = f"{next_head} :- {body_heads[0]}, {body_heads[1]}, " +\
-            f"{body_heads[0]} < {body_heads[1]}, not not_next_ag{str_id}({body_heads_tuple_vars[0]}, " +\
-            f"{body_heads_tuple_vars[1]}{joined_variable_dependencies})."
+        next_head = (
+            f"next_ag{str_id}"
+            + f"({body_heads_tuple_vars[0]}, {body_heads_tuple_vars[1]}{joined_variable_dependencies})"
+        )
+        rule_string = (
+            f"{next_head} :- {body_heads[0]}, {body_heads[1]}, "
+            + f"{body_heads[0]} < {body_heads[1]}, not not_next_ag{str_id}({body_heads_tuple_vars[0]}, "
+            + f"{body_heads_tuple_vars[1]}{joined_variable_dependencies})."
+        )
         new_prg_part.append(rule_string)
 
         # not_first

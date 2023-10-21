@@ -244,14 +244,12 @@ class AggregateTransformer(Transformer):
             and hasattr(condition.atom, "symbol")
             and condition.atom.symbol.ast_type == clingo.ast.ASTType.Function
         ):
-            
             self._aggregate_condition_is_function(element_dict, condition)
 
         elif (
             hasattr(condition, "atom")
             and condition.atom.ast_type == clingo.ast.ASTType.Comparison
         ):
-
             self._aggregate_condition_is_comparison(element_dict, condition)
 
         else:
@@ -292,10 +290,10 @@ class AggregateTransformer(Transformer):
 
     def _rs_plus_aggregate_condition_special_case(self, condition_strings, condition):
         if (
-                hasattr(condition, "atom")
-                and hasattr(condition.atom, "symbol")
-                and condition.atom.symbol.ast_type == clingo.ast.ASTType.Function
-            ):
+            hasattr(condition, "atom")
+            and hasattr(condition.atom, "symbol")
+            and condition.atom.symbol.ast_type == clingo.ast.ASTType.Function
+        ):
             cur_dict = {}
             cur_dict["all"] = str(condition)
             cur_dict["name"] = str(condition.atom.symbol.name)
@@ -322,9 +320,9 @@ class AggregateTransformer(Transformer):
 
             condition_strings.append(cur_dict)
         elif (
-                hasattr(condition, "atom")
-                and condition.atom.ast_type == clingo.ast.ASTType.Comparison
-            ):
+            hasattr(condition, "atom")
+            and condition.atom.ast_type == clingo.ast.ASTType.Comparison
+        ):
             cur_dict = {}
             cur_dict["all"] = str(condition)
             cur_dict["comparison"] = condition.atom
