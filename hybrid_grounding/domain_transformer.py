@@ -180,7 +180,7 @@ class DomainTransformer(Transformer):
         else:
             all_variables_present = False
             return (False, all_variables_present, new_domain)
-        
+
         return (True, all_variables_present, new_domain)
 
 
@@ -206,7 +206,7 @@ class DomainTransformer(Transformer):
             new_domain = ComparisonTools.generate_domain(
                         variable_assignments, safe_position["operation"]
                     )
-            
+
         return new_domain,all_variables_present
 
     def remove_unnecessary_safe_positions(self, safe_positions):

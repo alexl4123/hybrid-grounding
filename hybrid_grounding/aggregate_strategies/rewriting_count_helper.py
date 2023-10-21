@@ -16,12 +16,9 @@ class RewritingCountHelper:
         cls,
         rule_head_name,
         count,
-        elements,
         str_type,
         str_id,
         variable_dependencies,
-        aggregate_mode,
-        cur_variable_dependencies,
         always_add_variable_dependencies,
         skolem_constants,
         total_count=0,
@@ -32,12 +29,9 @@ class RewritingCountHelper:
         rules_strings = RSHelper.rs_count_generate_count_rule(
             rule_head_name,
             count,
-            elements,
             str_type,
             str_id,
             variable_dependencies,
-            aggregate_mode,
-            cur_variable_dependencies,
             always_add_variable_dependencies,
             skolem_constants,
             total_count,
@@ -65,7 +59,7 @@ class RewritingCountHelper:
         (
             rules_strings,
             rules_head_strings,
-        ) = RSPlusStarHelper._rs_plus_star_generate_all_diff_rules(
+        ) = RSPlusStarHelper.rs_plus_star_generate_all_diff_rules(
             rule_head_name,
             count,
             elements,

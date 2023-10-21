@@ -144,7 +144,7 @@ class GenerateSatisfiabilityPart:
                 right_eval = sint(right_eval)
 
                 safe_checks = left_eval != None and right_eval != None
-                evaluation = safe_checks and not ComparisonTools.compareTerms(
+                evaluation = safe_checks and not ComparisonTools.compare_terms(
                     comparison_operator, int(left_eval), int(right_eval)
                 )
 

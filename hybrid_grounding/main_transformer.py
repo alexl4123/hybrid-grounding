@@ -1,11 +1,11 @@
+# pylint: disable=C0103,R0913
 """
 Transforms a program according to hybrid-grounding.
 """
 
-import itertools
 import re
-
 import clingo
+
 from clingo import Function
 from clingo.ast import Transformer
 
@@ -25,7 +25,6 @@ class MainTransformer(Transformer):
 
     def __init__(
         self,
-        bld,
         terms,
         facts,
         ng_heads,
@@ -35,46 +34,46 @@ class MainTransformer(Transformer):
         domain,
         safe_variables_rules,
         aggregate_mode,
-        rule_strongly_restricted_components,
+        rule_strongly_connected_components,
         cyclic_strategy,
         rule_strongly_connected_comps_heads,
         predicates_strongly_connected_comps,
         scc_rule_functions_scc_lookup,
     ):
-        self.program_rules = False
-        self.program_count = False
-        self.program_sum = False
-        self.program_min = False
-        self.program_max = False
-
-        self.aggregate_mode = aggregate_mode
-
-        self.rule_is_non_ground = False
-        self.bld = bld
         self.terms = terms
         self.facts = facts
         self.ng_heads = ng_heads
-
+        self.shown_predicates = shown_predicates
         self.ground_entire_output = ground_guess
-
         self.printer = printer
-        self.cyclic_strategy = cyclic_strategy
-
         self.domain = domain
         self.safe_variables_rules = safe_variables_rules
+        self.aggregate_mode = aggregate_mode
+        self.rule_strongly_connected_components = rule_strongly_connected_components
+        self.cyclic_strategy = cyclic_strategy
+        self.rule_strongly_connected_components_heads = (
+            rule_strongly_connected_comps_heads
+        )
+        self.predicates_strongly_connected_comps = predicates_strongly_connected_comps
+        self.scc_rule_functions_scc_lookup = scc_rule_functions_scc_lookup
 
+        self.rule_is_non_ground = False
         self.rule_anonymous_variables = 0
         self.rule_variables = []
         self.rule_variables_predicates = {}
         self.rule_predicate_functions = []
         self.rule_literals_signums = []
         self.rule_comparisons = []
-        self.shown_predicates = shown_predicates
-        self.foundness = {}
+
         self.foundedness_check = {}
-        self.counter = 0
         self.non_ground_rules = {}
         self.g_counter = "A"
+
+        self.program_rules = False
+        self.program_count = False
+        self.program_sum = False
+        self.program_min = False
+        self.program_max = False
 
         self.additional_foundedness_part = []
 
@@ -85,13 +84,6 @@ class MainTransformer(Transformer):
 
         self.unfounded_rules = {}
         self.current_rule_position = 0
-
-        self.rule_strongly_restricted_components = rule_strongly_restricted_components
-        self.rule_strongly_connected_components_heads = (
-            rule_strongly_connected_comps_heads
-        )
-        self.predicates_strongly_connected_comps = predicates_strongly_connected_comps
-        self.scc_rule_functions_scc_lookup = scc_rule_functions_scc_lookup
 
     def _reset_after_rule(self):
         self.rule_variables = []
@@ -122,14 +114,16 @@ class MainTransformer(Transformer):
 
         if return_from_method is True:
             return node
-
-        if (
-            (
+        
+        aggregate_program_stmt = (
                 self.program_count
                 or self.program_sum
                 or self.program_min
                 or self.program_max
             )
+
+        if (
+            aggregate_program_stmt
             and self.aggregate_mode == AggregateMode.RA
             and self.program_rules
         ):
@@ -310,7 +304,7 @@ class MainTransformer(Transformer):
                 ],
             )
 
-        for id, v in enumerate(h_args):
+        for _, v in enumerate(h_args):
             if v not in f_vars_needed and v not in self.terms:
                 nnv.append(v)
             else:
@@ -510,11 +504,11 @@ class MainTransformer(Transformer):
                 CyclicStrategy.LEVEL_MAPPING,
                 CyclicStrategy.LEVEL_MAPPING_AAAI,
             ]:
-                if node in self.rule_strongly_restricted_components:
+                if node in self.rule_strongly_connected_components:
                     self._output_node_format_conform_level_mappings(
                         node,
                         self.rule_strongly_connected_components_heads[node],
-                        self.rule_strongly_restricted_components[node],
+                        self.rule_strongly_connected_components[node],
                     )
                     if self.cyclic_strategy == CyclicStrategy.LEVEL_MAPPING_AAAI:
                         self.current_rule_position += 1
@@ -577,7 +571,7 @@ class MainTransformer(Transformer):
                     self.rule_predicate_functions,
                     self.rule_literals_signums,
                     self.current_rule,
-                    self.rule_strongly_restricted_components,
+                    self.rule_strongly_connected_components,
                     self.ground_entire_output,
                     self.unfounded_rules,
                     self.cyclic_strategy,
@@ -598,7 +592,7 @@ class MainTransformer(Transformer):
                 self.rule_predicate_functions,
                 self.rule_literals_signums,
                 self.current_rule,
-                self.rule_strongly_restricted_components,
+                self.rule_strongly_connected_components,
                 self.ground_entire_output,
                 self.unfounded_rules,
                 self.cyclic_strategy,

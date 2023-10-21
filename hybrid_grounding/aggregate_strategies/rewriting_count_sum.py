@@ -1,3 +1,4 @@
+# pylint: disable=R0913
 """
 Rewriting Count/Sum module.
 """
@@ -16,7 +17,7 @@ class RewritingCountSum:
     """
 
     @classmethod
-    def _add_count_sum_aggregate_rules(
+    def add_count_sum_aggregate_rules(
         cls,
         aggregate_dict,
         variable_dependencies,
@@ -29,6 +30,9 @@ class RewritingCountSum:
         rule_positive_body,
         domain,
     ):
+        """
+        Add count/sum aggregate rules.
+        """
         new_prg_part_list = []
         new_prg_part_set = []
 
@@ -41,15 +45,13 @@ class RewritingCountSum:
 
         if (
             number_of_elements == 1
-            and (operator_type == ">=" or operator_type == ">")
+            and (operator_type in [">=", ">"])
             and len(list(guard_domain)) == 1
         ):
             # Handle special case RM (RM from paper)
             original_rule_additional_body_literals += RMCase.handle_rm_case(
                 aggregate_dict,
                 variable_dependencies,
-                aggregate_mode,
-                cur_variable_dependencies,
                 guard_domain,
                 operator_type,
             )
@@ -272,12 +274,9 @@ class RewritingCountSum:
                     RewritingCountHelper.rs_count_generate_alldiff_rules_helper(
                         predicate_name + "_1",
                         count1,
-                        aggregate_dict["elements"],
                         str_type,
                         str_id,
                         variable_dependencies,
-                        aggregate_mode,
-                        cur_variable_dependencies,
                         always_add_variable_dependencies,
                         skolem_constants,
                     )
@@ -286,12 +285,9 @@ class RewritingCountSum:
                     RewritingCountHelper.rs_count_generate_alldiff_rules_helper(
                         predicate_name + "_2",
                         count2,
-                        aggregate_dict["elements"],
                         str_type,
                         str_id,
                         variable_dependencies,
-                        aggregate_mode,
-                        cur_variable_dependencies,
                         always_add_variable_dependencies,
                         skolem_constants,
                     )
@@ -422,12 +418,9 @@ class RewritingCountSum:
                     RewritingCountHelper.rs_count_generate_alldiff_rules_helper(
                         predicate_name + "_1",
                         count1,
-                        aggregate_dict["elements"],
                         str_type,
                         str_id,
                         variable_dependencies,
-                        aggregate_mode,
-                        cur_variable_dependencies,
                         always_add_variable_dependencies,
                         skolem_constants,
                     )
@@ -436,12 +429,9 @@ class RewritingCountSum:
                     RewritingCountHelper.rs_count_generate_alldiff_rules_helper(
                         predicate_name + "_2",
                         count2,
-                        aggregate_dict["elements"],
                         str_type,
                         str_id,
                         variable_dependencies,
-                        aggregate_mode,
-                        cur_variable_dependencies,
                         always_add_variable_dependencies,
                         skolem_constants,
                     )
@@ -537,9 +527,11 @@ class RewritingCountSum:
             arguments = f"({','.join(variable_dependencies + [str(guard_value)])})"
 
         if aggregate_mode == AggregateMode.RS:
-            intermediate_rule = f"not_{predicate_name}{arguments} :- {predicate_name}_1{arguments}, not {predicate_name}_2{arguments}."
+            intermediate_rule = f"not_{predicate_name}{arguments} :- " +\
+                f"{predicate_name}_1{arguments}, not {predicate_name}_2{arguments}."
         elif aggregate_mode in [AggregateMode.RS_PLUS, AggregateMode.RS_STAR]:
-            intermediate_rule = f"not_{predicate_name}{arguments} :- not not_{predicate_name}_1{arguments}, not_{predicate_name}_2{arguments}."
+            intermediate_rule = f"not_{predicate_name}{arguments} :- " +\
+                f"not not_{predicate_name}_1{arguments}, not_{predicate_name}_2{arguments}."
 
         rules_strings.append(intermediate_rule)
 
@@ -577,7 +569,7 @@ class RewritingCountSum:
             # Special case if guard is variable
             arguments = f"({','.join(variable_dependencies + [guard_string])})"
 
-        if operator_type == ">=" or operator_type == ">":
+        if operator_type in [">=", ">"]:
             # Monotone
             if aggregate_mode == AggregateMode.RS:
                 double_negated_count_predicate = f"{predicate_name}{arguments}"
@@ -589,7 +581,7 @@ class RewritingCountSum:
                 original_rule_additional_body_literals.append(
                     double_negated_count_predicate
                 )
-        elif operator_type == "<=" or operator_type == "<":
+        elif operator_type in ["<=", "<"]:
             # Anti-Monotone
             if aggregate_mode == AggregateMode.RS:
                 triple_negated_count_predicate = f"not {predicate_name}{arguments}"
@@ -604,13 +596,10 @@ class RewritingCountSum:
                     triple_negated_count_predicate
                 )
 
-        if operator_type == "<":
-            count = count
-        elif operator_type == ">=":
-            count = count
-        elif operator_type == ">":
-            count = count + 1
-        elif operator_type == "<=":
+        if operator_type in ["<", ">="]:
+            # count = count
+            pass
+        elif operator_type in [">", "<="]:
             count = count + 1
         else:
             assert False  # Not implemented
@@ -621,12 +610,9 @@ class RewritingCountSum:
                     RewritingCountHelper.rs_count_generate_alldiff_rules_helper(
                         predicate_name,
                         count,
-                        aggregate_dict["elements"],
                         str_type,
                         str_id,
                         variable_dependencies,
-                        aggregate_mode,
-                        cur_variable_dependencies,
                         always_add_variable_dependencies,
                         skolem_constants,
                     )

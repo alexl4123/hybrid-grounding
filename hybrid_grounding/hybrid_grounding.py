@@ -1,3 +1,4 @@
+# pylint: disable=W0108
 """
 Main module.
 Contains the HybridGrounding class, 
@@ -27,7 +28,6 @@ class HybridGrounding:
 
     def __init__(
         self,
-        name="",
         no_show=False,
         ground_guess=False,
         output_printer=None,
@@ -163,7 +163,6 @@ class HybridGrounding:
         ctl = Control()
         with ProgramBuilder(ctl) as program_builder:
             transformer = MainTransformer(
-                program_builder,
                 term_transformer.terms,
                 term_transformer.facts,
                 term_transformer.ng_heads,
@@ -209,19 +208,21 @@ class HybridGrounding:
         """
         Global main transformations, like adding '':- not sat.'', and similar.
         """
-        parse_string(":- not sat.", lambda stm: program_builder.add(stm))
-        self.output_printer.custom_print(":- not sat.")
 
-        sat_strings = []
-        non_ground_rules = transformer.non_ground_rules
-        for non_ground_rule_key in non_ground_rules.keys():
-            sat_strings.append(f"sat_r{non_ground_rule_key}")
+        self._add_global_sat_statements(program_builder, transformer)
+        self._add_global_foundedness_statements(transformer)
 
-        if len(sat_strings) > 0:
-            self.output_printer.custom_print(f"sat :- {','.join(sat_strings)}.")
-        else:
-            self.output_printer.custom_print(f"sat.")
+        if not self.ground_guess:
+            for t in transformer.terms:
+                self.output_printer.custom_print(f"dom({t}).")
 
+        if not self.no_show:
+            if not term_transformer.show:
+                for f in transformer.shown_predicates.keys():
+                    for l in transformer.shown_predicates[f]:
+                        self.output_printer.custom_print(f"#show {f}/{l}.")
+
+    def _add_global_foundedness_statements(self, transformer):
         additional_foundedness_set = set(transformer.additional_foundedness_part)
         for additional_rule in additional_foundedness_set:
             self.output_printer.custom_print(additional_rule)
@@ -246,15 +247,19 @@ class HybridGrounding:
 
             self.output_printer.custom_print(f":- {key}, {','.join(sum_strings)}.")
 
-        if not self.ground_guess:
-            for t in transformer.terms:
-                self.output_printer.custom_print(f"dom({t}).")
+    def _add_global_sat_statements(self, program_builder, transformer):
+        parse_string(":- not sat.", lambda stm: program_builder.add(stm))
+        self.output_printer.custom_print(":- not sat.")
 
-        if not self.no_show:
-            if not term_transformer.show:
-                for f in transformer.shown_predicates.keys():
-                    for l in transformer.shown_predicates[f]:
-                        self.output_printer.custom_print(f"#show {f}/{l}.")
+        sat_strings = []
+        non_ground_rules = transformer.non_ground_rules
+        for non_ground_rule_key in non_ground_rules.keys():
+            sat_strings.append(f"sat_r{non_ground_rule_key}")
+
+        if len(sat_strings) > 0:
+            self.output_printer.custom_print(f"sat :- {','.join(sat_strings)}.")
+        else:
+            self.output_printer.custom_print("sat.")
 
     def compute_scc_data_structures(self, term_transformer):
         """
@@ -487,9 +492,7 @@ class HybridGrounding:
                 if rule not in rule_strongly_connected_comps:
                     rule_strongly_connected_comps[rule] = []
 
-                    # rule_strongly_connected_comps[rule] += term_transformer.dependency_graph_node_rule_bodies_lookup[node][rule]
                 rule_strongly_connected_comps[rule] += relevant_bodies
-                # predicates_strongly_connected_comps[strongly_connected_comps_counter] += term_transformer.dependency_graph_node_rule_bodies_lookup[node][rule]
                 predicates_strongly_connected_comps[
                     strongly_connected_comps_counter
                 ] += relevant_bodies

@@ -11,6 +11,10 @@ class CountAggregateHelper:
 
     @classmethod
     def generate_all_diff_predicates(cls, terms):
+        """
+        Generate the alldiff predicates.
+        """
+
         helper_bodies = []
         for index_1 in range(len(terms)):
             for index_2 in range(index_1 + 1, len(terms)):
@@ -27,9 +31,9 @@ class CountAggregateHelper:
                     second_term = terms[index_2][term_index]
 
                     if (
-                        CountAggregateHelper.check_string_is_int(first_term) == False
+                        CountAggregateHelper.check_string_is_int(first_term) is False
                         and CountAggregateHelper.check_string_is_int(second_term)
-                        == False
+                        is False
                     ):
                         term_combinations.append(f"({first_term} ^ {second_term})")
 

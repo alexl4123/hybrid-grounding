@@ -1,8 +1,8 @@
+# pylint: disable=R0913
 """
 General module for the rewriting strategy.
 """
 from ..comparison_tools import ComparisonTools
-from .aggregate_mode import AggregateMode
 from .rewriting_count_sum import RewritingCountSum
 from .rewriting_min_max import RewritingMinMax
 
@@ -15,20 +15,17 @@ class RSRewriting:
     @classmethod
     def rewriting_aggregate_strategy(
         cls,
-        aggregate_index,
         aggregate_dict,
         variables_dependencies_aggregate,
         aggregate_mode,
         cur_variable_dependencies,
         domain,
         rule_positive_body,
-        grounding_mode,
     ):
         """
         Main caller method for the rewriting procedure.
         """
         str_type = aggregate_dict["function"][1]
-        aggregate_dict["id"]
 
         new_prg_list = []
         new_prg_set = []
@@ -89,11 +86,9 @@ class RSRewriting:
             domain,
             right_guard,
             right_guard_string,
-            variables_dependencies_aggregate,
-            aggregate_dict,
         )
 
-        operator = ComparisonTools.getCompOperator(right_guard.comparison)
+        operator = ComparisonTools.get_comp_operator(right_guard.comparison)
         operator_type = operator
 
         string_capsulation = "right"
@@ -145,11 +140,9 @@ class RSRewriting:
             domain,
             left_guard,
             left_guard_string,
-            variables_dependencies_aggregate,
-            aggregate_dict,
         )
 
-        operator = ComparisonTools.getCompOperator(left_guard.comparison)
+        operator = ComparisonTools.get_comp_operator(left_guard.comparison)
 
         if operator == "<":
             operator_type = ">"
@@ -206,12 +199,12 @@ class RSRewriting:
         Method which calls the Count/Sum OR Min/Max aggregate-sum-classes.
         """
 
-        if str_type == "count" or str_type == "sum":
+        if str_type in ["count", "sum"]:
             (
                 new_prg_list,
                 output_remaining_body,
                 new_prg_set,
-            ) = RewritingCountSum._add_count_sum_aggregate_rules(
+            ) = RewritingCountSum.add_count_sum_aggregate_rules(
                 aggregate_dict,
                 variables_dependencies_aggregate,
                 aggregate_mode,
@@ -224,7 +217,7 @@ class RSRewriting:
                 domain,
             )
 
-        elif str_type == "max" or str_type == "min":
+        elif str_type in ["max", "min"]:
             (
                 new_prg_list,
                 output_remaining_body,
@@ -234,7 +227,6 @@ class RSRewriting:
                 aggregate_dict,
                 variables_dependencies_aggregate,
                 aggregate_mode,
-                cur_variable_dependencies,
                 guard_domain,
                 operator_type,
                 string_capsulation,
@@ -254,8 +246,6 @@ class RSRewriting:
         domain,
         guard,
         guard_string,
-        variable_dependencies_aggregate,
-        aggregate_dict,
     ):
         """
         Method which gets the guard domain.
@@ -264,7 +254,7 @@ class RSRewriting:
             # Guard is a Variable
             guard_domain = None
 
-            ComparisonTools.getCompOperator(guard.comparison)
+            ComparisonTools.get_comp_operator(guard.comparison)
 
             for var_dependency in cur_variable_dependencies[guard_string]:
                 var_dependency_argument_position = -1
@@ -297,14 +287,12 @@ class RSRewriting:
     @classmethod
     def rewriting_no_body_aggregate_strategy(
         cls,
-        aggregate_index,
         aggregate_dict,
         variables_dependencies_aggregate,
         aggregate_mode,
         cur_variable_dependencies,
         domain,
         rule_positive_body,
-        grounding_mode,
     ):
         """
         Wrapper for rewriting Strategy for RS-PLUS.
@@ -314,14 +302,12 @@ class RSRewriting:
             output_remaining_body,
             new_prg_set,
         ) = cls.rewriting_aggregate_strategy(
-            aggregate_index,
             aggregate_dict,
             variables_dependencies_aggregate,
             aggregate_mode,
             cur_variable_dependencies,
             domain,
             rule_positive_body,
-            grounding_mode,
         )
 
         return (new_prg_list, output_remaining_body, list(set(new_prg_set)))

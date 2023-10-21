@@ -52,7 +52,8 @@ class RSHelper:
             else:
                 positive_body_string = ""
 
-            body_string = f"body_{str_type}_ag{str_id}({term_string}) :- {positive_body_string} {','.join(element['condition'])}."
+            body_string = f"body_{str_type}_ag{str_id}({term_string}) :- " +\
+                f"{positive_body_string} {','.join(element['condition'])}."
             new_prg_part_set.append(body_string)
 
     @classmethod
@@ -60,12 +61,9 @@ class RSHelper:
         cls,
         rule_head_name,
         count,
-        elements,
         str_type,
         str_id,
         variable_dependencies,
-        aggregate_mode,
-        cur_variable_dependencies,
         always_add_variable_dependencies,
         skolem_constants,
         total_count=0,

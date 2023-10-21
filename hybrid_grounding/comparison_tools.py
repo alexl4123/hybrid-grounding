@@ -1,3 +1,4 @@
+# pylint: disable=R1705
 """
 The comparison tools module is used as a helper module,
 for various parts of the transformer.
@@ -15,7 +16,7 @@ class ComparisonTools:
     """
 
     @classmethod
-    def getCompOperator(cls, comp):
+    def get_comp_operator(cls, comp):
         """
         @comp - The AST representation of the comparison operator.
         returns the string representation (or false, if not implemented).
@@ -32,8 +33,8 @@ class ComparisonTools:
             return "<="
         elif comp is int(clingo.ast.ComparisonOperator.LessThan):
             return "<"
-        else:
-            assert False  # not implemented
+        
+        assert False  # not implemented
 
     @classmethod
     def comparison_handlings(cls, comp, c1, c2):
@@ -55,11 +56,11 @@ class ComparisonTools:
             return f"{c1} <= {c2}"
         elif comp is int(clingo.ast.ComparisonOperator.LessThan):
             return f"{c1} < {c2}"
-        else:
-            assert False  # not implemented
+        
+        assert False  # not implemented
 
     @classmethod
-    def compareTerms(cls, comp, c1, c2):
+    def compare_terms(cls, comp, c1, c2):
         """
         @comp - The AST representation of the comparison operator.
         @c1 - The left side of the comparison (Python-value - assumed int).
@@ -78,8 +79,8 @@ class ComparisonTools:
             return c1 <= c2
         elif comp is int(clingo.ast.ComparisonOperator.LessThan):
             return c1 < c2
-        else:
-            assert False  # not implemented
+        
+        assert False  # not implemented
 
     @classmethod
     def get_arguments_from_operation(cls, root):
@@ -111,8 +112,7 @@ class ComparisonTools:
 
             return argument_list
 
-        else:
-            assert False  # not implemented
+        assert False  # not implemented
 
     @classmethod
     def instantiate_operation(cls, root, variable_assignments):
@@ -166,8 +166,7 @@ class ComparisonTools:
 
             return f"{root.name}({','.join(instantiations)})"
 
-        else:
-            assert False  # not implemented
+        assert False  # not implemented
 
     @classmethod
     def _get_unary_operator_type_as_string(cls, operator_type):
@@ -179,11 +178,11 @@ class ComparisonTools:
             clingo.ast.UnaryOperator.Absolute
         ):  # Absolute, i.e. |X| needs special handling
             return "ABSOLUTE"
-        else:
-            print(
+        
+        print(
                 f"[NOT-IMPLEMENTED] - Unary operator type '{operator_type}' is not implemented!"
             )
-            assert False  # not implemented
+        assert False  # not implemented
 
     @classmethod
     def _get_binary_operator_type_as_string(cls, operator_type):
@@ -205,11 +204,11 @@ class ComparisonTools:
             return "\\"
         elif operator_type == int(clingo.ast.BinaryOperator.Power):
             return "**"
-        else:
-            print(
-                f"[NOT-IMPLEMENTED] - Binary operator type '{operator_type}' is not implemented!"
-            )
-            assert False  # not implemented
+            
+        print(
+            f"[NOT-IMPLEMENTED] - Binary operator type '{operator_type}' is not implemented!"
+        )
+        assert False  # not implemented
 
     @classmethod
     def generate_domain(cls, variable_assignments, operation):
@@ -237,10 +236,10 @@ class ComparisonTools:
                 cls.generate_domain(variable_assignments, operation.left),
                 cls.generate_domain(variable_assignments, operation.right),
             )
-        else:
-            print(operation)
-            print(operation.ast_type)
-            assert False
+            
+        print(operation)
+        print(operation.ast_type)
+        assert False
 
     @classmethod
     def generate_unary_operator_domain(cls, operator_type, domain):
@@ -255,11 +254,11 @@ class ComparisonTools:
             return cls.apply_unary_operation(domain, lambda d: ~d)
         elif operator_type == int(clingo.ast.UnaryOperator.Absolute):
             return cls.apply_unary_operation(domain, lambda d: abs(d))
-        else:
-            print(
-                f"[NOT-IMPLEMENTED] - Unary operator type '{operator_type}' is not implemented!"
-            )
-            assert False  # not implemented
+        
+        print(
+            f"[NOT-IMPLEMENTED] - Unary operator type '{operator_type}' is not implemented!"
+        )
+        assert False  # not implemented
 
     @classmethod
     def generate_binary_operator_domain(cls, operator_type, left_domain, right_domain):
@@ -305,12 +304,10 @@ class ComparisonTools:
             return cls.apply_binary_operation(
                 left_domain, right_domain, lambda l, r: pow(l, r)
             )
-        else:
-            print(
-                f"[NOT-IMPLEMENTED] - Binary operator type '{operator_type}' is not implemented!"
-            )
-            assert False  # not implemented
-
+            
+        print(
+            f"[NOT-IMPLEMENTED] - Binary operator type '{operator_type}' is not implemented!"
+        )
         assert False  # not implemented
 
     @classmethod
@@ -339,12 +336,10 @@ class ComparisonTools:
             return int(left_value) % int(right_value)
         elif operator_type == int(clingo.ast.BinaryOperator.Power):
             return pow(int(left_value), int(right_value))
-        else:
-            print(
-                f"[NOT-IMPLEMENTED] - Binary operator type '{operator_type}' is not implemented!"
-            )
-            assert False  # not implemented
-
+            
+        print(
+            f"[NOT-IMPLEMENTED] - Binary operator type '{operator_type}' is not implemented!"
+        )
         assert False  # not implemented
 
     @classmethod
@@ -375,12 +370,12 @@ class ComparisonTools:
             )
 
             return res
-        else:
-            print(
-                f"[WARNING] - The compare evaluation operation for {operation}, "
-                + f"which is of type {operation.ast_type} is not supported"
-            )
-            return "NOT-IMPLEMENTED"
+            
+        print(
+            f"[WARNING] - The compare evaluation operation for {operation}, "
+            + f"which is of type {operation.ast_type} is not supported"
+        )
+        return "NOT-IMPLEMENTED"
 
     @classmethod
     def apply_unary_operation(cls, domain, unary_operation):
@@ -438,5 +433,5 @@ class ComparisonTools:
             return cls.aggregate_count_special_variable_getter(
                 binary_operation.left
             ) + cls.aggregate_count_special_variable_getter(binary_operation.right)
-        else:
-            assert False  # not implemented
+            
+        assert False  # not implemented

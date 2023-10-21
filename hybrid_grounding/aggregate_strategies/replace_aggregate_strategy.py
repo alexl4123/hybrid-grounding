@@ -69,13 +69,13 @@ class ReplaceAggregateStrategy:
 
             new_elements.append(new_element)
 
-        new_aggregate = f""
+        new_aggregate = ""
 
         if aggregate["left_guard"]:
             left_guard = aggregate["left_guard"]
             left_guard_term = str(left_guard.term)
 
-            operator = ComparisonTools.getCompOperator(left_guard.comparison)
+            operator = ComparisonTools.get_comp_operator(left_guard.comparison)
 
             new_aggregate += f"{left_guard_term} {operator} "
 
@@ -85,7 +85,7 @@ class ReplaceAggregateStrategy:
             right_guard = aggregate["right_guard"]
             right_guard_term = str(right_guard.term)
 
-            operator = ComparisonTools.getCompOperator(right_guard.comparison)
+            operator = ComparisonTools.get_comp_operator(right_guard.comparison)
 
             new_aggregate += f" {operator} {right_guard_term}"
 

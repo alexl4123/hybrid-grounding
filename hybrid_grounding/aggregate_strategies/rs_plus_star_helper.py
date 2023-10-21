@@ -1,3 +1,4 @@
+# pylint: disable=R0913
 """
 Helper module for the rs-plus-star.
 """
@@ -44,11 +45,12 @@ class RSPlusStarHelper:
 
             term_string = f"{','.join(element['terms'] + element_dependent_variables)}"
 
-            body_string = f"body_{str_type}_ag{str_id}_{element_index}({term_string}) :- {','.join(element['condition'])}."
+            body_string = f"body_{str_type}_ag{str_id}_{element_index}({term_string}) :- " +\
+                f"{','.join(element['condition'])}."
             new_prg_part_set.append(body_string)
 
     @classmethod
-    def _rs_plus_star_generate_all_diff_rules(
+    def rs_plus_star_generate_all_diff_rules(
         cls,
         rule_head_name,
         count,

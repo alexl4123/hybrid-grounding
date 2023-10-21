@@ -106,42 +106,48 @@ class AggregateTransformer(Transformer):
             self.in_body = False
 
         if not self.cur_has_aggregate or not self.rules:
-            body_rep = ""
-
-            if node.head.ast_type == clingo.ast.ASTType.Disjunction:
-                new_head = "|".join([str(elem) for elem in node.head.elements])
-            else:
-                new_head = str(node.head)
-
-            for body_element_index in range(len(node.body)):
-                body_elem = node.body[body_element_index]
-                if body_element_index < len(node.body) - 1:
-                    body_rep += f"{str(body_elem)},"
-                else:
-                    body_rep += f"{str(body_elem)}"
-
-            if len(node.body) > 0:
-                self.new_prg.append(f"{new_head} :- {body_rep}.")
-            else:
-                self.new_prg.append(f"{new_head}.")
+            self._rule_has_no_aggregates(node)
 
         else:
-            head = str(node.head)
-            remaining_body = []
-
-            for body_item in node.body:
-                if body_item.atom.ast_type != clingo.ast.ASTType.BodyAggregate:
-                    remaining_body.append(str(body_item))
-
-            for aggregate_index in range(len(self.cur_aggregates)):
-                remaining_body += self._add_aggregate_helper_rules(aggregate_index)
-
-            remaining_body_string = ",".join(remaining_body)
-            new_rule = f"{head} :- {remaining_body_string}."
-            self.new_prg.append(new_rule)
+            self._rule_has_aggregates(node)
 
         self._reset_temporary_rule_variables()  # MUST BE LAST
         return node
+
+    def _rule_has_aggregates(self, node):
+        head = str(node.head)
+        remaining_body = []
+
+        for body_item in node.body:
+            if body_item.atom.ast_type != clingo.ast.ASTType.BodyAggregate:
+                remaining_body.append(str(body_item))
+
+        for aggregate_index in range(len(self.cur_aggregates)):
+            remaining_body += self._add_aggregate_helper_rules(aggregate_index)
+
+        remaining_body_string = ",".join(remaining_body)
+        new_rule = f"{head} :- {remaining_body_string}."
+        self.new_prg.append(new_rule)
+
+    def _rule_has_no_aggregates(self, node):
+        body_rep = ""
+
+        if node.head.ast_type == clingo.ast.ASTType.Disjunction:
+            new_head = "|".join([str(elem) for elem in node.head.elements])
+        else:
+            new_head = str(node.head)
+
+        for body_element_index in range(len(node.body)):
+            body_elem = node.body[body_element_index]
+            if body_element_index < len(node.body) - 1:
+                body_rep += f"{str(body_elem)},"
+            else:
+                body_rep += f"{str(body_elem)}"
+
+        if len(node.body) > 0:
+            self.new_prg.append(f"{new_head} :- {body_rep}.")
+        else:
+            self.new_prg.append(f"{new_head}.")
 
     def visit_Literal(self, node):
         """
@@ -238,32 +244,15 @@ class AggregateTransformer(Transformer):
             and hasattr(condition.atom, "symbol")
             and condition.atom.symbol.ast_type == clingo.ast.ASTType.Function
         ):
-            for argument in condition.atom.symbol.arguments:
-                if argument.ast_type == clingo.ast.ASTType.Variable:
-                    if str(argument) not in element_dict["condition_variables"]:
-                        element_dict["condition_variables"].append(str(argument))
+            
+            self._aggregate_condition_is_function(element_dict, condition)
+
         elif (
             hasattr(condition, "atom")
             and condition.atom.ast_type == clingo.ast.ASTType.Comparison
         ):
-            comparison = condition.atom
 
-            left = comparison.term
-            assert len(comparison.guards) <= 1
-            right = comparison.guards[0].term
-            comparison.guards[0].comparison
-
-            left_arguments = ComparisonTools.get_arguments_from_operation(left)
-            for argument in left_arguments:
-                if argument.ast_type == clingo.ast.ASTType.Variable:
-                    if str(argument) not in element_dict["condition_variables"]:
-                        element_dict["condition_variables"].append(str(argument))
-
-            right_arguments = ComparisonTools.get_arguments_from_operation(right)
-            for argument in right_arguments:
-                if argument.ast_type == clingo.ast.ASTType.Variable:
-                    if str(argument) not in element_dict["condition_variables"]:
-                        element_dict["condition_variables"].append(str(argument))
+            self._aggregate_condition_is_comparison(element_dict, condition)
 
         else:
             print(condition)
@@ -271,12 +260,37 @@ class AggregateTransformer(Transformer):
             assert False
 
         if self.aggregate_mode == AggregateMode.RS_PLUS:
-            self.rs_plus_aggregate_condition_special_case(condition_strings, condition)
+            self._rs_plus_aggregate_condition_special_case(condition_strings, condition)
 
         else:
             condition_strings.append(str(condition))
 
-    def rs_plus_aggregate_condition_special_case(self, condition_strings, condition):
+    def _aggregate_condition_is_function(self, element_dict, condition):
+        for argument in condition.atom.symbol.arguments:
+            if argument.ast_type == clingo.ast.ASTType.Variable:
+                if str(argument) not in element_dict["condition_variables"]:
+                    element_dict["condition_variables"].append(str(argument))
+
+    def _aggregate_condition_is_comparison(self, element_dict, condition):
+        comparison = condition.atom
+
+        left = comparison.term
+        assert len(comparison.guards) <= 1
+        right = comparison.guards[0].term
+
+        left_arguments = ComparisonTools.get_arguments_from_operation(left)
+        for argument in left_arguments:
+            if argument.ast_type == clingo.ast.ASTType.Variable:
+                if str(argument) not in element_dict["condition_variables"]:
+                    element_dict["condition_variables"].append(str(argument))
+
+        right_arguments = ComparisonTools.get_arguments_from_operation(right)
+        for argument in right_arguments:
+            if argument.ast_type == clingo.ast.ASTType.Variable:
+                if str(argument) not in element_dict["condition_variables"]:
+                    element_dict["condition_variables"].append(str(argument))
+
+    def _rs_plus_aggregate_condition_special_case(self, condition_strings, condition):
         if (
                 hasattr(condition, "atom")
                 and hasattr(condition.atom, "symbol")
@@ -343,7 +357,6 @@ class AggregateTransformer(Transformer):
         """
 
         aggregate = self.cur_aggregates[aggregate_index]
-        aggregate["function"][1]
 
         # Get all variables into a list that occur in all elements of the aggregate
         all_aggregate_variables = []
@@ -367,14 +380,12 @@ class AggregateTransformer(Transformer):
                 remaining_body_part,
                 program_set,
             ) = RSRewriting.rewriting_aggregate_strategy(
-                aggregate_index,
                 aggregate,
                 variables_dependencies_aggregate,
                 self.aggregate_mode,
                 self.cur_variable_dependencies,
                 self.domain,
                 self.rule_positive_body,
-                self.grounding_mode,
             )
 
             self.new_prg = self.new_prg + program_list + program_set
@@ -386,14 +397,12 @@ class AggregateTransformer(Transformer):
                 remaining_body_part,
                 program_set,
             ) = RSRewriting.rewriting_no_body_aggregate_strategy(
-                aggregate_index,
                 aggregate,
                 variables_dependencies_aggregate,
                 self.aggregate_mode,
                 self.cur_variable_dependencies,
                 self.domain,
                 self.rule_positive_body,
-                self.grounding_mode,
             )
 
             self.new_prg = self.new_prg + program_list + program_set
@@ -417,14 +426,12 @@ class AggregateTransformer(Transformer):
                 remaining_body_part,
                 program_set,
             ) = RSRewriting.rewriting_aggregate_strategy(
-                aggregate_index,
                 aggregate,
                 variables_dependencies_aggregate,
                 self.aggregate_mode,
                 self.cur_variable_dependencies,
                 self.domain,
                 self.rule_positive_body,
-                self.grounding_mode,
             )
 
             self.new_prg = self.new_prg + program_list + program_set
@@ -436,14 +443,10 @@ class AggregateTransformer(Transformer):
                 remaining_body_part,
                 program_set,
             ) = RecursiveAggregateRewriting.recursive_strategy(
-                aggregate_index,
                 aggregate,
                 variables_dependencies_aggregate,
-                self.aggregate_mode,
-                self.cur_variable_dependencies,
                 self.domain,
                 self.rule_positive_body,
-                self.grounding_mode,
             )
 
             self.new_prg = self.new_prg + program_list + program_set
