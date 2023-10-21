@@ -1,3 +1,4 @@
+# pylint: disable=R0913,R1721
 """
 Module for ensuring satisfiability.
 """
@@ -89,14 +90,14 @@ class GenerateSatisfiabilityPart:
             for symbolic_argument in symbolic_arguments:
                 arguments.append(str(symbolic_argument))
 
-            var = list(
+            arguments_list = list(
                 dict.fromkeys(arguments)
             )  # arguments (without duplicates / incl. terms)
-            vars = list(
+            variables = list(
                 dict.fromkeys([a for a in arguments if a in self.rule_variables])
             )  # which have to be grounded per combination
             dom_list = []
-            for variable in vars:
+            for variable in variables:
                 if (
                     str(self.current_rule_position) in self.safe_variables_rules
                     and variable
@@ -116,68 +117,79 @@ class GenerateSatisfiabilityPart:
 
             combinations = [p for p in itertools.product(*dom_list)]
 
-            for c in combinations:
-                variable_assignments = {}
+            for combination in combinations:
+                self._handle_combination_for_comparisons(covered_subsets, left, right, comparison_operator, arguments_list, variables, combination)
 
-                for variable_index in range(len(vars)):
-                    variable = vars[variable_index]
-                    value = c[variable_index]
+        return covered_subsets
 
-                    variable_assignments[variable] = value
+    def _handle_combination_for_comparisons(self, covered_subsets, left, right, comparison_operator, arguments_list, variables, combination):
+        variable_assignments = {}
 
-                interpretation_list = []
-                for variable in var:
-                    if variable in vars:
-                        interpretation_list.append(
+        for variable_index in range(len(variables)):
+            variable = variables[variable_index]
+            value = combination[variable_index]
+
+            variable_assignments[variable] = value
+
+        interpretation_list = []
+        for variable in arguments_list:
+            if variable in variables:
+                interpretation_list.append(
                             f"r{self.current_rule_position}_{variable}({variable_assignments[variable]})"
                         )
 
-                left_eval = ComparisonTools.evaluate_operation(
+        left_eval = ComparisonTools.evaluate_operation(
                     left, variable_assignments
                 )
-                right_eval = ComparisonTools.evaluate_operation(
+        right_eval = ComparisonTools.evaluate_operation(
                     right, variable_assignments
                 )
 
-                sint = HelperPart.ignore_exception(ValueError)(int)
-                left_eval = sint(left_eval)
-                right_eval = sint(right_eval)
+        sint = HelperPart.ignore_exception(ValueError)(int)
+        left_eval = sint(left_eval)
+        right_eval = sint(right_eval)
 
-                safe_checks = left_eval != None and right_eval != None
-                evaluation = safe_checks and not ComparisonTools.compare_terms(
+        safe_checks = left_eval is not None and right_eval is not None
+        evaluation = safe_checks and not ComparisonTools.compare_terms(
                     comparison_operator, int(left_eval), int(right_eval)
                 )
 
-                if not safe_checks or evaluation:
-                    left_instantiation = ComparisonTools.instantiate_operation(
+        if not safe_checks or evaluation:
+            left_instantiation = ComparisonTools.instantiate_operation(
                         left, variable_assignments
                     )
-                    right_instantiation = ComparisonTools.instantiate_operation(
+            right_instantiation = ComparisonTools.instantiate_operation(
                         right, variable_assignments
                     )
-                    ComparisonTools.comparison_handlings(
+            ComparisonTools.comparison_handlings(
                         comparison_operator, left_instantiation, right_instantiation
                     )
-                    interpretation = f"{','.join(interpretation_list)}"
+            interpretation = f"{','.join(interpretation_list)}"
 
-                    sat_atom = f"sat_r{self.current_rule_position}"
+            sat_atom = f"sat_r{self.current_rule_position}"
 
-                    self.printer.custom_print(f"{sat_atom} :- {interpretation}.")
+            self.printer.custom_print(f"{sat_atom} :- {interpretation}.")
 
-                    if sat_atom not in covered_subsets:
-                        covered_subsets[sat_atom] = []
+            if sat_atom not in covered_subsets:
+                covered_subsets[sat_atom] = []
 
-                    covered_subsets[sat_atom].append(interpretation_list)
-
-        return covered_subsets
+            covered_subsets[sat_atom].append(interpretation_list)
 
     def _generate_sat_functions(self, head, covered_subsets):
         for current_function_symbol in self.rule_literals:
             args_len = len(current_function_symbol.arguments)
             if args_len == 0:
-                self.printer.custom_print(
-                    f"sat_r{self.current_rule_position} :-{'' if (self.rule_literals_signums[self.rule_literals.index(current_function_symbol)] or current_function_symbol is head) else ' not'} {current_function_symbol}."
-                )
+                if (
+                    self.rule_literals_signums[self.rule_literals.index(current_function_symbol)]
+                    or current_function_symbol is head
+                    ):
+                    signum_string = ""
+                else:
+                    signum_string = "not "
+
+                self.printer.custom_print(f"sat_r{self.current_rule_position} :- " +\
+                    f"{signum_string}{current_function_symbol}.")
+
                 continue
 
             arguments = re.sub(r"^.*?\(", "", str(current_function_symbol))[:-1].split(
@@ -209,69 +221,80 @@ class GenerateSatisfiabilityPart:
 
                 sat_atom = f"sat_r{self.current_rule_position}"
 
-                sat_body_list = []
-                sat_body_dict = {}
-                for argument in arguments:
-                    if argument in self.rule_variables:
-                        variable_index_combination = variable_associations[argument]
-                        body_sat_predicate = f"r{self.current_rule_position}_{argument}({current_combination[variable_index_combination]})"
-                        sat_body_list.append(body_sat_predicate)
-                        sat_body_dict[body_sat_predicate] = body_sat_predicate
+                sat_body_list, sat_body_dict = self._create_sat_body_list(arguments, variable_associations, current_combination, current_function_arguments_string)
 
-                        current_function_arguments_string += (
-                            f"{current_combination[variable_index_combination]},"
-                        )
-                    else:
-                        current_function_arguments_string += f"{argument},"
+                if self._check_covered_subsets(sat_atom, covered_subsets, sat_body_dict) is True:
+                    continue
 
-                sat_body_list = list(set(sat_body_list))
+                self._construct_sat_function_guess_rule(head, current_function_symbol, current_function_arguments_string, sat_atom, sat_body_list)
 
-                if sat_atom in covered_subsets:  # Check for covered subsets
-                    possible_subsets = covered_subsets[sat_atom]
-                    found = False
+    def _construct_sat_function_guess_rule(self, head, current_function_symbol, current_function_arguments_string, sat_atom, sat_body_list):
+        current_function_name = f"{current_function_symbol.name}"
 
-                    for possible_subset in possible_subsets:
-                        temp_found = True
-                        for possible_subset_predicate in possible_subset:
-                            if possible_subset_predicate not in sat_body_dict:
-                                temp_found = False
-                                break
+        if len(current_function_arguments_string) > 0:
+            current_function_string_representation = f"{current_function_name}" +\
+                        f"({current_function_arguments_string[:-1]})"
+        else:
+            current_function_string_representation = f"{current_function_name}"
 
-                        if temp_found == True:
-                            found = True
-                            break
-
-                    if found == True:
-                        continue
-
-                if current_function_symbol is head:
-                    # For not deriving stuff two times:
-                    # current_function_name = f"{current_function_symbol.name}{self.current_rule_position}"
-                    # Else:
-                    current_function_name = f"{current_function_symbol.name}"
-                else:
-                    current_function_name = f"{current_function_symbol.name}"
-
-                if len(current_function_arguments_string) > 0:
-                    current_function_string_representation = f"{current_function_name}({current_function_arguments_string[:-1]})"
-                else:
-                    current_function_string_representation = f"{current_function_name}"
-
-                if (
+        if (
                     self.rule_literals_signums[
                         self.rule_literals.index(current_function_symbol)
                     ]
                     or current_function_symbol is head
                 ):
-                    sat_predicate = f"{current_function_string_representation}"
-                else:
-                    sat_predicate = f"not {current_function_string_representation}"
+            sat_predicate = f"{current_function_string_representation}"
+        else:
+            sat_predicate = f"not {current_function_string_representation}"
 
-                if len(sat_body_list) > 0:
-                    body_interpretation = ",".join(sat_body_list) + ","
-                else:
-                    body_interpretation = ""
+        if len(sat_body_list) > 0:
+            body_interpretation = ",".join(sat_body_list) + ","
+        else:
+            body_interpretation = ""
 
-                self.printer.custom_print(
+        self.printer.custom_print(
                     f"{sat_atom} :- {body_interpretation}{sat_predicate}."
                 )
+
+    def _create_sat_body_list(self, arguments, variable_associations, current_combination, current_function_arguments_string):
+        sat_body_list = []
+        sat_body_dict = {}
+        for argument in arguments:
+            if argument in self.rule_variables:
+                variable_index_combination = variable_associations[argument]
+                body_sat_predicate = f"r{self.current_rule_position}_{argument}" +\
+                            f"({current_combination[variable_index_combination]})"
+                sat_body_list.append(body_sat_predicate)
+                sat_body_dict[body_sat_predicate] = body_sat_predicate
+
+                current_function_arguments_string += (
+                            f"{current_combination[variable_index_combination]},"
+                        )
+            else:
+                current_function_arguments_string += f"{argument},"
+
+        sat_body_list = list(set(sat_body_list))
+
+        return sat_body_list,sat_body_dict
+
+    def _check_covered_subsets(self, sat_atom, covered_subsets, sat_body_dict):
+
+        if sat_atom in covered_subsets:  # Check for covered subsets
+            possible_subsets = covered_subsets[sat_atom]
+            found = False
+
+            for possible_subset in possible_subsets:
+                temp_found = True
+                for possible_subset_predicate in possible_subset:
+                    if possible_subset_predicate not in sat_body_dict:
+                        temp_found = False
+                        break
+
+                if temp_found is True:
+                    found = True
+                    break
+
+            if found is True:
+                return True
+            
+        return False

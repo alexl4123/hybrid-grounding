@@ -267,14 +267,14 @@ class HybridGrounding:
         This method computes the strongly-connected-components,
         and then prepares the necessary data-structures.
         """
-        strongly_connected_comps = [
-            c
-            for c in sorted(
-                nx.strongly_connected_components(term_transformer.dependency_graph),
-                key=len,
-                reverse=True,
-            )
-        ]
+        strongly_connected_comps = []
+
+        for c in sorted(
+            nx.strongly_connected_components(term_transformer.dependency_graph),
+            key=len,
+            reverse=True,
+        ):
+            strongly_connected_comps.append(c)
 
         strongly_connected_comps_counter = 0
         predicates_strongly_connected_comps = {}

@@ -1,4 +1,4 @@
-# pylint: disable=R1705
+# pylint: disable=R1705,W0108
 """
 The comparison tools module is used as a helper module,
 for various parts of the transformer.
@@ -33,7 +33,7 @@ class ComparisonTools:
             return "<="
         elif comp is int(clingo.ast.ComparisonOperator.LessThan):
             return "<"
-        
+
         assert False  # not implemented
 
     @classmethod
@@ -56,7 +56,7 @@ class ComparisonTools:
             return f"{c1} <= {c2}"
         elif comp is int(clingo.ast.ComparisonOperator.LessThan):
             return f"{c1} < {c2}"
-        
+
         assert False  # not implemented
 
     @classmethod
@@ -79,7 +79,7 @@ class ComparisonTools:
             return c1 <= c2
         elif comp is int(clingo.ast.ComparisonOperator.LessThan):
             return c1 < c2
-        
+
         assert False  # not implemented
 
     @classmethod
@@ -178,10 +178,10 @@ class ComparisonTools:
             clingo.ast.UnaryOperator.Absolute
         ):  # Absolute, i.e. |X| needs special handling
             return "ABSOLUTE"
-        
+
         print(
-                f"[NOT-IMPLEMENTED] - Unary operator type '{operator_type}' is not implemented!"
-            )
+            f"[NOT-IMPLEMENTED] - Unary operator type '{operator_type}' is not implemented!"
+        )
         assert False  # not implemented
 
     @classmethod
@@ -204,7 +204,7 @@ class ComparisonTools:
             return "\\"
         elif operator_type == int(clingo.ast.BinaryOperator.Power):
             return "**"
-            
+
         print(
             f"[NOT-IMPLEMENTED] - Binary operator type '{operator_type}' is not implemented!"
         )
@@ -236,7 +236,7 @@ class ComparisonTools:
                 cls.generate_domain(variable_assignments, operation.left),
                 cls.generate_domain(variable_assignments, operation.right),
             )
-            
+
         print(operation)
         print(operation.ast_type)
         assert False
@@ -254,7 +254,7 @@ class ComparisonTools:
             return cls.apply_unary_operation(domain, lambda d: ~d)
         elif operator_type == int(clingo.ast.UnaryOperator.Absolute):
             return cls.apply_unary_operation(domain, lambda d: abs(d))
-        
+
         print(
             f"[NOT-IMPLEMENTED] - Unary operator type '{operator_type}' is not implemented!"
         )
@@ -304,7 +304,7 @@ class ComparisonTools:
             return cls.apply_binary_operation(
                 left_domain, right_domain, lambda l, r: pow(l, r)
             )
-            
+
         print(
             f"[NOT-IMPLEMENTED] - Binary operator type '{operator_type}' is not implemented!"
         )
@@ -336,7 +336,7 @@ class ComparisonTools:
             return int(left_value) % int(right_value)
         elif operator_type == int(clingo.ast.BinaryOperator.Power):
             return pow(int(left_value), int(right_value))
-            
+
         print(
             f"[NOT-IMPLEMENTED] - Binary operator type '{operator_type}' is not implemented!"
         )
@@ -370,7 +370,7 @@ class ComparisonTools:
             )
 
             return res
-            
+
         print(
             f"[WARNING] - The compare evaluation operation for {operation}, "
             + f"which is of type {operation.ast_type} is not supported"
@@ -433,5 +433,5 @@ class ComparisonTools:
             return cls.aggregate_count_special_variable_getter(
                 binary_operation.left
             ) + cls.aggregate_count_special_variable_getter(binary_operation.right)
-            
+
         assert False  # not implemented

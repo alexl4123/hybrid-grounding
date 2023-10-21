@@ -1,11 +1,11 @@
-# pylint: disable=C0103,R0913
+# pylint: disable=C0103,R0913,R1720
 """
 Transforms a program according to hybrid-grounding.
 """
 
 import re
-import clingo
 
+import clingo
 from clingo import Function
 from clingo.ast import Transformer
 
@@ -114,13 +114,13 @@ class MainTransformer(Transformer):
 
         if return_from_method is True:
             return node
-        
+
         aggregate_program_stmt = (
-                self.program_count
-                or self.program_sum
-                or self.program_min
-                or self.program_max
-            )
+            self.program_count
+            or self.program_sum
+            or self.program_min
+            or self.program_max
+        )
 
         if (
             aggregate_program_stmt
@@ -136,7 +136,9 @@ class MainTransformer(Transformer):
         self.visit_children(node)
 
         if self.rule_is_non_ground:
-            self.handle_non_ground_rule(node)
+            return_value = self.handle_non_ground_rule(node)
+            if return_value is False:
+                return node
         else:
             self.handle_ground_rule(node)
 
@@ -389,99 +391,109 @@ class MainTransformer(Transformer):
             self.printer.custom_print(f":- {', '.join(str(n) for n in rule.body)}.")
         else:
             # Simple search for SCC KEY
-            found_scc_key = -1
-
             rule_head = rule.head.atom.symbol
 
-            for scc_key in self.predicates_strongly_connected_comps.keys():
-                for pred in self.predicates_strongly_connected_comps[scc_key]:
-                    if (
-                        str(pred) == str(rule.head)
-                        or str(pred) == str(rule_head.name)
-                        or (str(pred.name) == str(rule_head.name))
-                    ):
-                        found_scc_key = scc_key
-                        break
-
-            if found_scc_key < 0:
-                print(str(rule.head))
-                print(str(rule_head.name))
-                raise Exception("COULD NOT FIND SCC KEY")
+            found_scc_key = self._find_scc_key(rule, rule_head)
 
             body_string = f"{', '.join([str(b) for b in rule.body])}"
-
-            positive_body = []
-            negative_body = []
-
-            for b in rule.body:
-                if b.sign == 0:
-                    positive_body.append(b)
-                elif b.sign == 1:
-                    negative_body.append(b)
-                else:
-                    raise Exception("Unknown ast signum for literal!")
 
             if rule.head.ast_type == clingo.ast.ASTType.Aggregate:
                 # head_string = f"{str(rule.head)}"
                 raise Exception("NOT SUPPORTED!")
-            elif rule.head.ast_type == clingo.ast.ASTType.Disjunction:
+            if rule.head.ast_type == clingo.ast.ASTType.Disjunction:
                 # head_string = "|".join([str(elem) for elem in rule.head.elements])
                 raise Exception("NOT SUPPORTED!")
+
+            head_string = f"{str(rule.head).replace(';', ',')}"
+
+            if self.cyclic_strategy == CyclicStrategy.LEVEL_MAPPING:
+                new_head_name = f"{rule_head.name}{self.current_rule_position}"
+                # new_head_name = f"{rule_head.name}'"
+            elif self.cyclic_strategy == CyclicStrategy.LEVEL_MAPPING_AAAI:
+                new_head_name = f"{rule_head.name}"
+
+            new_arguments = ",".join(
+                [str(argument) for argument in rule_head.arguments]
+            )
+            if len(new_arguments) > 0:
+                new_head_string = f"{new_head_name}({new_arguments})"
             else:
-                head_string = f"{str(rule.head).replace(';', ',')}"
+                new_head_string = f"{new_head_name}"
 
-                if self.cyclic_strategy == CyclicStrategy.LEVEL_MAPPING:
-                    new_head_name = f"{rule_head.name}{self.current_rule_position}"
-                    # new_head_name = f"{rule_head.name}'"
-                elif self.cyclic_strategy == CyclicStrategy.LEVEL_MAPPING_AAAI:
-                    new_head_name = f"{rule_head.name}"
-
-                new_arguments = ",".join(
-                    [str(argument) for argument in rule_head.arguments]
+            if self.cyclic_strategy == CyclicStrategy.LEVEL_MAPPING:
+                new_head_func = Function(
+                    name=new_head_name,
+                    arguments=[Function(str(arg_)) for arg_ in rule_head.arguments],
                 )
-                if len(new_arguments) > 0:
-                    new_head_string = f"{new_head_name}({new_arguments})"
-                else:
-                    new_head_string = f"{new_head_name}"
+                self.predicates_strongly_connected_comps[found_scc_key].append(
+                    new_head_func
+                )
 
-                if self.cyclic_strategy == CyclicStrategy.LEVEL_MAPPING:
-                    new_head_func = Function(
-                        name=new_head_name,
-                        arguments=[Function(str(arg_)) for arg_ in rule_head.arguments],
-                    )
-                    self.predicates_strongly_connected_comps[found_scc_key].append(
+                if rule in self.scc_rule_functions_scc_lookup:
+                    self.scc_rule_functions_scc_lookup[rule]["head"].append(
                         new_head_func
                     )
 
-                    if rule in self.scc_rule_functions_scc_lookup:
-                        self.scc_rule_functions_scc_lookup[rule]["head"].append(
-                            new_head_func
-                        )
+            self._handle_level_mapping_strategies(
+                rule,
+                relevant_heads,
+                relevant_bodies,
+                body_string,
+                head_string,
+                new_head_string,
+            )
 
-            if self.cyclic_strategy == CyclicStrategy.LEVEL_MAPPING:
-                if len(rule.body) > 0:
-                    self.printer.custom_print(
-                        f"0 <= {{{new_head_string}}} <= 1 :- {body_string}."
-                    )
-                else:
-                    self.printer.custom_print(f"{new_head_string}.")
-
-                self.printer.custom_print(f"{head_string} :- {new_head_string}.")
-            elif self.cyclic_strategy == CyclicStrategy.LEVEL_MAPPING_AAAI:
-                precs = []
-                for relevant_head in relevant_heads:
-                    for relevant_body in relevant_bodies:
-                        precs.append(f"prec({str(relevant_body)},{str(relevant_head)})")
-
-                if len(precs) > 0:
-                    self.printer.custom_print(
-                        f"{head_string} :- {body_string},{','.join(precs)}."
-                    )
-                else:
-                    self.printer.custom_print(f"{head_string} :- {body_string}.")
-
-            # Add satisfiability check for both method
+            # Add satisfiability check for both methods
             self.printer.custom_print(f":- {body_string}, not {head_string}.")
+
+    def _handle_level_mapping_strategies(
+        self,
+        rule,
+        relevant_heads,
+        relevant_bodies,
+        body_string,
+        head_string,
+        new_head_string,
+    ):
+        if self.cyclic_strategy == CyclicStrategy.LEVEL_MAPPING:
+            if len(rule.body) > 0:
+                self.printer.custom_print(
+                    f"0 <= {{{new_head_string}}} <= 1 :- {body_string}."
+                )
+            else:
+                self.printer.custom_print(f"{new_head_string}.")
+
+            self.printer.custom_print(f"{head_string} :- {new_head_string}.")
+        elif self.cyclic_strategy == CyclicStrategy.LEVEL_MAPPING_AAAI:
+            precs = []
+            for relevant_head in relevant_heads:
+                for relevant_body in relevant_bodies:
+                    precs.append(f"prec({str(relevant_body)},{str(relevant_head)})")
+
+            if len(precs) > 0:
+                self.printer.custom_print(
+                    f"{head_string} :- {body_string},{','.join(precs)}."
+                )
+            else:
+                self.printer.custom_print(f"{head_string} :- {body_string}.")
+
+    def _find_scc_key(self, rule, rule_head):
+        found_scc_key = -1
+        for scc_key in self.predicates_strongly_connected_comps.keys():
+            for pred in self.predicates_strongly_connected_comps[scc_key]:
+                if (
+                    str(pred) == str(rule.head)
+                    or str(pred) == str(rule_head.name)
+                    or (str(pred.name) == str(rule_head.name))
+                ):
+                    found_scc_key = scc_key
+                    break
+
+        if found_scc_key < 0:
+            print(str(rule.head))
+            print(str(rule_head.name))
+            raise Exception("COULD NOT FIND SCC KEY")
+        return found_scc_key
 
     def handle_no_rewrite_rule(self, node):
         """
@@ -530,7 +542,7 @@ class MainTransformer(Transformer):
         if len(self.domain.keys()) == 0:
             self._reset_after_rule()
             self.current_rule_position += 1
-            return node
+            return False
 
         if self.program_rules:
             self.non_ground_rules[
@@ -602,6 +614,8 @@ class MainTransformer(Transformer):
                 self.rule_variables_predicates,
             )
             foundedness_generator.generate_foundedness_part()
+
+        return True
 
     def handle_ground_rule(self, node):
         """

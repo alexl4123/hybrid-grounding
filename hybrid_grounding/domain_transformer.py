@@ -137,7 +137,6 @@ class DomainTransformer(Transformer):
         return node
 
     def _generate_new_domain(self, safe_positions):
-
         new_domain = None
         all_variables_present = True
 
@@ -147,23 +146,33 @@ class DomainTransformer(Transformer):
                 continue
 
             if safe_position["type"] == "function":
-                return_value, all_variables_present, new_domain = \
-                    self._generate_new_domain_function_helper(safe_position, all_variables_present, new_domain)
+                (
+                    return_value,
+                    all_variables_present,
+                    new_domain,
+                ) = self._generate_new_domain_function_helper(
+                    safe_position, all_variables_present, new_domain
+                )
 
                 if return_value is False:
                     break
 
             elif safe_position["type"] == "term":
-                new_domain, all_variables_present = \
-                    self._generate_new_domain_term_helper(safe_position, all_variables_present, new_domain)
+                (
+                    new_domain,
+                    all_variables_present,
+                ) = self._generate_new_domain_term_helper(
+                    safe_position, all_variables_present, new_domain
+                )
 
             else:
                 # not implemented
                 assert False
         return new_domain, all_variables_present
 
-
-    def _generate_new_domain_function_helper(self, safe_position, all_variables_present, new_domain):
+    def _generate_new_domain_function_helper(
+        self, safe_position, all_variables_present, new_domain
+    ):
         safe_pos_name = safe_position["name"]
         safe_pos_position = safe_position["position"]
 
@@ -183,31 +192,29 @@ class DomainTransformer(Transformer):
 
         return (True, all_variables_present, new_domain)
 
-
-
-    def _generate_new_domain_term_helper(self, safe_position, all_variables_present, new_domain):
+    def _generate_new_domain_term_helper(
+        self, safe_position, all_variables_present, new_domain
+    ):
         rule_name = str(self.current_rule_position)
 
         variable_assignments = {}
 
         for variable in safe_position["variables"]:
-            new_domain_variable_name = (
-                        f"term_rule_{rule_name}_variable_{variable}"
-                    )
+            new_domain_variable_name = f"term_rule_{rule_name}_variable_{variable}"
             if new_domain_variable_name in self.domain:
-                variable_assignments[variable] = self.domain[
-                            new_domain_variable_name
-                        ]["0"]
+                variable_assignments[variable] = self.domain[new_domain_variable_name][
+                    "0"
+                ]
             else:
                 all_variables_present = False
                 break
 
         if all_variables_present:
             new_domain = ComparisonTools.generate_domain(
-                        variable_assignments, safe_position["operation"]
-                    )
+                variable_assignments, safe_position["operation"]
+            )
 
-        return new_domain,all_variables_present
+        return new_domain, all_variables_present
 
     def remove_unnecessary_safe_positions(self, safe_positions):
         """
