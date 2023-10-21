@@ -240,8 +240,8 @@ class GuessHeadPart:
             )
 
             self.printer.custom_print(
-                f"{self.rule_head.name}{parsed_current_head_guess_arguments} :- " +\
-                f"{new_head_name}{parsed_current_head_guess_arguments}."
+                f"{self.rule_head.name}{parsed_current_head_guess_arguments} :- "
+                + f"{new_head_name}{parsed_current_head_guess_arguments}."
             )
         return possible_head_guesses
 

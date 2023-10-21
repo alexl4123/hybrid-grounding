@@ -153,7 +153,6 @@ class GenerateFoundednessPart:
 
         return graph
 
-
     def _generate_foundedness_head(
         self,
         head,
@@ -211,22 +210,41 @@ class GenerateFoundednessPart:
                         head,
                     )
                 else:
-                    self._generate_foundedness_head_ground(head, reachable_head_variables_from_not_head_variable, head_variables, head_arguments, length_of_head_arguments, head_arguments_no_duplicates, not_head_variable, dom_list_lookup, combination)
+                    self._generate_foundedness_head_ground(
+                        head,
+                        reachable_head_variables_from_not_head_variable,
+                        head_variables,
+                        head_arguments,
+                        length_of_head_arguments,
+                        head_arguments_no_duplicates,
+                        not_head_variable,
+                        dom_list_lookup,
+                        combination,
+                    )
 
-    def _generate_foundedness_head_ground(self, head, reachable_head_variables_from_not_head_variable, head_variables, head_arguments, length_of_head_arguments, head_arguments_no_duplicates, not_head_variable, dom_list_lookup, combination):
+    def _generate_foundedness_head_ground(
+        self,
+        head,
+        reachable_head_variables_from_not_head_variable,
+        head_variables,
+        head_arguments,
+        length_of_head_arguments,
+        head_arguments_no_duplicates,
+        not_head_variable,
+        dom_list_lookup,
+        combination,
+    ):
         head_interpretation = f"{head.name}"
         if length_of_head_arguments > 0:
             argument_list = []
             for argument in head_arguments:
                 if (
-                                argument
-                                in reachable_head_variables_from_not_head_variable[
-                                    not_head_variable
-                                ]
-                            ):
-                    argument_list.append(
-                                    combination[dom_list_lookup[argument]]
-                                )
+                    argument
+                    in reachable_head_variables_from_not_head_variable[
+                        not_head_variable
+                    ]
+                ):
+                    argument_list.append(combination[dom_list_lookup[argument]])
                 else:
                     argument_list.append(argument)
             head_interpretation += f"({','.join(argument_list)})"
@@ -234,24 +252,18 @@ class GenerateFoundednessPart:
         remaining_head_values = []
         for variable in head_arguments_no_duplicates:
             if (
-                            variable
-                            in reachable_head_variables_from_not_head_variable[
-                                not_head_variable
-                            ]
-                        ):
-                remaining_head_values.append(
-                                combination[dom_list_lookup[variable]]
-                            )
+                variable
+                in reachable_head_variables_from_not_head_variable[not_head_variable]
+            ):
+                remaining_head_values.append(combination[dom_list_lookup[variable]])
 
-        not_head_variable_values = (
-                        HelperPart.get_domain_values_from_rule_variable(
-                            self.current_rule_position,
-                            not_head_variable,
-                            self.domain_lookup_dict,
-                            self.safe_variables_rules,
-                            self.rule_variables_predicates,
-                        )
-                    )
+        not_head_variable_values = HelperPart.get_domain_values_from_rule_variable(
+            self.current_rule_position,
+            not_head_variable,
+            self.domain_lookup_dict,
+            self.safe_variables_rules,
+            self.rule_variables_predicates,
+        )
 
         not_variable_interpretations = []
         for value in not_head_variable_values:
@@ -263,39 +275,28 @@ class GenerateFoundednessPart:
 
             not_variable_interpretations.append(f"{name}{arguments}")
 
-        not_variable_interpretations = ";".join(
-                        not_variable_interpretations
-                    )
+        not_variable_interpretations = ";".join(not_variable_interpretations)
 
         not_reached_head_variables = []
         for variable in head_variables:
             if (
-                            variable
-                            not in reachable_head_variables_from_not_head_variable[
-                                not_head_variable
-                            ]
-                        ):
+                variable
+                not in reachable_head_variables_from_not_head_variable[
+                    not_head_variable
+                ]
+            ):
                 not_reached_head_variables.append(variable)
 
         if len(head_variables) == len(
-                        reachable_head_variables_from_not_head_variable[
-                            not_head_variable
-                        ]
-                    ):  # removed none
+            reachable_head_variables_from_not_head_variable[not_head_variable]
+        ):  # removed none
             self.printer.custom_print(
-                            f"1{{{not_variable_interpretations}}}1 :- {head_interpretation}."
-                        )
+                f"1{{{not_variable_interpretations}}}1 :- {head_interpretation}."
+            )
         elif (
-                        len(
-                            reachable_head_variables_from_not_head_variable[
-                                not_head_variable
-                            ]
-                        )
-                        == 0
-                    ):  # removed all
-            self.printer.custom_print(
-                            f"1{{{not_variable_interpretations}}}1."
-                        )
+            len(reachable_head_variables_from_not_head_variable[not_head_variable]) == 0
+        ):  # removed all
+            self.printer.custom_print(f"1{{{not_variable_interpretations}}}1.")
         else:  # removed some
             dom_list = []
             dom_list_lookup = {}
@@ -303,45 +304,45 @@ class GenerateFoundednessPart:
             index = 0
             for variable in not_reached_head_variables:
                 values = HelperPart.get_domain_values_from_rule_variable(
-                                self.current_rule_position,
-                                not_head_variable,
-                                self.domain_lookup_dict,
-                                self.safe_variables_rules,
-                                self.rule_variables_predicates,
-                            )
+                    self.current_rule_position,
+                    not_head_variable,
+                    self.domain_lookup_dict,
+                    self.safe_variables_rules,
+                    self.rule_variables_predicates,
+                )
                 dom_list.append(values)
                 dom_list_lookup[variable] = index
                 index += 1
 
             combinations_for_not_reached_variables = [
-                            p for p in itertools.product(*dom_list)
-                        ]
+                p for p in itertools.product(*dom_list)
+            ]
 
             head_interpretations = []
-            for combination_not_reached_variable in combinations_for_not_reached_variables:
+            for (
+                combination_not_reached_variable
+            ) in combinations_for_not_reached_variables:
                 head_arguments_not_reached = []
 
                 for argument in head_arguments:
                     if argument in not_reached_head_variables:
                         head_arguments_not_reached.append(
-                                        combination_not_reached_variable[
-                                            dom_list_lookup[variable]
-                                        ]
-                                    )
+                            combination_not_reached_variable[dom_list_lookup[variable]]
+                        )
                     else:
                         head_arguments_not_reached.append(
-                                        combination[dom_list_lookup[variable]]
-                                    )
+                            combination[dom_list_lookup[variable]]
+                        )
 
                 current_head_interpretation = (
-                                f"{head.name}({','.join(head_arguments_not_reached)})"
-                            )
+                    f"{head.name}({','.join(head_arguments_not_reached)})"
+                )
                 head_interpretations.append(current_head_interpretation)
 
             for head_interpretation in head_interpretations:
                 self.printer.custom_print(
-                                f"1{{{not_variable_interpretations}}}1 :- {head_interpretation}."
-                            )
+                    f"1{{{not_variable_interpretations}}}1 :- {head_interpretation}."
+                )
 
     def _generate_foundedness_head_not_ground(
         self,
@@ -394,8 +395,7 @@ class GenerateFoundednessPart:
                     f"domain_rule_{self.current_rule_position}_variable_{not_head_variable}({value})."
                 )
 
-            domain_string = \
-                f"domain_rule_{self.current_rule_position}_variable_{not_head_variable}({not_head_variable})"
+            domain_string = f"domain_rule_{self.current_rule_position}_variable_{not_head_variable}({not_head_variable})"
         else:
             domain_string = f"dom({not_head_variable})"
 
@@ -415,15 +415,15 @@ class GenerateFoundednessPart:
 
         if len(graph_variable_dict[not_head_variable]) == 0:
             self.printer.custom_print(
-                "1<=" +\
-                f"{{r{self.current_rule_position}f_{not_head_variable}{rem_tuple_interpretation}:{domain_string}}}" +\
-                "<=1."
+                "1<="
+                + f"{{r{self.current_rule_position}f_{not_head_variable}{rem_tuple_interpretation}:{domain_string}}}"
+                + "<=1."
             )
         else:
             self.printer.custom_print(
-                "1<=" +\
-                f"{{r{self.current_rule_position}f_{not_head_variable}{rem_tuple_interpretation}:{domain_string}}}" +\
-                f"<=1 :- {head_interpretation}."
+                "1<="
+                + f"{{r{self.current_rule_position}f_{not_head_variable}{rem_tuple_interpretation}:{domain_string}}}"
+                + f"<=1 :- {head_interpretation}."
             )
 
     def _generate_foundedness_comparisons(self, head, rem, h_vars, h_args, g):
@@ -647,7 +647,6 @@ class GenerateFoundednessPart:
                 combinations = [p for p in itertools.product(*dom_list)]
 
                 for combination in combinations:
-
                     (
                         head_combination,
                         head_combination_list_2,
@@ -773,8 +772,10 @@ class GenerateFoundednessPart:
                                 else:
                                     head_predicate = f"{new_head_name}"
 
-                                unfound_level_mapping = f"{unfound_atom} :-{unfound_body} " +\
-                                    f"not prec({unfound_predicate},{head_predicate})."
+                                unfound_level_mapping = (
+                                    f"{unfound_atom} :-{unfound_body} "
+                                    + f"not prec({unfound_predicate},{head_predicate})."
+                                )
                                 self.printer.custom_print(unfound_level_mapping)
 
                                 if len(full_head_args) > 0:
@@ -790,15 +791,17 @@ class GenerateFoundednessPart:
                                     if argument != "_"
                                 ]
                                 if len(unfound_predicate_args) > 0:
-                                    new_unfound_atom = \
-                                        f"r{self.current_rule_position}_{self.current_rule_position}_unfound" +\
-                                        f"({','.join(unfound_predicate_args)})"
+                                    new_unfound_atom = (
+                                        f"r{self.current_rule_position}_{self.current_rule_position}_unfound"
+                                        + f"({','.join(unfound_predicate_args)})"
+                                    )
                                 else:
-                                    new_unfound_atom = \
-                                        f"r{self.current_rule_position}_{self.current_rule_position}_unfound_"
+                                    new_unfound_atom = f"r{self.current_rule_position}_{self.current_rule_position}_unfound_"
 
-                                unfound_level_mapping = f"{new_unfound_atom} :-" +\
-                                    f"{unfound_body} not prec({head_predicate},{original_head_predicate})."
+                                unfound_level_mapping = (
+                                    f"{new_unfound_atom} :-"
+                                    + f"{unfound_body} not prec({head_predicate},{original_head_predicate})."
+                                )
                                 self.printer.custom_print(unfound_level_mapping)
 
                                 # self._add_atom_to_unfoundedness_check(head_predicate, new_unfound_atom)
