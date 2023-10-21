@@ -234,20 +234,15 @@ class GenerateFoundednessPart:
         dom_list_lookup,
         combination,
     ):
-        head_interpretation = f"{head.name}"
-        if length_of_head_arguments > 0:
-            argument_list = []
-            for argument in head_arguments:
-                if (
-                    argument
-                    in reachable_head_variables_from_not_head_variable[
-                        not_head_variable
-                    ]
-                ):
-                    argument_list.append(combination[dom_list_lookup[argument]])
-                else:
-                    argument_list.append(argument)
-            head_interpretation += f"({','.join(argument_list)})"
+        head_interpretation = self._ground_head_generate_head_string(
+            head,
+            reachable_head_variables_from_not_head_variable,
+            head_arguments,
+            length_of_head_arguments,
+            not_head_variable,
+            dom_list_lookup,
+            combination,
+        )
 
         remaining_head_values = []
         for variable in head_arguments_no_duplicates:
@@ -298,51 +293,92 @@ class GenerateFoundednessPart:
         ):  # removed all
             self.printer.custom_print(f"1{{{not_variable_interpretations}}}1.")
         else:  # removed some
-            dom_list = []
-            dom_list_lookup = {}
+            self._ground_not_reached_variables(
+                head,
+                head_arguments,
+                not_head_variable,
+                combination,
+                not_variable_interpretations,
+                not_reached_head_variables,
+            )
 
-            index = 0
-            for variable in not_reached_head_variables:
-                values = HelperPart.get_domain_values_from_rule_variable(
-                    self.current_rule_position,
-                    not_head_variable,
-                    self.domain_lookup_dict,
-                    self.safe_variables_rules,
-                    self.rule_variables_predicates,
-                )
-                dom_list.append(values)
-                dom_list_lookup[variable] = index
-                index += 1
+    def _ground_not_reached_variables(
+        self,
+        head,
+        head_arguments,
+        not_head_variable,
+        combination,
+        not_variable_interpretations,
+        not_reached_head_variables,
+    ):
+        dom_list = []
+        dom_list_lookup = {}
 
-            combinations_for_not_reached_variables = [
-                p for p in itertools.product(*dom_list)
-            ]
+        index = 0
+        for variable in not_reached_head_variables:
+            values = HelperPart.get_domain_values_from_rule_variable(
+                self.current_rule_position,
+                not_head_variable,
+                self.domain_lookup_dict,
+                self.safe_variables_rules,
+                self.rule_variables_predicates,
+            )
+            dom_list.append(values)
+            dom_list_lookup[variable] = index
+            index += 1
 
-            head_interpretations = []
-            for (
-                combination_not_reached_variable
-            ) in combinations_for_not_reached_variables:
-                head_arguments_not_reached = []
+        combinations_for_not_reached_variables = [
+            p for p in itertools.product(*dom_list)
+        ]
 
-                for argument in head_arguments:
-                    if argument in not_reached_head_variables:
-                        head_arguments_not_reached.append(
-                            combination_not_reached_variable[dom_list_lookup[variable]]
-                        )
-                    else:
-                        head_arguments_not_reached.append(
-                            combination[dom_list_lookup[variable]]
-                        )
+        head_interpretations = []
+        for combination_not_reached_variable in combinations_for_not_reached_variables:
+            head_arguments_not_reached = []
 
-                current_head_interpretation = (
-                    f"{head.name}({','.join(head_arguments_not_reached)})"
-                )
-                head_interpretations.append(current_head_interpretation)
+            for argument in head_arguments:
+                if argument in not_reached_head_variables:
+                    head_arguments_not_reached.append(
+                        combination_not_reached_variable[dom_list_lookup[argument]]
+                    )
+                else:
+                    head_arguments_not_reached.append(str(argument))
+                    # combination[dom_list_lookup[variable]]
 
-            for head_interpretation in head_interpretations:
-                self.printer.custom_print(
-                    f"1{{{not_variable_interpretations}}}1 :- {head_interpretation}."
-                )
+            current_head_interpretation = (
+                f"{head.name}({','.join(head_arguments_not_reached)})"
+            )
+            head_interpretations.append(current_head_interpretation)
+
+        for head_interpretation in head_interpretations:
+            self.printer.custom_print(
+                f"1{{{not_variable_interpretations}}}1 :- {head_interpretation}."
+            )
+
+    def _ground_head_generate_head_string(
+        self,
+        head,
+        reachable_head_variables_from_not_head_variable,
+        head_arguments,
+        length_of_head_arguments,
+        not_head_variable,
+        dom_list_lookup,
+        combination,
+    ):
+        head_interpretation = f"{head.name}"
+        if length_of_head_arguments > 0:
+            argument_list = []
+            for argument in head_arguments:
+                if (
+                    argument
+                    in reachable_head_variables_from_not_head_variable[
+                        not_head_variable
+                    ]
+                ):
+                    argument_list.append(combination[dom_list_lookup[argument]])
+                else:
+                    argument_list.append(argument)
+            head_interpretation += f"({','.join(argument_list)})"
+        return head_interpretation
 
     def _generate_foundedness_head_not_ground(
         self,
