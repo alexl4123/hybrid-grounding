@@ -1,4 +1,4 @@
-# pylint: disable=R0913,R1721,R1728,E0401
+# pylint: disable=R0913,R1721,R1728
 """
 Module for ensuring foundedness.
 """

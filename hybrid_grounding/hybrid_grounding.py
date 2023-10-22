@@ -1,4 +1,4 @@
-# pylint: disable=W0108,E0401
+# pylint: disable=W0108
 """
 Main module.
 Contains the HybridGrounding class,
