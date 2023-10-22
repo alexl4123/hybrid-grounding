@@ -511,131 +511,225 @@ class GenerateFoundednessPart:
 
             combinations = [p for p in itertools.product(*dom_list)]
 
-            # print(f"[INFO] -------> NUMBER OF COMBINATIONS: {len(combinations)}")
             for combination in combinations:
-                variable_assignments = {}
-
-                for variable_index in range(len(combination_variables)):
-                    variable = combination_variables[variable_index]
-                    value = combination[variable_index]
-
-                    variable_assignments[variable] = value
-
-                (
-                    head_combination,
-                    head_combination_list_2,
-                    unfound_atom,
-                    not_head_counter,
-                    full_head_args,
-                ) = self._generate_head_atom(
-                    combination, h_vars, h_args, f_vars_needed, associated_variables
+                self._generate_foundedness_comparisons_combination(
+                    combination_variables,
+                    combination,
+                    h_vars,
+                    h_args,
+                    f_vars_needed,
+                    associated_variables,
+                    arguments,
+                    left,
+                    right,
+                    f_vars,
+                    comparison_operator,
+                    f_arguments_nd,
+                    rem,
+                    head,
+                    covered_subsets,
                 )
-
-                body_combination = {}
-
-                for f_arg in arguments:
-                    if f_arg in h_vars and f_arg in f_vars_needed:  # Variables in head
-                        associated_index = associated_variables[f_arg]
-                        body_combination[f_arg] = combination[associated_index]
-                        # body_combination[f_arg] = head_combination[f_arg]
-                    elif f_arg in f_vars:  # Not in head variables
-                        associated_index = associated_variables[f_arg]
-                        body_combination[f_arg] = combination[associated_index]
-                        # body_combination[f_arg] = (combination[not_head_counter])
-                        not_head_counter += 1
-                    else:  # Static
-                        body_combination[f_arg] = f_arg
-
-                left_eval = ComparisonTools.evaluate_operation(
-                    left, variable_assignments
-                )
-                right_eval = ComparisonTools.evaluate_operation(
-                    right, variable_assignments
-                )
-
-                sint = HelperPart.ignore_exception(ValueError)(int)
-                left_eval = sint(left_eval)
-                right_eval = sint(right_eval)
-
-                safe_checks = left_eval is not None and right_eval is not None
-                evaluation = safe_checks and not ComparisonTools.compare_terms(
-                    comparison_operator, int(left_eval), int(right_eval)
-                )
-
-                if not safe_checks or evaluation:
-                    left_instantiation = ComparisonTools.instantiate_operation(
-                        left, variable_assignments
-                    )
-                    right_instantiation = ComparisonTools.instantiate_operation(
-                        right, variable_assignments
-                    )
-                    ComparisonTools.comparison_handlings(
-                        comparison_operator, left_instantiation, right_instantiation
-                    )
-
-                    unfound_body_list = []
-
-                    for v in f_arguments_nd:
-                        if v in rem:
-                            body_combination_tmp = [
-                                body_combination[v]
-                            ] + head_combination_list_2
-                            body_predicate = f"r{self.current_rule_position}f_{v}({','.join(body_combination_tmp)})"
-                            unfound_body_list.append(body_predicate)
-
-                    if len(unfound_body_list) > 0:
-                        unfound_body = f" {','.join(unfound_body_list)}"
-                        unfound_rule = f"{unfound_atom} :- {unfound_body}"
-                        unfound_rule += "."
-
-                    else:
-                        unfound_rule = f"{unfound_atom}"
-                        unfound_rule += "."
-
-                    self.printer.custom_print(unfound_rule)
-
-                    if unfound_atom not in covered_subsets:
-                        covered_subsets[unfound_atom] = []
-
-                    covered_subsets[unfound_atom].append(unfound_body_list)
-
-                dom_list_2 = []
-                for arg in h_args:
-                    if arg in h_vars and arg not in head_combination:
-                        values = HelperPart.get_domain_values_from_rule_variable(
-                            self.current_rule_position,
-                            arg,
-                            self.domain_lookup_dict,
-                            self.safe_variables_rules,
-                            self.rule_variables_predicates,
-                        )
-                        dom_list_2.append(values)
-                    elif arg in h_vars and arg in head_combination:
-                        dom_list_2.append([head_combination[arg]])
-                    else:
-                        dom_list_2.append([arg])
-
-                combinations_2 = [p for p in itertools.product(*dom_list_2)]
-
-                for combination_2 in combinations_2:
-                    # new_head_name = f"{head.name}{self.current_rule_position}"
-                    new_head_name = f"{head.name}"
-
-                    if (
-                        len(head_combination_list_2) > 0
-                        and len(list(combination_2)) > 0
-                        and len(("".join(combination_2)).strip()) > 0
-                    ):
-                        head_string = (
-                            f"{new_head_name}({','.join(list(combination_2))})"
-                        )
-                    else:
-                        head_string = f"{new_head_name}"
-
-                    # print(f"{head_string}/{unfound_atom}")
-                    self._add_atom_to_unfoundedness_check(head_string, unfound_atom)
 
         return covered_subsets
+
+    def _generate_foundedness_comparisons_combination(
+        self,
+        combination_variables,
+        combination,
+        h_vars,
+        h_args,
+        f_vars_needed,
+        associated_variables,
+        arguments,
+        left,
+        right,
+        f_vars,
+        comparison_operator,
+        f_arguments_nd,
+        rem,
+        head,
+        covered_subsets,
+    ):
+        variable_assignments = {}
+
+        for variable_index in range(len(combination_variables)):
+            variable = combination_variables[variable_index]
+            value = combination[variable_index]
+
+            variable_assignments[variable] = value
+
+        (
+            head_combination,
+            head_combination_list_2,
+            unfound_atom,
+            not_head_counter,
+            full_head_args,
+        ) = self._generate_head_atom(
+            combination, h_vars, h_args, f_vars_needed, associated_variables
+        )
+
+        body_combination = {}
+
+        self._generate_foundedness_comparisons_combination_body_combination(
+            combination,
+            h_vars,
+            f_vars_needed,
+            associated_variables,
+            arguments,
+            f_vars,
+            not_head_counter,
+            body_combination,
+        )
+
+        left_eval = ComparisonTools.evaluate_operation(left, variable_assignments)
+        right_eval = ComparisonTools.evaluate_operation(right, variable_assignments)
+
+        sint = HelperPart.ignore_exception(ValueError)(int)
+        left_eval = sint(left_eval)
+        right_eval = sint(right_eval)
+
+        safe_checks = left_eval is not None and right_eval is not None
+        evaluation = safe_checks and not ComparisonTools.compare_terms(
+            comparison_operator, int(left_eval), int(right_eval)
+        )
+
+        if not safe_checks or evaluation:
+            self._generate_foundendess_comparisons_print_unfoundeness_rule(
+                left,
+                right,
+                comparison_operator,
+                f_arguments_nd,
+                rem,
+                covered_subsets,
+                variable_assignments,
+                head_combination_list_2,
+                unfound_atom,
+                body_combination,
+            )
+
+        self._generate_foundedness_comparisons_combination_check_unfoundeness(
+            h_vars,
+            h_args,
+            head,
+            head_combination,
+            head_combination_list_2,
+            unfound_atom,
+        )
+
+    def _generate_foundedness_comparisons_combination_body_combination(
+        self,
+        combination,
+        h_vars,
+        f_vars_needed,
+        associated_variables,
+        arguments,
+        f_vars,
+        not_head_counter,
+        body_combination,
+    ):
+        for f_arg in arguments:
+            if f_arg in h_vars and f_arg in f_vars_needed:  # Variables in head
+                associated_index = associated_variables[f_arg]
+                body_combination[f_arg] = combination[associated_index]
+                # body_combination[f_arg] = head_combination[f_arg]
+            elif f_arg in f_vars:  # Not in head variables
+                associated_index = associated_variables[f_arg]
+                body_combination[f_arg] = combination[associated_index]
+                # body_combination[f_arg] = (combination[not_head_counter])
+                not_head_counter += 1
+            else:  # Static
+                body_combination[f_arg] = f_arg
+
+    def _generate_foundendess_comparisons_print_unfoundeness_rule(
+        self,
+        left,
+        right,
+        comparison_operator,
+        f_arguments_nd,
+        rem,
+        covered_subsets,
+        variable_assignments,
+        head_combination_list_2,
+        unfound_atom,
+        body_combination,
+    ):
+        left_instantiation = ComparisonTools.instantiate_operation(
+            left, variable_assignments
+        )
+        right_instantiation = ComparisonTools.instantiate_operation(
+            right, variable_assignments
+        )
+
+        ComparisonTools.comparison_handlings(
+            comparison_operator, left_instantiation, right_instantiation
+        )
+
+        unfound_body_list = []
+
+        for v in f_arguments_nd:
+            if v in rem:
+                body_combination_tmp = [body_combination[v]] + head_combination_list_2
+                body_predicate = f"r{self.current_rule_position}f_{v}({','.join(body_combination_tmp)})"
+                unfound_body_list.append(body_predicate)
+
+        if len(unfound_body_list) > 0:
+            unfound_body = f" {','.join(unfound_body_list)}"
+            unfound_rule = f"{unfound_atom} :- {unfound_body}"
+            unfound_rule += "."
+
+        else:
+            unfound_rule = f"{unfound_atom}"
+            unfound_rule += "."
+
+        self.printer.custom_print(unfound_rule)
+
+        if unfound_atom not in covered_subsets:
+            covered_subsets[unfound_atom] = []
+
+        covered_subsets[unfound_atom].append(unfound_body_list)
+
+    def _generate_foundedness_comparisons_combination_check_unfoundeness(
+        self,
+        h_vars,
+        h_args,
+        head,
+        head_combination,
+        head_combination_list_2,
+        unfound_atom,
+    ):
+        dom_list_2 = []
+        for arg in h_args:
+            if arg in h_vars and arg not in head_combination:
+                values = HelperPart.get_domain_values_from_rule_variable(
+                    self.current_rule_position,
+                    arg,
+                    self.domain_lookup_dict,
+                    self.safe_variables_rules,
+                    self.rule_variables_predicates,
+                )
+                dom_list_2.append(values)
+            elif arg in h_vars and arg in head_combination:
+                dom_list_2.append([head_combination[arg]])
+            else:
+                dom_list_2.append([arg])
+
+        combinations_2 = [p for p in itertools.product(*dom_list_2)]
+
+        for combination_2 in combinations_2:
+            # new_head_name = f"{head.name}{self.current_rule_position}"
+            new_head_name = f"{head.name}"
+
+            if (
+                len(head_combination_list_2) > 0
+                and len(list(combination_2)) > 0
+                and len(("".join(combination_2)).strip()) > 0
+            ):
+                head_string = f"{new_head_name}({','.join(list(combination_2))})"
+            else:
+                head_string = f"{new_head_name}"
+
+            # print(f"{head_string}/{unfound_atom}")
+            self._add_atom_to_unfoundedness_check(head_string, unfound_atom)
 
     def _generate_foundedness_functions(
         self, head, rem, h_vars, h_args, g, covered_subsets
@@ -988,40 +1082,17 @@ class GenerateFoundednessPart:
         full_head_args = []
 
         if len(h_vars) > 0:
-            head_counter = 0
-            for h_arg in h_args:
-                if h_arg in h_vars and h_arg in f_vars_needed:
-                    combination_variable_position = combination_associated_variables[
-                        h_arg
-                    ]
+            not_head_counter, unfound_atom = self._generate_head_atom_with_variables(
+                combination,
+                h_vars,
+                h_args,
+                f_vars_needed,
+                combination_associated_variables,
+                head_combination_list_2,
+                head_combination,
+                full_head_args,
+            )
 
-                    head_combination[h_arg] = combination[combination_variable_position]
-                    full_head_args.append(combination[combination_variable_position])
-
-                    if combination_variable_position > head_counter:
-                        head_counter = combination_variable_position
-
-                elif h_arg not in h_vars:
-                    head_combination[h_arg] = h_arg
-
-                    full_head_args.append(h_arg)
-                else:
-                    full_head_args.append("_")
-
-            for h_arg in h_args:
-                if h_arg in head_combination:
-                    head_combination_list_2.append(head_combination[h_arg])
-
-            if (
-                len(head_combination_list_2) > 0
-                and len(list(head_combination_list_2)) > 0
-                and len(("".join(head_combination_list_2)).strip()) > 0
-            ):
-                unfound_atom = f"r{self.current_rule_position}_unfound({','.join(head_combination_list_2)})"
-            else:
-                unfound_atom = f"r{self.current_rule_position}_unfound_"
-
-            not_head_counter = head_counter
         elif len(h_args) > 0 and len(h_vars) == 0:
             for h_arg in h_args:
                 head_combination_list_2.append(h_arg)
@@ -1049,6 +1120,52 @@ class GenerateFoundednessPart:
             not_head_counter,
             full_head_args,
         )
+
+    def _generate_head_atom_with_variables(
+        self,
+        combination,
+        h_vars,
+        h_args,
+        f_vars_needed,
+        combination_associated_variables,
+        head_combination_list_2,
+        head_combination,
+        full_head_args,
+    ):
+        head_counter = 0
+        for h_arg in h_args:
+            if h_arg in h_vars and h_arg in f_vars_needed:
+                combination_variable_position = combination_associated_variables[h_arg]
+
+                head_combination[h_arg] = combination[combination_variable_position]
+                full_head_args.append(combination[combination_variable_position])
+
+                if combination_variable_position > head_counter:
+                    head_counter = combination_variable_position
+
+            elif h_arg not in h_vars:
+                head_combination[h_arg] = h_arg
+
+                full_head_args.append(h_arg)
+            else:
+                full_head_args.append("_")
+
+        for h_arg in h_args:
+            if h_arg in head_combination:
+                head_combination_list_2.append(head_combination[h_arg])
+
+        if (
+            len(head_combination_list_2) > 0
+            and len(list(head_combination_list_2)) > 0
+            and len(("".join(head_combination_list_2)).strip()) > 0
+        ):
+            unfound_atom = f"r{self.current_rule_position}_unfound({','.join(head_combination_list_2)})"
+        else:
+            unfound_atom = f"r{self.current_rule_position}_unfound_"
+
+        not_head_counter = head_counter
+
+        return not_head_counter, unfound_atom
 
     def _add_atom_to_unfoundedness_check(self, head_string, unfound_atom):
         if head_string not in self.unfounded_rules:
