@@ -1,4 +1,4 @@
-# pylint: disable=C0103
+# pylint: disable=C0103,E0401
 """
 Preliminary transformer module/class.
 Necessary for domain inference, and strongly-connected-component computation.

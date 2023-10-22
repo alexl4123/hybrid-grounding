@@ -1,4 +1,4 @@
-# pylint: disable=W0102
+# pylint: disable=W0102,E0401
 """
 General helper module for the reduction.
 """

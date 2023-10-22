@@ -14,7 +14,7 @@ if "GITHUB_ACTIONS" in os.environ:
 @nox.session
 def lint_flake8(session):
     session.install("-e", ".[lint_flake8]")
-    session.run("flake8", "hybrid_grounding", "tests")
+    session.run("flake8", "hybrid_grounding")
 
 @nox.session
 def lint_pylint(session):

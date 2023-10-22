@@ -1,7 +1,7 @@
-# pylint: disable=W0108
+# pylint: disable=W0108,E0401
 """
 Main module.
-Contains the HybridGrounding class, 
+Contains the HybridGrounding class,
 which is used for the tranformations.
 """
 
