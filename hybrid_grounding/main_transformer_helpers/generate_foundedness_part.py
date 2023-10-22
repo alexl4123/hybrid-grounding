@@ -429,15 +429,10 @@ class GenerateFoundednessPart:
                     f"domain_rule_{self.current_rule_position}_variable_{not_head_variable}({value})."
                 )
 
-            domain_string = f"domain_rule_{self.current_rule_position}_variable_{not_head_variable}({not_head_variable})"
+            domain_string = f"domain_rule_{self.current_rule_position}_variable_{not_head_variable}" +\
+                f"({not_head_variable})"
         else:
             domain_string = f"dom({not_head_variable})"
-
-        domains = []
-        for variable in head_variables:
-            domains.append(
-                f"domain_rule_{self.current_rule_position}_variable_{variable}({variable})"
-            )
 
         rem_tuple_list = [not_head_variable] + partly_head_tuple_list
 
@@ -445,7 +440,7 @@ class GenerateFoundednessPart:
             rem_tuple_list = [item for item in rem_tuple_list if len(item) > 0]
             rem_tuple_interpretation = f"({','.join(rem_tuple_list)})"
         else:
-            rem_tuple_interpretation = f""
+            rem_tuple_interpretation = ""
 
         if len(graph_variable_dict[not_head_variable]) == 0:
             self.printer.custom_print(
@@ -563,7 +558,7 @@ class GenerateFoundednessPart:
             head_combination_list_2,
             unfound_atom,
             not_head_counter,
-            full_head_args,
+            _,
         ) = self._generate_head_atom(
             combination, h_vars, h_args, f_vars_needed, associated_variables
         )
@@ -581,19 +576,11 @@ class GenerateFoundednessPart:
             body_combination,
         )
 
-        left_eval = ComparisonTools.evaluate_operation(left, variable_assignments)
-        right_eval = ComparisonTools.evaluate_operation(right, variable_assignments)
-
-        sint = HelperPart.ignore_exception(ValueError)(int)
-        left_eval = sint(left_eval)
-        right_eval = sint(right_eval)
-
-        safe_checks = left_eval is not None and right_eval is not None
-        evaluation = safe_checks and not ComparisonTools.compare_terms(
-            comparison_operator, int(left_eval), int(right_eval)
+        print_value = self._generate_foundedness_comparisons_evaluate_comparison(
+            left, right, comparison_operator, variable_assignments
         )
 
-        if not safe_checks or evaluation:
+        if print_value:
             self._generate_foundendess_comparisons_print_unfoundeness_rule(
                 left,
                 right,
@@ -615,6 +602,24 @@ class GenerateFoundednessPart:
             head_combination_list_2,
             unfound_atom,
         )
+
+    def _generate_foundedness_comparisons_evaluate_comparison(
+        self, left, right, comparison_operator, variable_assignments
+    ):
+        left_eval = ComparisonTools.evaluate_operation(left, variable_assignments)
+        right_eval = ComparisonTools.evaluate_operation(right, variable_assignments)
+
+        sint = HelperPart.ignore_exception(ValueError)(int)
+        left_eval = sint(left_eval)
+        right_eval = sint(right_eval)
+
+        safe_checks = left_eval is not None and right_eval is not None
+        evaluation = safe_checks and not ComparisonTools.compare_terms(
+            comparison_operator, int(left_eval), int(right_eval)
+        )
+
+        print_value = not safe_checks or evaluation
+        return print_value
 
     def _generate_foundedness_comparisons_combination_body_combination(
         self,
