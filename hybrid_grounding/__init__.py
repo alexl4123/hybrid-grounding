@@ -120,7 +120,6 @@ def main():
         contents += f.read()
 
     hybrid_grounding = HybridGrounding(
-        sys.argv[0],
         no_show=no_show,
         ground_guess=ground_guess,
         output_printer=DefaultOutputPrinter(),

@@ -1,3 +1,8 @@
+# pylint: disable=R0913,R1721,R1728
+"""
+Module for foundedness-function, i.e., it deals with the foundedness of rules like:
+of e.g., ''b(X)'' in the rule ''a(X) :- b(X), X > 2.''
+"""
 import itertools
 import re
 
@@ -6,6 +11,10 @@ from .helper_part import HelperPart
 
 
 class GenerateFoundednessPartFunction:
+    """
+    Class for foundedness-function, i.e., it deals with the foundedness of rules like:
+    of e.g., ''b(X)'' in the rule ''a(X) :- b(X), X > 2.''
+    """
 
     def __init__(
         self,
@@ -26,9 +35,8 @@ class GenerateFoundednessPartFunction:
         strongly_connected_components_heads,
         program_rules,
         additional_unfounded_rules,
-        rule_variables_predicates
+        rule_variables_predicates,
     ):
-
         self.rule_head = rule_head
         self.current_rule_position = current_rule_position
         self.printer = custom_printer
@@ -51,12 +59,13 @@ class GenerateFoundednessPartFunction:
 
         self.additional_unfounded_rules = additional_unfounded_rules
 
-
-    def _generate_foundedness_functions(
+    def generate_foundedness_functions(
         self, head, rem, h_vars, h_args, g, covered_subsets
     ):
-        # -------------------------------------------
-        # over every body-atom
+        """
+        Starting method for foundedness-function, i.e., it deals with the foundedness of rules like:
+        of e.g., ''b(X)'' in the rule ''a(X) :- b(X), X > 2.''
+        """
 
         for rule_predicate_function in self.rule_literals:
             if rule_predicate_function != head:
@@ -75,7 +84,7 @@ class GenerateFoundednessPartFunction:
                     v for v in f_vars if v in rem
                 ]  # remaining vars for current function (not in head)
 
-                f_vars_needed = HelperPart._get_vars_needed(h_vars, f_vars, f_rem, g)
+                f_vars_needed = HelperPart.get_vars_needed(h_vars, f_vars, f_rem, g)
                 # f_vars_needed = h_vars
 
                 associated_variables = {}
@@ -132,8 +141,13 @@ class GenerateFoundednessPartFunction:
             unfound_atom,
             _,
             full_head_args,
-        ) = HelperPart._generate_head_atom(
-            combination, h_vars, h_args, f_vars_needed, associated_variables, self.current_rule_position
+        ) = HelperPart.generate_head_atom(
+            combination,
+            h_vars,
+            h_args,
+            f_vars_needed,
+            associated_variables,
+            self.current_rule_position,
         )
 
         # ---------
@@ -309,7 +323,12 @@ class GenerateFoundednessPartFunction:
             else:
                 head_string = f"{new_head_name}"
 
-            HelperPart._add_atom_to_unfoundedness_check(head_string, unfound_atom, self.unfounded_rules, self.current_rule_position)
+            HelperPart.add_atom_to_unfoundedness_check(
+                head_string,
+                unfound_atom,
+                self.unfounded_rules,
+                self.current_rule_position,
+            )
 
     def _generate_foundedness_function_combination_level_mappings(
         self,
@@ -369,4 +388,3 @@ class GenerateFoundednessPartFunction:
                 self.additional_unfounded_rules.append(
                     f":- {new_unfound_atom}, {head_predicate}."
                 )
-

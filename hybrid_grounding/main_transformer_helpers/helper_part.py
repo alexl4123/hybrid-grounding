@@ -5,6 +5,7 @@ General helper module for the reduction.
 
 import networkx as nx
 
+
 class HelperPart:
     """
     General helper class for the reduction.
@@ -118,15 +119,19 @@ class HelperPart:
         return dec
 
     @classmethod
-    def _generate_head_atom(
+    def generate_head_atom(
         cls,
         combination,
         h_vars,
         h_args,
         f_vars_needed,
         combination_associated_variables,
-        current_rule_position
+        current_rule_position,
     ):
+        """
+        Needed for foundedness checks.
+        Generates the head atom of a foundedness-check-rule.
+        """
         head_combination_list_2 = []
         head_combination = {}
 
@@ -142,7 +147,7 @@ class HelperPart:
                 head_combination_list_2,
                 head_combination,
                 full_head_args,
-                current_rule_position
+                current_rule_position,
             )
 
         elif len(h_args) > 0 and len(h_vars) == 0:
@@ -184,7 +189,7 @@ class HelperPart:
         head_combination_list_2,
         head_combination,
         full_head_args,
-        current_rule_position
+        current_rule_position,
     ):
         head_counter = 0
         for h_arg in h_args:
@@ -213,7 +218,9 @@ class HelperPart:
             and len(list(head_combination_list_2)) > 0
             and len(("".join(head_combination_list_2)).strip()) > 0
         ):
-            unfound_atom = f"r{current_rule_position}_unfound({','.join(head_combination_list_2)})"
+            unfound_atom = (
+                f"r{current_rule_position}_unfound({','.join(head_combination_list_2)})"
+            )
         else:
             unfound_atom = f"r{current_rule_position}_unfound_"
 
@@ -222,19 +229,26 @@ class HelperPart:
         return not_head_counter, unfound_atom
 
     @classmethod
-    def _add_atom_to_unfoundedness_check(cls, head_string, unfound_atom, unfounded_rules, current_rule_position):
+    def add_atom_to_unfoundedness_check(
+        cls, head_string, unfound_atom, unfounded_rules, current_rule_position
+    ):
+        """
+        Adds an atom to the ''unfoundedness-check'', i.e.,
+        the check at the end of the program (that nothing is unfound).
+        """
         if head_string not in unfounded_rules:
             unfounded_rules[head_string] = {}
 
         if str(current_rule_position) not in unfounded_rules[head_string]:
             unfounded_rules[head_string][str(current_rule_position)] = []
 
-        unfounded_rules[head_string][str(current_rule_position)].append(
-            unfound_atom
-        )
+        unfounded_rules[head_string][str(current_rule_position)].append(unfound_atom)
 
     @classmethod
-    def _get_vars_needed(cls, h_vars, f_vars, f_rem, graph):
+    def get_vars_needed(cls, h_vars, f_vars, f_rem, graph):
+        """
+        Needed for foundedness, gets the reachable variables from one variables.
+        """
         f_vars_needed = [
             f for f in f_vars if f in h_vars
         ]  # bounded head vars which are needed for foundation
