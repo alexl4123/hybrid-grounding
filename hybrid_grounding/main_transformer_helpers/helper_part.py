@@ -3,6 +3,7 @@
 General helper module for the reduction.
 """
 
+import networkx as nx
 
 class HelperPart:
     """
@@ -115,3 +116,130 @@ class HelperPart:
             return _dec
 
         return dec
+
+    @classmethod
+    def _generate_head_atom(
+        cls,
+        combination,
+        h_vars,
+        h_args,
+        f_vars_needed,
+        combination_associated_variables,
+        current_rule_position
+    ):
+        head_combination_list_2 = []
+        head_combination = {}
+
+        full_head_args = []
+
+        if len(h_vars) > 0:
+            not_head_counter, unfound_atom = cls._generate_head_atom_with_variables(
+                combination,
+                h_vars,
+                h_args,
+                f_vars_needed,
+                combination_associated_variables,
+                head_combination_list_2,
+                head_combination,
+                full_head_args,
+                current_rule_position
+            )
+
+        elif len(h_args) > 0 and len(h_vars) == 0:
+            for h_arg in h_args:
+                head_combination_list_2.append(h_arg)
+                head_combination[h_arg] = h_arg
+                full_head_args.append(h_arg)
+
+            if (
+                len(list(head_combination_list_2)) > 0
+                and len(("".join(head_combination_list_2)).strip()) > 0
+            ):
+                unfound_atom = f"r{current_rule_position}_unfound({','.join(head_combination_list_2)})"
+            else:
+                unfound_atom = f"r{current_rule_position}_unfound_"
+
+            not_head_counter = 0
+
+        else:
+            unfound_atom = f"r{current_rule_position}_unfound_"
+            not_head_counter = 0
+
+        return (
+            head_combination,
+            head_combination_list_2,
+            unfound_atom,
+            not_head_counter,
+            full_head_args,
+        )
+
+    @classmethod
+    def _generate_head_atom_with_variables(
+        cls,
+        combination,
+        h_vars,
+        h_args,
+        f_vars_needed,
+        combination_associated_variables,
+        head_combination_list_2,
+        head_combination,
+        full_head_args,
+        current_rule_position
+    ):
+        head_counter = 0
+        for h_arg in h_args:
+            if h_arg in h_vars and h_arg in f_vars_needed:
+                combination_variable_position = combination_associated_variables[h_arg]
+
+                head_combination[h_arg] = combination[combination_variable_position]
+                full_head_args.append(combination[combination_variable_position])
+
+                if combination_variable_position > head_counter:
+                    head_counter = combination_variable_position
+
+            elif h_arg not in h_vars:
+                head_combination[h_arg] = h_arg
+
+                full_head_args.append(h_arg)
+            else:
+                full_head_args.append("_")
+
+        for h_arg in h_args:
+            if h_arg in head_combination:
+                head_combination_list_2.append(head_combination[h_arg])
+
+        if (
+            len(head_combination_list_2) > 0
+            and len(list(head_combination_list_2)) > 0
+            and len(("".join(head_combination_list_2)).strip()) > 0
+        ):
+            unfound_atom = f"r{current_rule_position}_unfound({','.join(head_combination_list_2)})"
+        else:
+            unfound_atom = f"r{current_rule_position}_unfound_"
+
+        not_head_counter = head_counter
+
+        return not_head_counter, unfound_atom
+
+    @classmethod
+    def _add_atom_to_unfoundedness_check(cls, head_string, unfound_atom, unfounded_rules, current_rule_position):
+        if head_string not in unfounded_rules:
+            unfounded_rules[head_string] = {}
+
+        if str(current_rule_position) not in unfounded_rules[head_string]:
+            unfounded_rules[head_string][str(current_rule_position)] = []
+
+        unfounded_rules[head_string][str(current_rule_position)].append(
+            unfound_atom
+        )
+
+    @classmethod
+    def _get_vars_needed(cls, h_vars, f_vars, f_rem, graph):
+        f_vars_needed = [
+            f for f in f_vars if f in h_vars
+        ]  # bounded head vars which are needed for foundation
+        for r in f_rem:
+            for n in nx.dfs_postorder_nodes(graph, source=r):
+                if n in h_vars and n not in f_vars_needed:
+                    f_vars_needed.append(n)
+        return f_vars_needed
