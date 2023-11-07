@@ -22,6 +22,13 @@ The set of answer sets from the rewritten program is A(R(Pi)), which is a set an
 It is then checked, that each answer set q in A(Pi), has an equvalent in A(R(Pi)), and vice versa.
 Equivalence meaning here, that the answer sets exactly match.
 
+What tests have been written?
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+In general we wrote tests of two kinds: Those that check our aggregate-rewritings and those that check our reduction.
+Note that the tests capture various aspects of ASP, and were crafted iteratively.
+Note that the tests 114 (S3-T4), 115 (S3-T4), 116 (S4-T4), 117 (S1), 118 (S1), 119 (S2), 120 (S2), check the experiments.
+
 Setup
 --------
 
