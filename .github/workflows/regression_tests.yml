@@ -38,7 +38,7 @@ jobs:
 
     - name: Run Newground help
       run: |
-        hybrid_grounding --help
+        newground --help
 
 
   tests:
@@ -69,7 +69,7 @@ jobs:
         run: |
           conda activate potassco
           python -m pip install -r requirements.txt
-          python start_hybrid_grounding.py --help
+          python start_newground.py --help
       - name: Test Aggregate RS-STAR
         shell: bash -l {0}
         run: |

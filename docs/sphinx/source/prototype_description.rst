@@ -127,7 +127,7 @@ Aggregate Rewriting
 
 The aggregate-transformer checks whether an aggregate occurs in a rule.
 If so, then the selected aggregate rewriting technique is used, for each aggregate in the rule.
-The individual strategies can be found in the package ``hybrid_grounding.aggregate_strategies``.
+The individual strategies can be found in the package ``newground.aggregate_strategies``.
 
 
 Main Transformer (Applying the Reduction)

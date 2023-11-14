@@ -17,7 +17,7 @@ If you are new to this protype be sure to check-out the :ref:`installation-refer
 .. _here: 
 .. _newground: https://github.com/viktorbesin/newground
 .. _newground-Fork: https://github.com/alexl4123/newground
-.. _newground-Experiments: https://github.com/alexl4123/hybridgrounding-experiments
+.. _newground-Experiments: https://github.com/alexl4123/newground-experiments
 
 
 .. toctree::

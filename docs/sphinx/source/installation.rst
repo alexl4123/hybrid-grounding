@@ -44,14 +44,14 @@ Check the installation:
 
 .. code-block:: console
 
-    $ hybrid_grounding --help
+    $ newground --help
 
 Which output should be:
 
 .. code-block:: console
 
-    $ hybrid_grounding --help
-    usage: hybrid_grounding [files]
+    $ newground --help
+    usage: newground [files]
 
     positional arguments:
       files
@@ -78,8 +78,8 @@ Check if newground was correctly installed:
 
 .. code-block:: console
 
-    $ hybrid_grounding --help
-    usage: hybrid_grounding [files]
+    $ newground --help
+    usage: newground [files]
 
     positional arguments:
       files
@@ -100,7 +100,7 @@ Although we would be very sad, if you would do it, you can uninstall Newground w
 
 .. code-block:: console
 
-    $ python -m pip uninstall hybrid_grounding
+    $ python -m pip uninstall newground
 
 Or by using make:
 
@@ -159,7 +159,7 @@ This can be done in the following way:
 Autoformatting with nox
 """"""""""""""""""""""""
 
-For autoformatting the hybrid_grounding directory, use:
+For autoformatting the newground directory, use:
 
 .. code-block:: console
 
@@ -274,8 +274,8 @@ And then directly call the prototype script:
 
 .. code-block:: console
     
-    $ python start_hybrid_grounding.py --help
-    usage: hybrid_grounding [files]
+    $ python start_newground.py --help
+    usage: newground [files]
 
     positional arguments:
       files

@@ -4,7 +4,7 @@ Experiments
 For the source code of the experiments, the experimental instances, etc., take a look at the experiments repository experiments-page_
 For other additional information, not found here, take a look at the relevant publications.
 
-.. _experiments-page: https://github.com/alexl4123/hybridgrounding-experiments
+.. _experiments-page: https://github.com/alexl4123/newground-experiments
 
 Methodology:
 ---------------
@@ -168,7 +168,7 @@ A note on the benchmark scripts:
 
 The main benchmark script is the *start_benchmark_tests.py* script.
 It assumes *gringo*, *clingo*, *idlv.bin* and *python3* as binaries on the same level as the script.
-Further, it assumes hybrid_grounding (*start_hybrid_grounding.py*) to be on the same level as the script.
+Further, it assumes newground (*start_newground.py*) to be on the same level as the script.
 This can in general be changed at the bottom of the file (look for the *config* dict).
 You can also change the aggregate **rewriting_strategy** there (and add possible other config-infos, but where maybe additional coding is necessary).
 

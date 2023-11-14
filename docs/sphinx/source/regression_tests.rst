@@ -3,7 +3,7 @@ Regression Tests
 
 The regression tests of newground cover aggregate-rewritings, standard ASP programs and non-tight programs.
 The tests are located in the *regression_tests* folder, where the aggregate-rewriting-tests are located in *regression_tests/aggregate_tests*,
-and the ASP/non-tight tests are located in *regression_tests/hybrid_grounding_tests*.
+and the ASP/non-tight tests are located in *regression_tests/newground_tests*.
 At the time of writing (2023-10) the number of regression tests totals over 100.
 
 What is actually tested?
@@ -48,7 +48,7 @@ Synopsis of the script:
                                                              [--mode {aggregates-rs-star,aggregates-rs-plus,aggregates-rs,aggregates-ra,aggregates-recursive,rewriting-tight,rewriting-shared-cycle,rewriting-level-mappings-1,rewriting-level-mappings-2,fully-grounded-tight,fully-grounded-shared-cycle,fully-grounded-level-mappings-1,fully-grounded-level-mappings-2,test-all}]
                                                              [--folder FOLDER]
 
-    Checks equivalence of answersets produced by hybrid_grounding and clingo on all instance-
+    Checks equivalence of answersets produced by newground and clingo on all instance-
     encoding pairs in a subfolder.
 
     options:
@@ -66,7 +66,7 @@ It totals 14 strategies and one *test-all* strategy.
 Folder
 ^^^^^^^
 
-One can specify a specific folder, if one wants to execute tests beside the ones located in the *regression_tests/aggregate_tests* and *regression_tests/hybrid_grounding_tests* folders.
+One can specify a specific folder, if one wants to execute tests beside the ones located in the *regression_tests/aggregate_tests* and *regression_tests/newground_tests* folders.
 
 Automatic Testing
 ------------------

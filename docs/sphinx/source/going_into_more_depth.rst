@@ -42,8 +42,8 @@ By entering enter, you are able to choose from a variety of options:
 
 .. code-block:: console
 
-    $ hybrid_grounding --help    
-    usage: hybrid_grounding [files]
+    $ newground --help    
+    usage: newground [files]
 
     positional arguments:
       files
@@ -139,7 +139,7 @@ The program is rewritten with the prototype and the *RS* strategy (but not using
 
 .. code-block:: console
 
-    $ hybrid_grounding aggregate_test.lp --mode rewrite-aggregates-no-ground --aggregate-strategy RS > output.lp
+    $ newground aggregate_test.lp --mode rewrite-aggregates-no-ground --aggregate-strategy RS > output.lp
 
 
 Then the (commented) output program (*output.lp*) is:
@@ -207,7 +207,7 @@ We use the *shared-cycle-body-predicates* strategy with the partly-grounded mode
 
 .. code-block:: console
 
-    $ hybrid_grounding --cyclic-strategy shared-cycle-body-predicates --mode rewrite-aggregates-ground-partly non_tight_test.lp > output.lp 
+    $ newground --cyclic-strategy shared-cycle-body-predicates --mode rewrite-aggregates-ground-partly non_tight_test.lp > output.lp 
 
 The contents of the (commented) *output.lp* file are the following:
 
@@ -308,7 +308,7 @@ We use the *level-mappings-AAAI* strategy with the fully-grounded mode to ground
 
 .. code-block:: console
 
-    $ hybrid_grounding --cyclic-strategy level-mappings-AAAI --mode rewrite-aggregates-ground-fully non_tight_test.lp > output.lp 
+    $ newground --cyclic-strategy level-mappings-AAAI --mode rewrite-aggregates-ground-fully non_tight_test.lp > output.lp 
 
 The contents of the (commented) *output.lp* file are the following:
 
