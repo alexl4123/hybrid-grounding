@@ -64,7 +64,7 @@ class RegressionTest:
 
         if chosenRegressionTestMode != all_test:
             if folder_path == "__DEFAULT__" and chosenRegressionTestMode in rewriting_modes:
-                folder_path = os.path.join("regression_tests","newground_tests")
+                folder_path = os.path.join("regression_tests","tight_non_tight_tests")
             elif folder_path == "__DEFAULT__" and chosenRegressionTestMode in aggregate_modes:
                 folder_path = os.path.join("regression_tests","aggregate_tests")
 
