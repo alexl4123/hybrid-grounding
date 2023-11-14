@@ -1,4 +1,4 @@
-.. _hybrid-grounding-term-transformer-reference:
+.. _newground-term-transformer-reference:
 
 hybrid\_grounding.term\_transformer module
 ==========================================

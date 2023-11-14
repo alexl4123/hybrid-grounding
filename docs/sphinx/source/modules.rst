@@ -1,4 +1,4 @@
-Hybrid Grounding Code Documentation
+Newground Code Documentation
 ===================================
 
 .. toctree::

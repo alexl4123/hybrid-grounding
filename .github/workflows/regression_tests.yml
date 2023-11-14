@@ -32,11 +32,11 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-    - name: Install HybridGrounding
+    - name: Install Newground
       run: |
         python -m pip install ./
 
-    - name: Run HybridGrounding help
+    - name: Run Newground help
       run: |
         hybrid_grounding --help
 
@@ -64,7 +64,7 @@ jobs:
         run: conda create -n potassco -c conda-forge clingo
       - name: Conda Init bash
         run: conda init bash
-      - name: Setup HybridGrounding
+      - name: Setup Newground
         shell: bash -l {0}
         run: |
           conda activate potassco
@@ -144,7 +144,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-    - name: Install HybridGrounding
+    - name: Install Newground
       run: |
         python -m pip install ./[lint_flake8]
 
@@ -169,7 +169,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-    - name: Install HybridGrounding
+    - name: Install Newground
       run: |
         python -m pip install ./[lint_pylint]
     - name: run pylint

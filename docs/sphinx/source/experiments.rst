@@ -33,7 +33,7 @@ For S1 - S3 and S4, we use *RS* and *RA*, respectively.
 
 Further every benchmark instance is divided into three files:
 
-1. Encoding file *encoding.lp*: Is the encoding, that is grounded via Hybrid-Grounding/BDG.
+1. Encoding file *encoding.lp*: Is the encoding, that is grounded via newground/BDG.
 2. Instance file *instance.lp* (name may diverge from problem to problem): Is a file of facts, which determines the current problem instance.
 3. Encoding file *additional_instance.lp*: Is the encoding/additional-instance file, which is grounded via traditional-means.
 
@@ -181,7 +181,7 @@ The **synapsis** of the benchmark script are two positional arguments:
 2. **output_file**: Which stores the output results. Note to only give a file-stem (e.g. instead of *output.csv* only *output*), as different measures are tracked in multiple files.
 
 The script then calls each instance-file in order.
-For each such file it first performs a *GRINGO*, a *IDLV*, a *Hybrid-Grounding-IDLV*, and a *Hybrid-Grounding-GRINGO* run (**not necessarily in this order!**).
+For each such file it first performs a *GRINGO*, a *IDLV*, a *newground-IDLV*, and a *newground-GRINGO* run (**not necessarily in this order!**).
 
 *start_benchmark_.py* files
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -193,4 +193,5 @@ They include utils files (like base64 encodings for passing arguments), and file
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Are most of the time actually used to start the *start_benchmark_tests.py* file, as they are able to start multiple runs in parallel, e.g., for computing density measures (grounding-profile).
+
 

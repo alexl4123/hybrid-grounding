@@ -1,3 +1,3 @@
 """
-Hybrid Grounding helper module
+Newground helper module
 """

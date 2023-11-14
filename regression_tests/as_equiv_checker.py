@@ -6,7 +6,7 @@ import resource
 
 import clingo
 
-from hybrid_grounding.hybrid_grounding import HybridGrounding
+from hybrid_grounding.hybrid_grounding import Newground
 from hybrid_grounding.default_output_printer import DefaultOutputPrinter
 
 from hybrid_grounding.aggregate_strategies.aggregate_mode import AggregateMode
@@ -141,7 +141,7 @@ class EquivChecker:
             grounding_mode = GroundingModes.REWRITE_AGGREGATES_GROUND_PARTLY
             ground_guess = False
 
-            regression_test_strategy_string = "Checking HybridGrounding with partly rewriting "
+            regression_test_strategy_string = "Checking Newground with partly rewriting "
 
             if self.chosenRegressiontestMode == RegressionTestStrategy.REWRITING_TIGHT:
                 cyclic_strategy = CyclicStrategy.ASSUME_TIGHT
@@ -162,7 +162,7 @@ class EquivChecker:
             grounding_mode = GroundingModes.REWRITE_AGGREGATES_GROUND_FULLY
             ground_guess = True
 
-            regression_test_strategy_string = "Checking HybridGrounding with fully rewriting "
+            regression_test_strategy_string = "Checking Newground with fully rewriting "
 
             if self.chosenRegressiontestMode == RegressionTestStrategy.FULLY_GROUNDED_TIGHT:
                 cyclic_strategy = CyclicStrategy.ASSUME_TIGHT
@@ -196,7 +196,7 @@ class EquivChecker:
 
             custom_printer = CustomOutputPrinter()
 
-            hybrid_grounding = HybridGrounding(no_show = no_show, ground_guess = ground_guess, output_printer = custom_printer, aggregate_mode = aggregate_mode[1], cyclic_strategy=cyclic_strategy, grounding_mode=grounding_mode)
+            hybrid_grounding = Newground(no_show = no_show, ground_guess = ground_guess, output_printer = custom_printer, aggregate_mode = aggregate_mode[1], cyclic_strategy=cyclic_strategy, grounding_mode=grounding_mode)
             hybrid_grounding.start(total_content)
             
             self.start_clingo(custom_printer.get_string(), self.hybrid_grounding_output, self.hybrid_grounding_hashes)
@@ -211,7 +211,7 @@ class EquivChecker:
                             print(f"[ERROR] Used Aggregate Mode: {aggregate_mode[0]} - Could not find corresponding stable model in hybrid_grounding for hash {clingo_key}")
                             print(f"[ERROR] This corresponds to the answer set: ")
                             print(self.clingo_output[self.clingo_hashes[clingo_key]])
-                            print("Output of HybridGrounding:")
+                            print("Output of Newground:")
                             print(self.hybrid_grounding_output)
 
                 for hybrid_grounding_key in self.hybrid_grounding_hashes.keys():
@@ -221,7 +221,7 @@ class EquivChecker:
                             print(f"[ERROR] Used Aggregate Mode: {aggregate_mode[0]} - Could not find corresponding stable model in clingo for hash {hybrid_grounding_key}")
                             print(f"[ERROR] This corresponds to the answer set: ")
                             print(self.hybrid_grounding_output[self.hybrid_grounding_hashes[hybrid_grounding_key]])
-                            print("Output of HybridGrounding:")
+                            print("Output of Newground:")
                             print(self.hybrid_grounding_output)
 
 

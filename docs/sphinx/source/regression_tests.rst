@@ -1,7 +1,7 @@
 Regression Tests
 ================
 
-The regression tests of Hybrid-Grounding cover aggregate-rewritings, standard ASP programs and non-tight programs.
+The regression tests of newground cover aggregate-rewritings, standard ASP programs and non-tight programs.
 The tests are located in the *regression_tests* folder, where the aggregate-rewriting-tests are located in *regression_tests/aggregate_tests*,
 and the ASP/non-tight tests are located in *regression_tests/hybrid_grounding_tests*.
 At the time of writing (2023-10) the number of regression tests totals over 100.

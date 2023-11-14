@@ -1,4 +1,4 @@
-.. _hybrid-grounding-aggregate-transformer-reference:
+.. _newground-aggregate-transformer-reference:
 
 hybrid\_grounding.aggregate\_transformer module
 ===============================================

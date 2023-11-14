@@ -3,7 +3,7 @@
 Installation Guide
 ============================================
 
-By following this guide you will be able to install the Hybrid-Grounding prototype.
+By following this guide you will be able to install the newground prototype.
 
 Requirements
 ------------
@@ -21,7 +21,7 @@ General Installation
 -----------------------
 
 
-For using the Hybrid-Grounding prototype an installation is not required, but recommended, as all dependencies are automatically installed.
+For using the newground prototype an installation is not required, but recommended, as all dependencies are automatically installed.
 
 General Installation Method
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -67,14 +67,14 @@ Which output should be:
 General Installation via make
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-If you have the *make* environment installed, you can use it to install Hybrid-Grounding.
+If you have the *make* environment installed, you can use it to install newground.
 To install the general version, execute the following command.
 
 .. code-block:: console
 
     $ make install
 
-Check if Hybrid-Grounding was correctly installed:
+Check if newground was correctly installed:
 
 .. code-block:: console
 
@@ -96,7 +96,7 @@ Check if Hybrid-Grounding was correctly installed:
 Uninstall
 ---------
 
-Although we would be very sad, if you would do it, you can uninstall Hybrid-Gounding with the following command:
+Although we would be very sad, if you would do it, you can uninstall Newground with the following command:
 
 .. code-block:: console
 

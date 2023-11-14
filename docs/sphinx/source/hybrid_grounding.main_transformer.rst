@@ -1,4 +1,4 @@
-.. _hybrid-grounding-main-transformer:
+.. _newground-main-transformer:
 
 hybrid\_grounding.main\_transformer module
 ==========================================
