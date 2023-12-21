@@ -18,7 +18,6 @@ class CountAggregateHelper:
         helper_bodies = []
         for index_1 in range(len(terms)):
             for index_2 in range(index_1 + 1, len(terms)):
-                helper_body = "0 != "
 
                 if len(terms[index_1]) != len(terms[index_2]):
                     continue
@@ -37,7 +36,11 @@ class CountAggregateHelper:
                     ):
                         term_combinations.append(f"({first_term} ^ {second_term})")
 
-                helper_body = f"0 != {'?'.join(term_combinations)}"
+                if len(term_combinations) > 0:
+                    helper_body = f"0 != {'?'.join(term_combinations)}"
+                else:
+                    helper_body = "0 != 0"
+
                 helper_bodies.append(helper_body)
         return helper_bodies
 
@@ -53,11 +56,17 @@ class CountAggregateHelper:
                 first_list = all_diff_list_terms[index_1]
                 second_list = all_diff_list_terms[index_2]
 
+                tmp_list = []
                 for index_3 in range(len(first_list)):
                     first_item = first_list[index_3]
                     second_item = second_list[index_3]
 
-                    all_diff_list.append(first_item + "!=" + second_item)
+                    tmp_list.append(first_item + "^" + second_item)
+
+                if len(tmp_list) > 0:
+                    all_diff_list.append("0 != " + " ? ".join(tmp_list))
+                else:
+                    all_diff_list.append("0 != 0")
 
         return all_diff_list
 

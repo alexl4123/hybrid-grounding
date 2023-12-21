@@ -47,6 +47,7 @@ class RewritingCountSum:
             number_of_elements == 1
             and (operator_type in [">=", ">"])
             and len(list(guard_domain)) == 1
+            and str_type == "count"
         ):
             # Handle special case RM (RM from paper)
             original_rule_additional_body_literals += RMCase.handle_rm_case(
@@ -259,10 +260,10 @@ class RewritingCountSum:
             )
         elif aggregate_mode in [AggregateMode.RS_PLUS, AggregateMode.RS_STAR]:
             original_rule_additional_body_literals.append(
-                f"not not_{predicate_name}_1{arguments}"
+                f"{predicate_name}_1{arguments}"
             )
             original_rule_additional_body_literals.append(
-                f"not not not_{predicate_name}_2{arguments}"
+                f"not {predicate_name}_2{arguments}"
             )
 
         count1 = count
@@ -400,7 +401,7 @@ class RewritingCountSum:
             # Special case if guard is variable
             arguments = f"({','.join(variable_dependencies + [guard_string])})"
 
-        double_negated_count_predicate = f"not not_{predicate_name}{arguments}"
+        double_negated_count_predicate = f"{predicate_name}{arguments}"
         original_rule_additional_body_literals.append(double_negated_count_predicate)
 
         count1 = count
@@ -443,17 +444,11 @@ class RewritingCountSum:
             arguments = f"({','.join(variable_dependencies + [str(guard_value)])})"
 
         if aggregate_mode == AggregateMode.RS:
-            intermediate_rule = (
-                f"not_{predicate_name}{arguments} :- "
-                + f"{predicate_name}_1{arguments}, not {predicate_name}_2{arguments}."
-            )
+            rules_strings.append(f"{predicate_name}{arguments} :- not {predicate_name}_1{arguments}.")
+            rules_strings.append(f"{predicate_name}{arguments} :- {predicate_name}_2{arguments}.")
         elif aggregate_mode in [AggregateMode.RS_PLUS, AggregateMode.RS_STAR]:
-            intermediate_rule = (
-                f"not_{predicate_name}{arguments} :- "
-                + f"not not_{predicate_name}_1{arguments}, not_{predicate_name}_2{arguments}."
-            )
-
-        rules_strings.append(intermediate_rule)
+            rules_strings.append(f"{predicate_name}{arguments} :- not {predicate_name}_1{arguments}.")
+            rules_strings.append(f"{predicate_name}{arguments} :- {predicate_name}_2{arguments}.")
 
         return rules_strings
 
@@ -732,7 +727,7 @@ class RewritingCountSum:
                     double_negated_count_predicate
                 )
             elif aggregate_mode in [AggregateMode.RS_PLUS, AggregateMode.RS_STAR]:
-                double_negated_count_predicate = f"not not_{predicate_name}{arguments}"
+                double_negated_count_predicate = f"{predicate_name}{arguments}"
                 original_rule_additional_body_literals.append(
                     double_negated_count_predicate
                 )
@@ -745,7 +740,7 @@ class RewritingCountSum:
                 )
             elif aggregate_mode in [AggregateMode.RS_PLUS, AggregateMode.RS_STAR]:
                 triple_negated_count_predicate = (
-                    f"not not not_{predicate_name}{arguments}"
+                    f"not {predicate_name}{arguments}"
                 )
                 original_rule_additional_body_literals.append(
                     triple_negated_count_predicate

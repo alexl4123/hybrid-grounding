@@ -52,10 +52,17 @@ class RSHelper:
             else:
                 positive_body_string = ""
 
-            body_string = (
-                f"body_{str_type}_ag{str_id}({term_string}) :- "
-                + f"{positive_body_string} {','.join(element['condition'])}."
-            )
+            if len(element_tuples) > 0 or len(element_dependent_variables) > 0:
+                body_string = (
+                    f"body_{str_type}_ag{str_id}({term_string}) :- "
+                    + f"{positive_body_string} {','.join(element['condition'])}."
+                )
+            else:
+                body_string = (
+                    f"body_{str_type}_ag{str_id} :- "
+                    + f"{positive_body_string} {','.join(element['condition'])}."
+                )
+
             new_prg_part_set.append(body_string)
 
     @classmethod
@@ -86,8 +93,13 @@ class RSHelper:
                 tuple_variables.append(f"TUPLEVARIABLE_{index}_{tuple_index}")
 
             terms.append(tuple_variables)
-            terms_string = f"{','.join(tuple_variables + variable_dependencies + always_add_variable_dependencies)}"
-            bodies.append(f"body_{str_type}_ag{str_id}({terms_string})")
+
+            body_string = f"body_{str_type}_ag{str_id}"
+            if len(tuple_variables) > 0 or len(variable_dependencies) > 0 or len(always_add_variable_dependencies) > 0:
+                terms_string = f"{','.join(tuple_variables + variable_dependencies + always_add_variable_dependencies)}"
+                body_string += f"({terms_string})"
+
+            bodies.append(body_string)
 
         helper_bodies = CountAggregateHelper.generate_all_diff_predicates(terms)
         if str_type == "sum":
@@ -124,10 +136,12 @@ class RSHelper:
                 max_number_element_head = len(element["terms"])
 
         highest_integer_value = 0
-        for domain_value in domain["0_terms"]:
-            if CountAggregateHelper.check_string_is_int(str(domain_value)) is True:
-                if int(domain_value) > highest_integer_value:
-                    highest_integer_value = int(domain_value)
+
+        if "0_terms" in domain:
+            for domain_value in domain["0_terms"]:
+                if CountAggregateHelper.check_string_is_int(str(domain_value)) is True:
+                    if int(domain_value) > highest_integer_value:
+                        highest_integer_value = int(domain_value)
 
         for skolem_index in range(max_number_element_head):
             skolem_constants.append(str(int(highest_integer_value + 1 + skolem_index)))

@@ -161,6 +161,33 @@ class RecursiveAggregateRewriting:
         )
 
     @classmethod
+    def generate_skolem_constants(cls, aggregate_dict, domain):
+        """
+        Generate the respective domain
+        """
+
+        max_number_element_head = 0
+        skolem_constants = []
+
+        for element_index in range(len(aggregate_dict["elements"])):
+            element = aggregate_dict["elements"][element_index]
+
+            if len(element["terms"]) > max_number_element_head:
+                max_number_element_head = len(element["terms"])
+
+        highest_integer_value = 0
+        if "0_terms" in domain:
+            for domain_value in domain["0_terms"]:
+                if CountAggregateHelper.check_string_is_int(str(domain_value)) is True:
+                    if int(domain_value) > highest_integer_value:
+                        highest_integer_value = int(domain_value)
+
+        for skolem_index in range(max_number_element_head):
+            skolem_constants.append(str(int(highest_integer_value + 1 + skolem_index)))
+
+        return (max_number_element_head, skolem_constants)
+
+    @classmethod
     def generate_tuple_predicate_rules(
         cls,
         aggregate_dict,
@@ -175,23 +202,7 @@ class RecursiveAggregateRewriting:
         Generate the tuple predicates and rules.
         """
 
-        max_number_element_head = 0
-        skolem_constants = []
-
-        for element_index in range(len(aggregate_dict["elements"])):
-            element = aggregate_dict["elements"][element_index]
-
-            if len(element["terms"]) > max_number_element_head:
-                max_number_element_head = len(element["terms"])
-
-        highest_integer_value = 0
-        for domain_value in domain["0_terms"]:
-            if CountAggregateHelper.check_string_is_int(str(domain_value)) is True:
-                if int(domain_value) > highest_integer_value:
-                    highest_integer_value = int(domain_value)
-
-        for skolem_index in range(max_number_element_head):
-            skolem_constants.append(str(int(highest_integer_value + 1 + skolem_index)))
+        max_number_element_head, skolem_constants = cls.generate_skolem_constants(aggregate_dict, domain)
 
         for element_index in range(len(aggregate_dict["elements"])):
             element = aggregate_dict["elements"][element_index]
@@ -279,6 +290,9 @@ class RecursiveAggregateRewriting:
             + f"partial_{str_type}_ag{str_id}({first_tuple_predicate_arguments},S)."
         )
         new_prg_part.append(rule_string)
+
+        new_prg_part.append(f"any_last_ag{str_id} :- last_ag{str_id}({first_tuple_predicate_arguments}).")
+        new_prg_part.append(f"{str_type}_ag{str_id}(0) :- not any_last_ag{str_id}.")
 
         # Partial Middle
 

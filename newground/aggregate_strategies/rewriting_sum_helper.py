@@ -102,8 +102,8 @@ class RewritingSumHelper:
         for head_string in rules_head_strings:
             negated_head_strings.append(f"not {head_string}")
 
-        helper_rule = f"not_{rule_head_name}{sum_name_ending} :- {','.join(spawner_functions + negated_head_strings)}."
-
-        rules_strings.append(helper_rule)
+        for head_string in rules_head_strings:
+            rules_strings.append(f"{rule_head_name}{sum_name_ending} :- "
+                                 + f"{','.join(spawner_functions + [head_string])}.")
 
         return rules_strings

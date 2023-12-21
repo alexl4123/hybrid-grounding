@@ -223,9 +223,15 @@ class RSPlusStarHelper:
     ):
         new_condition = condition["name"]
 
+        whole_condition = condition["all"]
+        is_positive = True
+        if whole_condition.startswith("not "):
+            is_positive = False
+
         new_args = []
 
         for argument in condition["arguments"]:
+
             if "variable" in argument:
                 variable = argument["variable"]
                 if variable in element_dependent_variables:
@@ -237,6 +243,9 @@ class RSPlusStarHelper:
 
         if len(new_args) > 0:
             new_condition += f"({','.join(new_args)})"
+
+        if is_positive is False:
+            new_condition = "not " + new_condition
 
         new_conditions.append(new_condition)
 

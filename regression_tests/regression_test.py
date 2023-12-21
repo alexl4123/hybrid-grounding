@@ -96,7 +96,7 @@ class RegressionTest:
 
             for rewriting_strategy in rewriting_modes:
                 if folder_path == "__DEFAULT__" and rewriting_strategy in rewriting_modes:
-                    rewriting_folder = os.path.join("regression_tests","newground_tests")
+                    rewriting_folder = os.path.join("regression_tests","tight_non_tight_tests")
                 else:
                     rewriting_folder = folder_path
 
@@ -119,9 +119,9 @@ class RegressionTest:
     def regression_test_a_strategy_helper(cls, chosenRegressionTestMode, folder_path):
         sub_directories = []
 
-        sub_folder_pattern = re.compile("^[0-9]{2,3}_test$")
-        encoding_pattern = re.compile("^encoding_[0-9]{2,3}_test\.lp$")
-        instance_pattern = re.compile("^instance_[0-9]{2,3}_test\.lp$")
+        sub_folder_pattern = re.compile(r"^[0-9]{2,3}_test$")
+        encoding_pattern = re.compile(r"^encoding_[0-9]{2,3}_test\.lp$")
+        instance_pattern = re.compile(r"^instance_[0-9]{2,3}_test\.lp$")
 
         for f in os.scandir(folder_path):
             if f.is_dir():

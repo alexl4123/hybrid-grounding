@@ -88,15 +88,8 @@ class RewritingCountHelper:
                 for function in cur_spawner_functions:
                     spawner_functions.append(str(function))
 
-        negated_head_strings = []
         for head_string in rules_head_strings:
-            negated_head_strings.append(f"not {head_string}")
-
-        helper_rule = (
-            f"not_{rule_head_name}{count_name_ending} :- "
-            + f"{','.join(spawner_functions + negated_head_strings)}."
-        )
-
-        rules_strings.append(helper_rule)
+            rules_strings.append(f"{rule_head_name}{count_name_ending} :- "
+                                 + ','.join(spawner_functions + [head_string]) + ".")
 
         return rules_strings

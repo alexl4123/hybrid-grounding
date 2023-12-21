@@ -5,6 +5,7 @@ import clingo
 
 from ..comparison_tools import ComparisonTools
 from .count_aggregate_helper import CountAggregateHelper
+from ..misc_tools import MiscTools
 
 
 class RMCase:
@@ -40,10 +41,13 @@ class RMCase:
         for index in range(upper):
             cur_term_list = []
             for term in terms:
-                if term in variable_dependencies:
-                    cur_term_list.append(term)
+                if MiscTools.string_is_variable(str(term)) is True:
+                    if term in variable_dependencies:
+                        cur_term_list.append(term)
+                    else:
+                        cur_term_list.append(term + "_" + str(index))
                 else:
-                    cur_term_list.append(term + "_" + str(index))
+                    cur_term_list.append(term)
             all_diff_list_terms.append(cur_term_list)
 
             for condition in conditions:
@@ -110,6 +114,11 @@ class RMCase:
     def _handle_function(cls, variable_dependencies, new_body_list, index, condition):
         cur_condition = condition.atom.symbol
 
+        whole_condition = str(condition)
+        is_positive = True
+        if whole_condition.startswith("not "):
+            is_positive = False
+
         arg_list = []
 
         for argument in cur_condition.arguments:
@@ -118,6 +127,11 @@ class RMCase:
             else:
                 arg_list.append(str(argument) + "_" + str(index))
 
-        new_function = cur_condition.name + "(" + ",".join(arg_list) + ")"
+        new_function = cur_condition.name
+        if len(arg_list) > 0:
+            new_function += "(" + ",".join(arg_list) + ")"
+
+        if is_positive is False:
+            new_function = "not " + new_function
 
         new_body_list.append(new_function)
