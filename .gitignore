@@ -2,3 +2,14 @@
 
 dlv*
 __pycache__
+hybrid_grounding.egg-info/
+newground.egg-info/
+dist/
+docs/sphinx/build/
+build/
+python
+python3
+clingo
+gringo
+idlv
+idlv.bin
