@@ -1,4 +1,4 @@
-APPLICATION_NAME = newground
+APPLICATION_NAME = nagg
 
 install:
 	python -m pip install .

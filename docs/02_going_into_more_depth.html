@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Going into more Depth &mdash; nagg 1.0.0 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="How it Works" href="how_it_works.html" />
+    <link rel="prev" title="Quick-Start" href="quick_start.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="going-into-more-depth">
+<h1>Going into more Depth<a class="headerlink" href="#going-into-more-depth" title="Permalink to this heading"></a></h1>
+<section id="input-format">
+<h2>Input Format<a class="headerlink" href="#input-format" title="Permalink to this heading"></a></h2>
+<p>The accepted ASP syntax of the prototype is a subset of clingos accepted syntax.
+At the moment, the following syntax is accepted in general:</p>
+<ul class="simple">
+<li><p>Normal ASP programs, where each literal is a predicate, and the terms only consist of variables and constants,</p></li>
+<li><p>with the addition of <strong>comparison</strong> literals, when operating over an integer domain,</p></li>
+<li><p>further, (non-recursive) <strong>Aggregates</strong>, and</p></li>
+<li><p>the <strong>#program rules.</strong> rule.</p></li>
+</ul>
+<p>However it is important to note that <strong>different</strong> techniques exist, both for the normal (non-tight) ASP case, as the aggregate case.</p>
+<p>Using the theoretical results that one can ground parts of a program by traditional means and parts by Body-decoupled Grounding (resulting in nagg),
+one separates these two parts with the <strong>#program rules.</strong> rule in the nagg prototype.
+All rules which are placed <em>above</em> <strong>#program rules.</strong> are grounded by traditional means,
+and all rules placed <em>below</em> <strong>#program rules.</strong> are grounded by Body-decoupled Grounding.</p>
+<p>Note however that the combination of comparisons and non-tight ASP programs is in general <strong>not</strong> allowed, i.e., a statement like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">c</span><span class="p">(</span><span class="n">Z</span><span class="p">)</span> <span class="p">:</span><span class="o">-</span> <span class="n">a</span><span class="p">(</span><span class="n">X</span><span class="p">),</span> <span class="n">b</span><span class="p">(</span><span class="n">Y</span><span class="p">),</span> <span class="n">Z</span> <span class="o">=</span> <span class="n">X</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">Z</span> <span class="o">&lt;</span> <span class="n">Y</span><span class="o">.</span>
+</pre></div>
+</div>
+<p>is <strong>not</strong> allowed.
+Additionally, when using aggregates, equality (=) as the aggregate relation, and a variable as the aggregate bounds, the variable has to be bound.
+E.g., the following is <strong>not</strong> supported (for the RS, RS-STAR, and RS-PLUS techniques, for the other ones it is allowed):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">c</span><span class="p">(</span><span class="n">Z</span><span class="p">)</span> <span class="p">:</span><span class="o">-</span> <span class="n">Z</span> <span class="o">=</span> <span class="c1">#sum{X : p(X)}.</span>
+</pre></div>
+</div>
+<p>The above is <strong>not</strong> supported for the RS, RS-STAR and RS-PLUS techniques!</p>
+</section>
+<section id="synapsis">
+<h2>Synapsis<a class="headerlink" href="#synapsis" title="Permalink to this heading"></a></h2>
+<p>By entering enter, you are able to choose from a variety of options:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>nagg<span class="w"> </span>--help
+<span class="go">usage: nagg [files]</span>
+
+<span class="go">positional arguments:</span>
+<span class="go">  files</span>
+
+<span class="go">options:</span>
+<span class="go">  -h, --help            show this help message and exit</span>
+<span class="go">  --no-show             Do not print #show-statements to avoid compatibility issues.</span>
+<span class="go">  --mode {rewrite-aggregates-ground-partly,rewrite-aggregates-no-ground,rewrite-aggregates-ground-fully}</span>
+<span class="go">  --aggregate-strategy {RA,RS,RS-PLUS,RS-STAR,RECURSIVE}</span>
+<span class="go">  --cyclic-strategy {assume-tight,level-mappings,shared-cycle-body-predicates,level-mappings-AAAI}</span>
+</pre></div>
+</div>
+<section id="positional-arguments">
+<h3>Positional Arguments<a class="headerlink" href="#positional-arguments" title="Permalink to this heading"></a></h3>
+<p>Consists of the <strong>files</strong> (input-files) argument.
+Other (optional) arguments are listed below in subsections.</p>
+</section>
+<section id="help">
+<h3>Help<a class="headerlink" href="#help" title="Permalink to this heading"></a></h3>
+<p>Shows the synapsis of the program.</p>
+</section>
+<section id="no-show">
+<h3>No-Show<a class="headerlink" href="#no-show" title="Permalink to this heading"></a></h3>
+<p>If specified, then no <em>#show</em> statements are generated, as they are not accepted by all grounders/solvers.</p>
+</section>
+<section id="aggregate-strategy">
+<h3>Aggregate-Strategy<a class="headerlink" href="#aggregate-strategy" title="Permalink to this heading"></a></h3>
+<p>Specifies the used aggregate-rewriting strategy, s.t. nagg can be used in conjunction with aggregates.
+The possible modes are:</p>
+<ol class="arabic simple">
+<li><p>(Default) <em>RA</em>: Performs a light rewriting, meaning that the aggregates are not fully rewritten, therefore, aggregates are still present in the output program, although their elements are replaced, s.t. their elements can be grounded by nagg.</p></li>
+<li><p><em>RS</em>: The standard rewriting method that fully rewrites the aggregates. It facilitates results, which enable one to efficiently rewrite certain classes of aggregates.</p></li>
+<li><p><em>RS-PLUS</em>: In certain contexts, this method outperforms the <em>RS</em> method.</p></li>
+<li><p><em>RS-STAR</em>: A method primarily used to understand the <em>RS-PLUS</em> method, and is a hybrid between <em>RS</em> and <em>RS-PLUS</em>.</p></li>
+<li><p><em>RECURSIVE</em>: Rewrites an aggregate into a strict order of elements, and then performs an aggregate function on them.</p></li>
+</ol>
+</section>
+<section id="cyclic-strategy">
+<h3>Cyclic-Strategy<a class="headerlink" href="#cyclic-strategy" title="Permalink to this heading"></a></h3>
+<p>Specifies the used method for handling non-tight programs.
+In general all methods (with the exception of <em>assume-tight</em>) analyze the program into a set of strongly-connected-components (SCCs),
+and perform a certain method on each such SCC.
+Note that one only needs to intervene, if the SCCs intersect with the part of the program that shall be grounded via nagg.</p>
+<ol class="arabic simple">
+<li><p>(DEFAULT) <em>assume-tight</em>: Assumes a tight ASP program (does not work for non-tight ASP programs).</p></li>
+<li><p><em>shared-cycle-body-predicates</em>: Balances Body-decoupled Grounding and traditional grounding, if needed.</p></li>
+<li><p><em>level-mappings</em>: Explicitly encodes the order of derivation for an SCC. Full BDG method.</p></li>
+<li><p><em>level-mappings-AAAI</em>: Explicitly encodes the order of derivation, but uses an improved method for intersections in the traditionally-grounded part.</p></li>
+</ol>
+</section>
+<section id="mode">
+<h3>Mode<a class="headerlink" href="#mode" title="Permalink to this heading"></a></h3>
+<p>Defines the general mode of operation of the program.</p>
+<ol class="arabic simple">
+<li><p>(Default) <em>rewrite-aggregates-ground-partly</em>: Aggregates are rewritten, and the nagg reduction is performed, although the reduction uses some improvements that are only possible, when not the whole output is grounded (therefore delegating some effort to a traditional grounder).</p></li>
+<li><p><em>rewrite-aggregates-no-ground</em>: Aggregates are rewritten, but no reduction is performed, i.e., not using nagg.</p></li>
+<li><p><em>rewrite-aggregates-ground-fully</em>: Aggregates are rewritten, and additionally fully performs the reduction s.t. the output is a fully grounded program.</p></li>
+</ol>
+</section>
+</section>
+<section id="examples">
+<h2>Examples<a class="headerlink" href="#examples" title="Permalink to this heading"></a></h2>
+<p>Below we show some examples, of how to use the prototype with some output.</p>
+<section id="aggregate-no-grounding">
+<h3>Aggregate no grounding<a class="headerlink" href="#aggregate-no-grounding" title="Permalink to this heading"></a></h3>
+<p>The following examples shows the case, when one wants to get the aggregate rewriting without grounding the program by BDG.
+For demonstration purposes a program is shown with a single max aggregate, which is rewritten with the <strong>RS</strong> procedure.
+Assume for that the input program (<em>aggregate_test.lp</em>):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">p</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span>
+<span class="n">p</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span>
+<span class="n">p</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span><span class="o">.</span>
+<span class="n">p</span><span class="p">(</span><span class="mi">8</span><span class="p">)</span><span class="o">.</span>
+<span class="n">p</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span><span class="o">.</span>
+<span class="n">p</span><span class="p">(</span><span class="mi">12</span><span class="p">)</span><span class="o">.</span>
+<span class="n">p</span><span class="p">(</span><span class="mi">14</span><span class="p">)</span><span class="o">.</span>
+<span class="n">p</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span><span class="o">.</span>
+<span class="n">p</span><span class="p">(</span><span class="mi">21</span><span class="p">)</span><span class="o">.</span>
+<span class="n">p</span><span class="p">(</span><span class="mi">22</span><span class="p">)</span><span class="o">.</span>
+<span class="n">p</span><span class="p">(</span><span class="mi">23</span><span class="p">)</span><span class="o">.</span>
+
+<span class="c1">#program rules.</span>
+<span class="p">:</span><span class="o">-</span> <span class="mi">14</span> <span class="o">&lt;=</span> <span class="c1">#max{X1 : p(X1), p(X2), p(X3), p(X4), X1 &lt; X2, X1 &lt; X3, X1 &lt; X4, X2 &lt; X3, X2 &lt; X4,  X3 &lt; X4, X4 - X1 &lt; 7}.</span>
+</pre></div>
+</div>
+<p>The program is rewritten with the prototype and the <em>RS</em> strategy (but not using the reduction):</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>nagg<span class="w"> </span>aggregate_test.lp<span class="w"> </span>--mode<span class="w"> </span>rewrite-aggregates-no-ground<span class="w"> </span>--aggregate-strategy<span class="w"> </span>RS<span class="w"> </span>&gt;<span class="w"> </span>output.lp
+</pre></div>
+</div>
+<p>Then the (commented) output program (<em>output.lp</em>) is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1">#show p/1.</span>
+<span class="c1">#show q/1.</span>
+<span class="n">p</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span>
+<span class="n">p</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span>
+<span class="n">p</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span><span class="o">.</span>
+<span class="n">p</span><span class="p">(</span><span class="mi">8</span><span class="p">)</span><span class="o">.</span>
+<span class="n">p</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span><span class="o">.</span>
+<span class="n">p</span><span class="p">(</span><span class="mi">12</span><span class="p">)</span><span class="o">.</span>
+<span class="n">p</span><span class="p">(</span><span class="mi">14</span><span class="p">)</span><span class="o">.</span>
+<span class="n">p</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span><span class="o">.</span>
+<span class="n">p</span><span class="p">(</span><span class="mi">21</span><span class="p">)</span><span class="o">.</span>
+<span class="n">p</span><span class="p">(</span><span class="mi">22</span><span class="p">)</span><span class="o">.</span>
+<span class="n">p</span><span class="p">(</span><span class="mi">23</span><span class="p">)</span><span class="o">.</span>
+<span class="n">q</span><span class="p">(</span><span class="mi">15</span><span class="p">)</span><span class="o">.</span>
+<span class="o">%</span><span class="p">[</span><span class="n">COMMENT</span><span class="p">]:</span> <span class="n">Rewriting</span><span class="o">-</span><span class="n">Start</span><span class="p">:</span>
+<span class="o">%</span><span class="p">[</span><span class="n">COMMENT</span><span class="p">]:</span> <span class="n">The</span> <span class="n">following</span> <span class="n">two</span> <span class="n">lines</span> <span class="n">resemble</span> <span class="n">the</span> <span class="n">different</span> <span class="n">elements</span><span class="o">.</span>
+<span class="n">max_ag0_left</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="p">:</span><span class="o">-</span>  <span class="n">body_max_ag0_0</span><span class="p">(</span><span class="n">Y</span><span class="p">),</span> <span class="n">Y</span> <span class="o">&gt;=</span> <span class="mf">14.</span>
+<span class="n">max_ag0_left</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="p">:</span><span class="o">-</span>  <span class="n">body_max_ag0_1</span><span class="p">(</span><span class="n">X1</span><span class="p">),</span> <span class="n">X1</span> <span class="o">&gt;=</span> <span class="mf">14.</span>
+<span class="o">%</span><span class="p">[</span><span class="n">COMMENT</span><span class="p">]:</span> <span class="n">The</span> <span class="n">following</span> <span class="n">two</span> <span class="n">lines</span> <span class="n">resemble</span> <span class="n">the</span> <span class="n">individual</span> <span class="n">element</span> <span class="n">tuples</span><span class="o">.</span>
+<span class="n">body_max_ag0_1</span><span class="p">(</span><span class="n">X1</span><span class="p">)</span> <span class="p">:</span><span class="o">-</span> <span class="n">p</span><span class="p">(</span><span class="n">X1</span><span class="p">),</span><span class="n">p</span><span class="p">(</span><span class="n">X2</span><span class="p">),</span><span class="n">p</span><span class="p">(</span><span class="n">X3</span><span class="p">),</span><span class="n">p</span><span class="p">(</span><span class="n">X4</span><span class="p">),</span><span class="n">X1</span> <span class="o">&lt;</span> <span class="n">X2</span><span class="p">,</span><span class="n">X1</span> <span class="o">&lt;</span> <span class="n">X3</span><span class="p">,</span><span class="n">X1</span> <span class="o">&lt;</span> <span class="n">X4</span><span class="p">,</span><span class="n">X2</span> <span class="o">&lt;</span> <span class="n">X3</span><span class="p">,</span><span class="n">X2</span> <span class="o">&lt;</span> <span class="n">X4</span><span class="p">,</span><span class="n">X3</span> <span class="o">&lt;</span> <span class="n">X4</span><span class="p">,(</span><span class="n">X4</span><span class="o">-</span><span class="n">X1</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">7.</span>
+<span class="n">body_max_ag0_0</span><span class="p">(</span><span class="n">Y</span><span class="p">)</span> <span class="p">:</span><span class="o">-</span> <span class="n">q</span><span class="p">(</span><span class="n">Y</span><span class="p">)</span><span class="o">.</span>
+<span class="o">%</span><span class="p">[</span><span class="n">COMMENT</span><span class="p">]:</span> <span class="n">The</span> <span class="n">following</span> <span class="n">line</span> <span class="n">corresponds</span> <span class="n">to</span> <span class="n">the</span> <span class="n">original</span> <span class="n">aggregate</span><span class="o">-</span><span class="n">line</span><span class="o">.</span>
+<span class="c1">#false :- max_ag0_left(1).</span>
+</pre></div>
+</div>
+<p>When using clingo, we get the expected output:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>clingo<span class="w"> </span>output.lp
+<span class="go">clingo version 5.6.2</span>
+<span class="go">Reading from output.lp</span>
+<span class="go">Solving...</span>
+<span class="go">UNSATISFIABLE</span>
+
+<span class="go">Models       : 0</span>
+<span class="go">Calls        : 1</span>
+<span class="go">Time         : 0.000s (Solving: 0.00s 1st Model: 0.00s Unsat: 0.00s)</span>
+<span class="go">CPU Time     : 0.000s</span>
+</pre></div>
+</div>
+</section>
+<section id="normal-program-shared-cycle-body-predicates">
+<h3>Normal Program shared-cycle-body-predicates<a class="headerlink" href="#normal-program-shared-cycle-body-predicates" title="Permalink to this heading"></a></h3>
+<p>The following example shows how the <em>shared-cycle-body-predicates</em> strategy behaves for non-tight programs.</p>
+<p>For this we assume the following input program (<em>non_tight_test.lp</em>):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">d</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span>
+<span class="n">c</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span>
+<span class="n">c</span><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="n">Y</span><span class="p">)</span> <span class="p">:</span><span class="o">-</span> <span class="n">a</span><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="n">Y</span><span class="p">)</span><span class="o">.</span>
+<span class="n">c</span><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="n">X</span><span class="p">)</span> <span class="p">:</span><span class="o">-</span> <span class="n">d</span><span class="p">(</span><span class="n">X</span><span class="p">)</span><span class="o">.</span>
+
+<span class="c1">#program rules.</span>
+<span class="n">a</span><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="n">Y</span><span class="p">)</span> <span class="p">:</span><span class="o">-</span> <span class="n">c</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span><span class="n">X</span><span class="p">)</span><span class="o">.</span>
+</pre></div>
+</div>
+<p>We use the <em>shared-cycle-body-predicates</em> strategy with the partly-grounded mode to ground this program:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>nagg<span class="w"> </span>--cyclic-strategy<span class="w"> </span>shared-cycle-body-predicates<span class="w"> </span>--mode<span class="w"> </span>rewrite-aggregates-ground-partly<span class="w"> </span>non_tight_test.lp<span class="w"> </span>&gt;<span class="w"> </span>output.lp
+</pre></div>
+</div>
+<p>The contents of the (commented) <em>output.lp</em> file are the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">d</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span>
+<span class="n">c</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span>
+<span class="n">c</span><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="n">Y</span><span class="p">)</span> <span class="p">:</span><span class="o">-</span> <span class="n">a</span><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="n">Y</span><span class="p">)</span><span class="o">.</span>
+<span class="n">c</span><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="n">X</span><span class="p">)</span> <span class="p">:</span><span class="o">-</span> <span class="n">d</span><span class="p">(</span><span class="n">X</span><span class="p">)</span><span class="o">.</span>
+
+<span class="o">%</span><span class="p">[</span><span class="n">COMMENT</span><span class="p">]:</span> <span class="n">SAT</span> <span class="n">checks</span> <span class="k">for</span> <span class="n">R4</span> <span class="p">(</span><span class="n">a</span><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="n">Y</span><span class="p">)</span> <span class="p">:</span><span class="o">-</span> <span class="n">c</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span><span class="n">X</span><span class="p">))</span>
+<span class="n">r4_X</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">|</span> <span class="n">r4_X</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span>
+<span class="n">r4_X</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="p">:</span><span class="o">-</span> <span class="n">sat</span><span class="o">.</span>
+<span class="n">r4_X</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="p">:</span><span class="o">-</span> <span class="n">sat</span><span class="o">.</span>
+<span class="n">r4_Y</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">|</span> <span class="n">r4_Y</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span>
+<span class="n">r4_Y</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="p">:</span><span class="o">-</span> <span class="n">sat</span><span class="o">.</span>
+<span class="n">r4_Y</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="p">:</span><span class="o">-</span> <span class="n">sat</span><span class="o">.</span>
+<span class="n">sat_r4</span> <span class="p">:</span><span class="o">-</span> <span class="n">r4_X</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span><span class="n">r4_Y</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span><span class="n">a</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span>
+<span class="n">sat_r4</span> <span class="p">:</span><span class="o">-</span> <span class="n">r4_X</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span><span class="n">r4_Y</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span><span class="n">a</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span>
+<span class="n">sat_r4</span> <span class="p">:</span><span class="o">-</span> <span class="n">r4_X</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span><span class="n">r4_Y</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span><span class="n">a</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span>
+<span class="n">sat_r4</span> <span class="p">:</span><span class="o">-</span> <span class="n">r4_Y</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span><span class="n">r4_X</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span><span class="n">a</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span>
+<span class="n">sat_r4</span> <span class="p">:</span><span class="o">-</span> <span class="n">r4_X</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span><span class="n">r4_Y</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span><span class="ow">not</span> <span class="n">c</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span>
+<span class="n">sat_r4</span> <span class="p">:</span><span class="o">-</span> <span class="n">r4_X</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span><span class="n">r4_Y</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span><span class="ow">not</span> <span class="n">c</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span>
+<span class="n">sat_r4</span> <span class="p">:</span><span class="o">-</span> <span class="n">r4_X</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span><span class="n">r4_Y</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span><span class="ow">not</span> <span class="n">c</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span>
+<span class="n">sat_r4</span> <span class="p">:</span><span class="o">-</span> <span class="n">r4_Y</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span><span class="n">r4_X</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span><span class="ow">not</span> <span class="n">c</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span>
+
+<span class="n">domain_rule_4_variable_X</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span>
+<span class="n">domain_rule_4_variable_X</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span>
+<span class="n">domain_rule_4_variable_Y</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span>
+<span class="n">domain_rule_4_variable_Y</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span>
+
+<span class="o">%</span><span class="p">[</span><span class="n">COMMENT</span><span class="p">]:</span> <span class="n">Speciality</span> <span class="n">of</span> <span class="n">this</span> <span class="n">rewriting</span><span class="o">-</span><span class="n">strategy</span><span class="p">,</span> <span class="k">as</span> <span class="n">c</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span><span class="n">X</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">in</span> <span class="n">the</span> <span class="n">body</span><span class="o">.</span>
+<span class="o">%</span><span class="p">[</span><span class="n">COMMENT</span><span class="p">]:</span> <span class="n">The</span> <span class="n">naming</span> <span class="n">of</span> <span class="n">a4</span> <span class="p">(</span><span class="kn">from</span> <span class="nn">a</span><span class="p">)</span> <span class="ow">is</span> <span class="n">due</span> <span class="n">to</span> <span class="n">encapsulation</span> <span class="n">of</span> <span class="n">local</span> <span class="n">effects</span><span class="o">.</span>
+<span class="o">%</span><span class="p">[</span><span class="n">COMMENT</span><span class="p">]:</span> <span class="n">Guessing</span> <span class="n">the</span> <span class="n">head</span><span class="o">.</span>
+<span class="p">{</span><span class="n">a4</span><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="n">Y</span><span class="p">)</span> <span class="p">:</span> <span class="n">domain_rule_4_variable_X</span><span class="p">(</span><span class="n">X</span><span class="p">),</span><span class="n">domain_rule_4_variable_Y</span><span class="p">(</span><span class="n">Y</span><span class="p">)}</span>  <span class="p">:</span><span class="o">-</span> <span class="n">c</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span><span class="n">X</span><span class="p">)</span><span class="o">.</span>
+<span class="o">%</span><span class="p">[</span><span class="n">COMMENT</span><span class="p">]:</span> <span class="n">Whenever</span> <span class="s1">&#39;&#39;</span><span class="n">a4</span><span class="s1">&#39;&#39;</span> <span class="n">holds</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="n">a</span><span class="s1">&#39;&#39;</span> <span class="n">has</span> <span class="n">to</span> <span class="n">hold</span> <span class="k">as</span> <span class="n">well</span> <span class="p">(</span><span class="n">encapsulation</span> <span class="n">rules</span><span class="p">)</span><span class="o">.</span>
+<span class="n">a</span><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="n">Y</span><span class="p">)</span> <span class="p">:</span><span class="o">-</span> <span class="n">a4</span><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="n">Y</span><span class="p">)</span><span class="o">.</span>
+<span class="o">%</span><span class="p">[</span><span class="n">COMMENT</span><span class="p">]:</span> <span class="n">Further</span> <span class="n">encode</span> <span class="p">(</span><span class="n">un</span><span class="p">)</span><span class="n">foundedness</span>
+<span class="n">r4_unfound</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="p">:</span><span class="o">-</span> <span class="ow">not</span> <span class="n">c</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span>
+<span class="n">r4_unfound</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="p">:</span><span class="o">-</span> <span class="ow">not</span> <span class="n">c</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span>
+<span class="n">r4_unfound</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span> <span class="p">:</span><span class="o">-</span> <span class="ow">not</span> <span class="n">c</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span>
+<span class="n">r4_unfound</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span> <span class="p">:</span><span class="o">-</span> <span class="ow">not</span> <span class="n">c</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span>
+
+<span class="o">%</span><span class="p">[</span><span class="n">COMMENT</span><span class="p">]:</span> <span class="n">Global</span> <span class="n">rules</span> <span class="k">for</span> <span class="n">SAT</span> <span class="ow">and</span> <span class="p">(</span><span class="n">un</span><span class="p">)</span><span class="n">foundedness</span><span class="o">.</span>
+<span class="p">:</span><span class="o">-</span> <span class="ow">not</span> <span class="n">sat</span><span class="o">.</span>
+<span class="n">sat</span> <span class="p">:</span><span class="o">-</span> <span class="n">sat_r4</span><span class="o">.</span>
+<span class="p">:</span><span class="o">-</span> <span class="n">a4</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="c1">#sum{1,0 : r4_unfound(1,1)} &gt;=1 .</span>
+<span class="p">:</span><span class="o">-</span> <span class="n">a4</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="c1">#sum{1,0 : r4_unfound(2,1)} &gt;=1 .</span>
+<span class="p">:</span><span class="o">-</span> <span class="n">a4</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">),</span> <span class="c1">#sum{1,0 : r4_unfound(1,2)} &gt;=1 .</span>
+<span class="p">:</span><span class="o">-</span> <span class="n">a4</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">),</span> <span class="c1">#sum{1,0 : r4_unfound(2,2)} &gt;=1 .</span>
+
+<span class="o">%</span><span class="p">[</span><span class="n">COMMENT</span><span class="p">]:</span> <span class="n">Generic</span> <span class="n">domain</span> <span class="o">+</span> <span class="n">show</span> <span class="n">statements</span><span class="o">.</span>
+<span class="n">dom</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span>
+<span class="n">dom</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span>
+<span class="c1">#show d/1.</span>
+<span class="c1">#show c/2.</span>
+<span class="c1">#show a/2.</span>
+</pre></div>
+</div>
+<p>Next we compare the output of <em>output.lp</em> with the original output, which holds.
+Note the <em>–project</em> option for clingo,
+which is due to the fact that the answer-sets produced by nagg equal
+the answer sets of traditional grounding only with intersection to the original predicates.
+Finally, note that if you want to execute the <em>non_tight_test.lp</em> program, you have to <strong>remove</strong> the <em>#program rules.</em> rule!</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>clingo<span class="w"> </span>--project<span class="w"> </span>--model<span class="w"> </span><span class="m">0</span><span class="w"> </span>output.lp
+<span class="go">clingo version 5.6.2</span>
+<span class="go">Reading from output.lp</span>
+<span class="go">Solving...</span>
+<span class="go">Answer: 1</span>
+<span class="go">d(1) c(1,2) c(1,1) a(2,1) a(1,1) c(2,1) a(1,2)</span>
+<span class="go">SATISFIABLE</span>
+
+<span class="go">Models       : 1</span>
+<span class="go">Calls        : 1</span>
+<span class="go">Time         : 0.008s (Solving: 0.00s 1st Model: 0.00s Unsat: 0.00s)</span>
+<span class="go">CPU Time     : 0.001s</span>
+</pre></div>
+</div>
+</section>
+<section id="normal-program-level-mappings">
+<h3>Normal Program Level-Mappings<a class="headerlink" href="#normal-program-level-mappings" title="Permalink to this heading"></a></h3>
+<p>Next we consider the difference from the <em>shared-cycle-body-predicates</em> to the <em>level-mappings</em>, where here we use the <em>level-mappings-AAAI</em> strategy,
+on the same input program as the program above (<em>shared-cycle-body-predicates</em>).</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">d</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span>
+<span class="n">c</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span>
+<span class="n">c</span><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="n">Y</span><span class="p">)</span> <span class="p">:</span><span class="o">-</span> <span class="n">a</span><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="n">Y</span><span class="p">)</span><span class="o">.</span>
+<span class="n">c</span><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="n">X</span><span class="p">)</span> <span class="p">:</span><span class="o">-</span> <span class="n">d</span><span class="p">(</span><span class="n">X</span><span class="p">)</span><span class="o">.</span>
+
+<span class="c1">#program rules.</span>
+<span class="n">a</span><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="n">Y</span><span class="p">)</span> <span class="p">:</span><span class="o">-</span> <span class="n">c</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span><span class="n">X</span><span class="p">)</span><span class="o">.</span>
+</pre></div>
+</div>
+<p>We use the <em>level-mappings-AAAI</em> strategy with the fully-grounded mode to ground this program:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>nagg<span class="w"> </span>--cyclic-strategy<span class="w"> </span>level-mappings-AAAI<span class="w"> </span>--mode<span class="w"> </span>rewrite-aggregates-ground-fully<span class="w"> </span>non_tight_test.lp<span class="w"> </span>&gt;<span class="w"> </span>output.lp
+</pre></div>
+</div>
+<p>The contents of the (commented) <em>output.lp</em> file are the following:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">d(1).</span>
+<span class="go">c(1,2).</span>
+<span class="gp">%</span><span class="o">[</span>COMMENT<span class="o">]</span>:<span class="w"> </span>Speciality<span class="w"> </span>of<span class="w"> </span>this<span class="w"> </span>method
+<span class="gp">%</span><span class="o">[</span>COMMENT<span class="o">]</span>:<span class="w"> </span>Note<span class="w"> </span>that<span class="w"> </span>this<span class="w"> </span>block<span class="w"> </span>is<span class="w"> </span>from<span class="w"> </span>above<span class="w"> </span>the<span class="w"> </span><span class="c1">#program rules. block and therefore grounded by traditional means,</span>
+<span class="gp">%</span><span class="o">[</span>COMMENT<span class="o">]</span>:<span class="w"> </span>but<span class="w"> </span><span class="k">for</span><span class="w"> </span>this<span class="w"> </span>method<span class="w"> </span>it<span class="w"> </span>is<span class="w"> </span>required<span class="w"> </span>to<span class="w"> </span>rewrite<span class="w"> </span>rules<span class="w"> </span><span class="k">in</span><span class="w"> </span>SCCs.
+<span class="go">c(X,Y) :- a(X,Y),prec(a(X,Y),c(X,Y)).</span>
+<span class="go">:- a(X,Y), not c(X,Y).</span>
+<span class="go">c(X,X) :- d(X).</span>
+
+<span class="gp">%</span><span class="o">[</span>COMMENT<span class="o">]</span>:<span class="w"> </span>Start<span class="w"> </span>of<span class="w"> </span><span class="c1">#program rules.</span>
+<span class="go">r4_X(2) | r4_X(1).</span>
+<span class="go">r4_X(2) :- sat.</span>
+<span class="go">r4_X(1) :- sat.</span>
+<span class="go">r4_Y(1) | r4_Y(2).</span>
+<span class="go">r4_Y(1) :- sat.</span>
+<span class="go">r4_Y(2) :- sat.</span>
+
+<span class="gp">%</span><span class="o">[</span>COMMENT<span class="o">]</span>:<span class="w"> </span>SAT<span class="w"> </span>checks.
+<span class="go">sat_r4 :- r4_Y(1),r4_X(2),a(2,1).</span>
+<span class="go">sat_r4 :- r4_Y(2),r4_X(2),a(2,2).</span>
+<span class="go">sat_r4 :- r4_X(1),r4_Y(1),a(1,1).</span>
+<span class="go">sat_r4 :- r4_Y(2),r4_X(1),a(1,2).</span>
+<span class="go">sat_r4 :- r4_Y(1),r4_X(2),not c(1,2).</span>
+<span class="go">sat_r4 :- r4_X(1),r4_Y(1),not c(1,1).</span>
+<span class="go">sat_r4 :- r4_Y(2),r4_X(2),not c(2,2).</span>
+<span class="go">sat_r4 :- r4_Y(2),r4_X(1),not c(2,1).</span>
+<span class="gp">%</span><span class="o">[</span>COMMENT<span class="o">]</span>:<span class="w"> </span>Encapsulation<span class="w"> </span>rules.
+<span class="go">a(2,1) :- a4(2,1).</span>
+<span class="go">a(2,2) :- a4(2,2).</span>
+<span class="go">a(1,1) :- a4(1,1).</span>
+<span class="go">a(1,2) :- a4(1,2).</span>
+
+<span class="gp">%</span><span class="o">[</span>COMMENT<span class="o">]</span>:<span class="w"> </span>Guessing<span class="w"> </span>the<span class="w"> </span>head.
+<span class="go">{a4(2,1);a4(2,2);a4(1,1);a4(1,2)}.</span>
+
+<span class="gp">%</span><span class="o">[</span>COMMENT<span class="o">]</span>:<span class="w"> </span><span class="o">(</span>un<span class="o">)</span>foudnedness<span class="w"> </span>checks.
+<span class="go">r4_unfound(2,1) :- not c(1,2).</span>
+<span class="go">r4_unfound(2,1) :- not prec(c(1,2),a4(2,1)).</span>
+<span class="go">r4_4_unfound(1,2) :- not prec(a4(2,1),a(2,1)).</span>
+<span class="go">r4_unfound(1,1) :- not c(1,1).</span>
+<span class="go">r4_unfound(1,1) :- not prec(c(1,1),a4(1,1)).</span>
+<span class="go">r4_4_unfound(1,1) :- not prec(a4(1,1),a(1,1)).</span>
+<span class="go">r4_unfound(2,2) :- not c(2,2).</span>
+<span class="go">r4_unfound(2,2) :- not prec(c(2,2),a4(2,2)).</span>
+<span class="go">r4_4_unfound(2,2) :- not prec(a4(2,2),a(2,2)).</span>
+<span class="go">r4_unfound(1,2) :- not c(2,1).</span>
+<span class="go">r4_unfound(1,2) :- not prec(c(2,1),a4(1,2)).</span>
+<span class="go">r4_4_unfound(2,1) :- not prec(a4(1,2),a(1,2)).</span>
+
+<span class="gp">%</span><span class="o">[</span>COMMENT<span class="o">]</span>:<span class="w"> </span>Guessing<span class="w"> </span>derivation<span class="w"> </span>orders.
+<span class="go">1 &lt;= {prec(a(2,1),a4(1,1));prec(a4(1,1),a(2,1))} &lt;= 1.</span>
+<span class="go">1 &lt;= {prec(a(2,1),a4(1,2));prec(a4(1,2),a(2,1))} &lt;= 1.</span>
+<span class="go">1 &lt;= {prec(a(2,1),a4(2,1));prec(a4(2,1),a(2,1))} &lt;= 1.</span>
+<span class="go">1 &lt;= {prec(a(2,1),a4(2,2));prec(a4(2,2),a(2,1))} &lt;= 1.</span>
+<span class="go">1 &lt;= {prec(a(2,2),a4(1,1));prec(a4(1,1),a(2,2))} &lt;= 1.</span>
+<span class="go">1 &lt;= {prec(a(2,2),a4(1,2));prec(a4(1,2),a(2,2))} &lt;= 1.</span>
+<span class="go">1 &lt;= {prec(a(2,2),a4(2,1));prec(a4(2,1),a(2,2))} &lt;= 1.</span>
+<span class="go">1 &lt;= {prec(a(2,2),a4(2,2));prec(a4(2,2),a(2,2))} &lt;= 1.</span>
+<span class="go">1 &lt;= {prec(a(1,1),a4(1,1));prec(a4(1,1),a(1,1))} &lt;= 1.</span>
+<span class="go">1 &lt;= {prec(a(1,1),a4(1,2));prec(a4(1,2),a(1,1))} &lt;= 1.</span>
+<span class="go">1 &lt;= {prec(a(1,1),a4(2,1));prec(a4(2,1),a(1,1))} &lt;= 1.</span>
+<span class="go">1 &lt;= {prec(a(1,1),a4(2,2));prec(a4(2,2),a(1,1))} &lt;= 1.</span>
+<span class="go">1 &lt;= {prec(a(1,2),a4(1,1));prec(a4(1,1),a(1,2))} &lt;= 1.</span>
+<span class="go">1 &lt;= {prec(a(1,2),a4(1,2));prec(a4(1,2),a(1,2))} &lt;= 1.</span>
+<span class="go">1 &lt;= {prec(a(1,2),a4(2,1));prec(a4(2,1),a(1,2))} &lt;= 1.</span>
+<span class="go">1 &lt;= {prec(a(1,2),a4(2,2));prec(a4(2,2),a(1,2))} &lt;= 1.</span>
+<span class="go">1 &lt;= {prec(a(2,1),c(1,2));prec(c(1,2),a(2,1))} &lt;= 1.</span>
+<span class="go">1 &lt;= {prec(a(2,1),c(1,1));prec(c(1,1),a(2,1))} &lt;= 1.</span>
+<span class="go">1 &lt;= {prec(a(2,1),c(2,2));prec(c(2,2),a(2,1))} &lt;= 1.</span>
+<span class="go">1 &lt;= {prec(a(2,1),c(2,1));prec(c(2,1),a(2,1))} &lt;= 1.</span>
+<span class="go">1 &lt;= {prec(a(2,2),c(1,2));prec(c(1,2),a(2,2))} &lt;= 1.</span>
+<span class="go">1 &lt;= {prec(a(2,2),c(1,1));prec(c(1,1),a(2,2))} &lt;= 1.</span>
+<span class="go">1 &lt;= {prec(a(2,2),c(2,2));prec(c(2,2),a(2,2))} &lt;= 1.</span>
+<span class="go">1 &lt;= {prec(a(2,2),c(2,1));prec(c(2,1),a(2,2))} &lt;= 1.</span>
+<span class="go">1 &lt;= {prec(a(1,1),c(1,2));prec(c(1,2),a(1,1))} &lt;= 1.</span>
+<span class="go">1 &lt;= {prec(a(1,1),c(1,1));prec(c(1,1),a(1,1))} &lt;= 1.</span>
+<span class="go">1 &lt;= {prec(a(1,1),c(2,2));prec(c(2,2),a(1,1))} &lt;= 1.</span>
+<span class="go">1 &lt;= {prec(a(1,1),c(2,1));prec(c(2,1),a(1,1))} &lt;= 1.</span>
+<span class="go">1 &lt;= {prec(a(1,2),c(1,2));prec(c(1,2),a(1,2))} &lt;= 1.</span>
+<span class="go">1 &lt;= {prec(a(1,2),c(1,1));prec(c(1,1),a(1,2))} &lt;= 1.</span>
+<span class="go">1 &lt;= {prec(a(1,2),c(2,2));prec(c(2,2),a(1,2))} &lt;= 1.</span>
+<span class="go">1 &lt;= {prec(a(1,2),c(2,1));prec(c(2,1),a(1,2))} &lt;= 1.</span>
+<span class="go">1 &lt;= {prec(a4(1,1),c(1,2));prec(c(1,2),a4(1,1))} &lt;= 1.</span>
+<span class="go">1 &lt;= {prec(a4(1,1),c(1,1));prec(c(1,1),a4(1,1))} &lt;= 1.</span>
+<span class="go">1 &lt;= {prec(a4(1,1),c(2,2));prec(c(2,2),a4(1,1))} &lt;= 1.</span>
+<span class="go">1 &lt;= {prec(a4(1,1),c(2,1));prec(c(2,1),a4(1,1))} &lt;= 1.</span>
+<span class="go">1 &lt;= {prec(a4(1,2),c(1,2));prec(c(1,2),a4(1,2))} &lt;= 1.</span>
+<span class="go">1 &lt;= {prec(a4(1,2),c(1,1));prec(c(1,1),a4(1,2))} &lt;= 1.</span>
+<span class="go">1 &lt;= {prec(a4(1,2),c(2,2));prec(c(2,2),a4(1,2))} &lt;= 1.</span>
+<span class="go">1 &lt;= {prec(a4(1,2),c(2,1));prec(c(2,1),a4(1,2))} &lt;= 1.</span>
+<span class="go">1 &lt;= {prec(a4(2,1),c(1,2));prec(c(1,2),a4(2,1))} &lt;= 1.</span>
+<span class="go">1 &lt;= {prec(a4(2,1),c(1,1));prec(c(1,1),a4(2,1))} &lt;= 1.</span>
+<span class="go">1 &lt;= {prec(a4(2,1),c(2,2));prec(c(2,2),a4(2,1))} &lt;= 1.</span>
+<span class="go">1 &lt;= {prec(a4(2,1),c(2,1));prec(c(2,1),a4(2,1))} &lt;= 1.</span>
+<span class="go">1 &lt;= {prec(a4(2,2),c(1,2));prec(c(1,2),a4(2,2))} &lt;= 1.</span>
+<span class="go">1 &lt;= {prec(a4(2,2),c(1,1));prec(c(1,1),a4(2,2))} &lt;= 1.</span>
+<span class="go">1 &lt;= {prec(a4(2,2),c(2,2));prec(c(2,2),a4(2,2))} &lt;= 1.</span>
+<span class="go">1 &lt;= {prec(a4(2,2),c(2,1));prec(c(2,1),a4(2,2))} &lt;= 1.</span>
+
+<span class="gp">%</span><span class="o">[</span>COMMENT<span class="o">]</span>:<span class="w"> </span>Ensuring<span class="w"> </span>transitivity<span class="w"> </span>of<span class="w"> </span>derivation<span class="w"> </span>orders.
+<span class="go">:- prec(a(2,1),a4(1,1)), prec(a4(1,1),c(1,2)), prec(c(1,2),a(2,1)).</span>
+<span class="go">:- prec(a(2,1),a4(1,1)), prec(a4(1,1),c(1,1)), prec(c(1,1),a(2,1)).</span>
+<span class="go">:- prec(a(2,1),a4(1,1)), prec(a4(1,1),c(2,2)), prec(c(2,2),a(2,1)).</span>
+<span class="go">:- prec(a(2,1),a4(1,1)), prec(a4(1,1),c(2,1)), prec(c(2,1),a(2,1)).</span>
+<span class="go">:- prec(a(2,1),a4(1,2)), prec(a4(1,2),c(1,2)), prec(c(1,2),a(2,1)).</span>
+<span class="go">:- prec(a(2,1),a4(1,2)), prec(a4(1,2),c(1,1)), prec(c(1,1),a(2,1)).</span>
+<span class="go">:- prec(a(2,1),a4(1,2)), prec(a4(1,2),c(2,2)), prec(c(2,2),a(2,1)).</span>
+<span class="go">:- prec(a(2,1),a4(1,2)), prec(a4(1,2),c(2,1)), prec(c(2,1),a(2,1)).</span>
+<span class="go">:- prec(a(2,1),a4(2,1)), prec(a4(2,1),c(1,2)), prec(c(1,2),a(2,1)).</span>
+<span class="go">:- prec(a(2,1),a4(2,1)), prec(a4(2,1),c(1,1)), prec(c(1,1),a(2,1)).</span>
+<span class="go">:- prec(a(2,1),a4(2,1)), prec(a4(2,1),c(2,2)), prec(c(2,2),a(2,1)).</span>
+<span class="go">:- prec(a(2,1),a4(2,1)), prec(a4(2,1),c(2,1)), prec(c(2,1),a(2,1)).</span>
+<span class="go">:- prec(a(2,1),a4(2,2)), prec(a4(2,2),c(1,2)), prec(c(1,2),a(2,1)).</span>
+<span class="go">:- prec(a(2,1),a4(2,2)), prec(a4(2,2),c(1,1)), prec(c(1,1),a(2,1)).</span>
+<span class="go">:- prec(a(2,1),a4(2,2)), prec(a4(2,2),c(2,2)), prec(c(2,2),a(2,1)).</span>
+<span class="go">:- prec(a(2,1),a4(2,2)), prec(a4(2,2),c(2,1)), prec(c(2,1),a(2,1)).</span>
+<span class="go">:- prec(a(2,2),a4(1,1)), prec(a4(1,1),c(1,2)), prec(c(1,2),a(2,2)).</span>
+<span class="go">:- prec(a(2,2),a4(1,1)), prec(a4(1,1),c(1,1)), prec(c(1,1),a(2,2)).</span>
+<span class="go">:- prec(a(2,2),a4(1,1)), prec(a4(1,1),c(2,2)), prec(c(2,2),a(2,2)).</span>
+<span class="go">:- prec(a(2,2),a4(1,1)), prec(a4(1,1),c(2,1)), prec(c(2,1),a(2,2)).</span>
+<span class="go">:- prec(a(2,2),a4(1,2)), prec(a4(1,2),c(1,2)), prec(c(1,2),a(2,2)).</span>
+<span class="go">:- prec(a(2,2),a4(1,2)), prec(a4(1,2),c(1,1)), prec(c(1,1),a(2,2)).</span>
+<span class="go">:- prec(a(2,2),a4(1,2)), prec(a4(1,2),c(2,2)), prec(c(2,2),a(2,2)).</span>
+<span class="go">:- prec(a(2,2),a4(1,2)), prec(a4(1,2),c(2,1)), prec(c(2,1),a(2,2)).</span>
+<span class="go">:- prec(a(2,2),a4(2,1)), prec(a4(2,1),c(1,2)), prec(c(1,2),a(2,2)).</span>
+<span class="go">:- prec(a(2,2),a4(2,1)), prec(a4(2,1),c(1,1)), prec(c(1,1),a(2,2)).</span>
+<span class="go">:- prec(a(2,2),a4(2,1)), prec(a4(2,1),c(2,2)), prec(c(2,2),a(2,2)).</span>
+<span class="go">:- prec(a(2,2),a4(2,1)), prec(a4(2,1),c(2,1)), prec(c(2,1),a(2,2)).</span>
+<span class="go">:- prec(a(2,2),a4(2,2)), prec(a4(2,2),c(1,2)), prec(c(1,2),a(2,2)).</span>
+<span class="go">:- prec(a(2,2),a4(2,2)), prec(a4(2,2),c(1,1)), prec(c(1,1),a(2,2)).</span>
+<span class="go">:- prec(a(2,2),a4(2,2)), prec(a4(2,2),c(2,2)), prec(c(2,2),a(2,2)).</span>
+<span class="go">:- prec(a(2,2),a4(2,2)), prec(a4(2,2),c(2,1)), prec(c(2,1),a(2,2)).</span>
+<span class="go">:- prec(a(1,1),a4(1,1)), prec(a4(1,1),c(1,2)), prec(c(1,2),a(1,1)).</span>
+<span class="go">:- prec(a(1,1),a4(1,1)), prec(a4(1,1),c(1,1)), prec(c(1,1),a(1,1)).</span>
+<span class="go">:- prec(a(1,1),a4(1,1)), prec(a4(1,1),c(2,2)), prec(c(2,2),a(1,1)).</span>
+<span class="go">:- prec(a(1,1),a4(1,1)), prec(a4(1,1),c(2,1)), prec(c(2,1),a(1,1)).</span>
+<span class="go">:- prec(a(1,1),a4(1,2)), prec(a4(1,2),c(1,2)), prec(c(1,2),a(1,1)).</span>
+<span class="go">:- prec(a(1,1),a4(1,2)), prec(a4(1,2),c(1,1)), prec(c(1,1),a(1,1)).</span>
+<span class="go">:- prec(a(1,1),a4(1,2)), prec(a4(1,2),c(2,2)), prec(c(2,2),a(1,1)).</span>
+<span class="go">:- prec(a(1,1),a4(1,2)), prec(a4(1,2),c(2,1)), prec(c(2,1),a(1,1)).</span>
+<span class="go">:- prec(a(1,1),a4(2,1)), prec(a4(2,1),c(1,2)), prec(c(1,2),a(1,1)).</span>
+<span class="go">:- prec(a(1,1),a4(2,1)), prec(a4(2,1),c(1,1)), prec(c(1,1),a(1,1)).</span>
+<span class="go">:- prec(a(1,1),a4(2,1)), prec(a4(2,1),c(2,2)), prec(c(2,2),a(1,1)).</span>
+<span class="go">:- prec(a(1,1),a4(2,1)), prec(a4(2,1),c(2,1)), prec(c(2,1),a(1,1)).</span>
+<span class="go">:- prec(a(1,1),a4(2,2)), prec(a4(2,2),c(1,2)), prec(c(1,2),a(1,1)).</span>
+<span class="go">:- prec(a(1,1),a4(2,2)), prec(a4(2,2),c(1,1)), prec(c(1,1),a(1,1)).</span>
+<span class="go">:- prec(a(1,1),a4(2,2)), prec(a4(2,2),c(2,2)), prec(c(2,2),a(1,1)).</span>
+<span class="go">:- prec(a(1,1),a4(2,2)), prec(a4(2,2),c(2,1)), prec(c(2,1),a(1,1)).</span>
+<span class="go">:- prec(a(1,2),a4(1,1)), prec(a4(1,1),c(1,2)), prec(c(1,2),a(1,2)).</span>
+<span class="go">:- prec(a(1,2),a4(1,1)), prec(a4(1,1),c(1,1)), prec(c(1,1),a(1,2)).</span>
+<span class="go">:- prec(a(1,2),a4(1,1)), prec(a4(1,1),c(2,2)), prec(c(2,2),a(1,2)).</span>
+<span class="go">:- prec(a(1,2),a4(1,1)), prec(a4(1,1),c(2,1)), prec(c(2,1),a(1,2)).</span>
+<span class="go">:- prec(a(1,2),a4(1,2)), prec(a4(1,2),c(1,2)), prec(c(1,2),a(1,2)).</span>
+<span class="go">:- prec(a(1,2),a4(1,2)), prec(a4(1,2),c(1,1)), prec(c(1,1),a(1,2)).</span>
+<span class="go">:- prec(a(1,2),a4(1,2)), prec(a4(1,2),c(2,2)), prec(c(2,2),a(1,2)).</span>
+<span class="go">:- prec(a(1,2),a4(1,2)), prec(a4(1,2),c(2,1)), prec(c(2,1),a(1,2)).</span>
+<span class="go">:- prec(a(1,2),a4(2,1)), prec(a4(2,1),c(1,2)), prec(c(1,2),a(1,2)).</span>
+<span class="go">:- prec(a(1,2),a4(2,1)), prec(a4(2,1),c(1,1)), prec(c(1,1),a(1,2)).</span>
+<span class="go">:- prec(a(1,2),a4(2,1)), prec(a4(2,1),c(2,2)), prec(c(2,2),a(1,2)).</span>
+<span class="go">:- prec(a(1,2),a4(2,1)), prec(a4(2,1),c(2,1)), prec(c(2,1),a(1,2)).</span>
+<span class="go">:- prec(a(1,2),a4(2,2)), prec(a4(2,2),c(1,2)), prec(c(1,2),a(1,2)).</span>
+<span class="go">:- prec(a(1,2),a4(2,2)), prec(a4(2,2),c(1,1)), prec(c(1,1),a(1,2)).</span>
+<span class="go">:- prec(a(1,2),a4(2,2)), prec(a4(2,2),c(2,2)), prec(c(2,2),a(1,2)).</span>
+<span class="go">:- prec(a(1,2),a4(2,2)), prec(a4(2,2),c(2,1)), prec(c(2,1),a(1,2)).</span>
+<span class="go">:- prec(a(2,1),c(1,2)), prec(c(1,2),a4(1,1)), prec(a4(1,1),a(2,1)).</span>
+<span class="go">:- prec(a(2,1),c(1,2)), prec(c(1,2),a4(1,2)), prec(a4(1,2),a(2,1)).</span>
+<span class="go">:- prec(a(2,1),c(1,2)), prec(c(1,2),a4(2,1)), prec(a4(2,1),a(2,1)).</span>
+<span class="go">:- prec(a(2,1),c(1,2)), prec(c(1,2),a4(2,2)), prec(a4(2,2),a(2,1)).</span>
+<span class="go">:- prec(a(2,1),c(1,1)), prec(c(1,1),a4(1,1)), prec(a4(1,1),a(2,1)).</span>
+<span class="go">:- prec(a(2,1),c(1,1)), prec(c(1,1),a4(1,2)), prec(a4(1,2),a(2,1)).</span>
+<span class="go">:- prec(a(2,1),c(1,1)), prec(c(1,1),a4(2,1)), prec(a4(2,1),a(2,1)).</span>
+<span class="go">:- prec(a(2,1),c(1,1)), prec(c(1,1),a4(2,2)), prec(a4(2,2),a(2,1)).</span>
+<span class="go">:- prec(a(2,1),c(2,2)), prec(c(2,2),a4(1,1)), prec(a4(1,1),a(2,1)).</span>
+<span class="go">:- prec(a(2,1),c(2,2)), prec(c(2,2),a4(1,2)), prec(a4(1,2),a(2,1)).</span>
+<span class="go">:- prec(a(2,1),c(2,2)), prec(c(2,2),a4(2,1)), prec(a4(2,1),a(2,1)).</span>
+<span class="go">:- prec(a(2,1),c(2,2)), prec(c(2,2),a4(2,2)), prec(a4(2,2),a(2,1)).</span>
+<span class="go">:- prec(a(2,1),c(2,1)), prec(c(2,1),a4(1,1)), prec(a4(1,1),a(2,1)).</span>
+<span class="go">:- prec(a(2,1),c(2,1)), prec(c(2,1),a4(1,2)), prec(a4(1,2),a(2,1)).</span>
+<span class="go">:- prec(a(2,1),c(2,1)), prec(c(2,1),a4(2,1)), prec(a4(2,1),a(2,1)).</span>
+<span class="go">:- prec(a(2,1),c(2,1)), prec(c(2,1),a4(2,2)), prec(a4(2,2),a(2,1)).</span>
+<span class="go">:- prec(a(2,2),c(1,2)), prec(c(1,2),a4(1,1)), prec(a4(1,1),a(2,2)).</span>
+<span class="go">:- prec(a(2,2),c(1,2)), prec(c(1,2),a4(1,2)), prec(a4(1,2),a(2,2)).</span>
+<span class="go">:- prec(a(2,2),c(1,2)), prec(c(1,2),a4(2,1)), prec(a4(2,1),a(2,2)).</span>
+<span class="go">:- prec(a(2,2),c(1,2)), prec(c(1,2),a4(2,2)), prec(a4(2,2),a(2,2)).</span>
+<span class="go">:- prec(a(2,2),c(1,1)), prec(c(1,1),a4(1,1)), prec(a4(1,1),a(2,2)).</span>
+<span class="go">:- prec(a(2,2),c(1,1)), prec(c(1,1),a4(1,2)), prec(a4(1,2),a(2,2)).</span>
+<span class="go">:- prec(a(2,2),c(1,1)), prec(c(1,1),a4(2,1)), prec(a4(2,1),a(2,2)).</span>
+<span class="go">:- prec(a(2,2),c(1,1)), prec(c(1,1),a4(2,2)), prec(a4(2,2),a(2,2)).</span>
+<span class="go">:- prec(a(2,2),c(2,2)), prec(c(2,2),a4(1,1)), prec(a4(1,1),a(2,2)).</span>
+<span class="go">:- prec(a(2,2),c(2,2)), prec(c(2,2),a4(1,2)), prec(a4(1,2),a(2,2)).</span>
+<span class="go">:- prec(a(2,2),c(2,2)), prec(c(2,2),a4(2,1)), prec(a4(2,1),a(2,2)).</span>
+<span class="go">:- prec(a(2,2),c(2,2)), prec(c(2,2),a4(2,2)), prec(a4(2,2),a(2,2)).</span>
+<span class="go">:- prec(a(2,2),c(2,1)), prec(c(2,1),a4(1,1)), prec(a4(1,1),a(2,2)).</span>
+<span class="go">:- prec(a(2,2),c(2,1)), prec(c(2,1),a4(1,2)), prec(a4(1,2),a(2,2)).</span>
+<span class="go">:- prec(a(2,2),c(2,1)), prec(c(2,1),a4(2,1)), prec(a4(2,1),a(2,2)).</span>
+<span class="go">:- prec(a(2,2),c(2,1)), prec(c(2,1),a4(2,2)), prec(a4(2,2),a(2,2)).</span>
+<span class="go">:- prec(a(1,1),c(1,2)), prec(c(1,2),a4(1,1)), prec(a4(1,1),a(1,1)).</span>
+<span class="go">:- prec(a(1,1),c(1,2)), prec(c(1,2),a4(1,2)), prec(a4(1,2),a(1,1)).</span>
+<span class="go">:- prec(a(1,1),c(1,2)), prec(c(1,2),a4(2,1)), prec(a4(2,1),a(1,1)).</span>
+<span class="go">:- prec(a(1,1),c(1,2)), prec(c(1,2),a4(2,2)), prec(a4(2,2),a(1,1)).</span>
+<span class="go">:- prec(a(1,1),c(1,1)), prec(c(1,1),a4(1,1)), prec(a4(1,1),a(1,1)).</span>
+<span class="go">:- prec(a(1,1),c(1,1)), prec(c(1,1),a4(1,2)), prec(a4(1,2),a(1,1)).</span>
+<span class="go">:- prec(a(1,1),c(1,1)), prec(c(1,1),a4(2,1)), prec(a4(2,1),a(1,1)).</span>
+<span class="go">:- prec(a(1,1),c(1,1)), prec(c(1,1),a4(2,2)), prec(a4(2,2),a(1,1)).</span>
+<span class="go">:- prec(a(1,1),c(2,2)), prec(c(2,2),a4(1,1)), prec(a4(1,1),a(1,1)).</span>
+<span class="go">:- prec(a(1,1),c(2,2)), prec(c(2,2),a4(1,2)), prec(a4(1,2),a(1,1)).</span>
+<span class="go">:- prec(a(1,1),c(2,2)), prec(c(2,2),a4(2,1)), prec(a4(2,1),a(1,1)).</span>
+<span class="go">:- prec(a(1,1),c(2,2)), prec(c(2,2),a4(2,2)), prec(a4(2,2),a(1,1)).</span>
+<span class="go">:- prec(a(1,1),c(2,1)), prec(c(2,1),a4(1,1)), prec(a4(1,1),a(1,1)).</span>
+<span class="go">:- prec(a(1,1),c(2,1)), prec(c(2,1),a4(1,2)), prec(a4(1,2),a(1,1)).</span>
+<span class="go">:- prec(a(1,1),c(2,1)), prec(c(2,1),a4(2,1)), prec(a4(2,1),a(1,1)).</span>
+<span class="go">:- prec(a(1,1),c(2,1)), prec(c(2,1),a4(2,2)), prec(a4(2,2),a(1,1)).</span>
+<span class="go">:- prec(a(1,2),c(1,2)), prec(c(1,2),a4(1,1)), prec(a4(1,1),a(1,2)).</span>
+<span class="go">:- prec(a(1,2),c(1,2)), prec(c(1,2),a4(1,2)), prec(a4(1,2),a(1,2)).</span>
+<span class="go">:- prec(a(1,2),c(1,2)), prec(c(1,2),a4(2,1)), prec(a4(2,1),a(1,2)).</span>
+<span class="go">:- prec(a(1,2),c(1,2)), prec(c(1,2),a4(2,2)), prec(a4(2,2),a(1,2)).</span>
+<span class="go">:- prec(a(1,2),c(1,1)), prec(c(1,1),a4(1,1)), prec(a4(1,1),a(1,2)).</span>
+<span class="go">:- prec(a(1,2),c(1,1)), prec(c(1,1),a4(1,2)), prec(a4(1,2),a(1,2)).</span>
+<span class="go">:- prec(a(1,2),c(1,1)), prec(c(1,1),a4(2,1)), prec(a4(2,1),a(1,2)).</span>
+<span class="go">:- prec(a(1,2),c(1,1)), prec(c(1,1),a4(2,2)), prec(a4(2,2),a(1,2)).</span>
+<span class="go">:- prec(a(1,2),c(2,2)), prec(c(2,2),a4(1,1)), prec(a4(1,1),a(1,2)).</span>
+<span class="go">:- prec(a(1,2),c(2,2)), prec(c(2,2),a4(1,2)), prec(a4(1,2),a(1,2)).</span>
+<span class="go">:- prec(a(1,2),c(2,2)), prec(c(2,2),a4(2,1)), prec(a4(2,1),a(1,2)).</span>
+<span class="go">:- prec(a(1,2),c(2,2)), prec(c(2,2),a4(2,2)), prec(a4(2,2),a(1,2)).</span>
+<span class="go">:- prec(a(1,2),c(2,1)), prec(c(2,1),a4(1,1)), prec(a4(1,1),a(1,2)).</span>
+<span class="go">:- prec(a(1,2),c(2,1)), prec(c(2,1),a4(1,2)), prec(a4(1,2),a(1,2)).</span>
+<span class="go">:- prec(a(1,2),c(2,1)), prec(c(2,1),a4(2,1)), prec(a4(2,1),a(1,2)).</span>
+<span class="go">:- prec(a(1,2),c(2,1)), prec(c(2,1),a4(2,2)), prec(a4(2,2),a(1,2)).</span>
+<span class="go">:- prec(a4(1,1),a(2,1)), prec(a(2,1),c(1,2)), prec(c(1,2),a4(1,1)).</span>
+<span class="go">:- prec(a4(1,1),a(2,1)), prec(a(2,1),c(1,1)), prec(c(1,1),a4(1,1)).</span>
+<span class="go">:- prec(a4(1,1),a(2,1)), prec(a(2,1),c(2,2)), prec(c(2,2),a4(1,1)).</span>
+<span class="go">:- prec(a4(1,1),a(2,1)), prec(a(2,1),c(2,1)), prec(c(2,1),a4(1,1)).</span>
+<span class="go">:- prec(a4(1,1),a(2,2)), prec(a(2,2),c(1,2)), prec(c(1,2),a4(1,1)).</span>
+<span class="go">:- prec(a4(1,1),a(2,2)), prec(a(2,2),c(1,1)), prec(c(1,1),a4(1,1)).</span>
+<span class="go">:- prec(a4(1,1),a(2,2)), prec(a(2,2),c(2,2)), prec(c(2,2),a4(1,1)).</span>
+<span class="go">:- prec(a4(1,1),a(2,2)), prec(a(2,2),c(2,1)), prec(c(2,1),a4(1,1)).</span>
+<span class="go">:- prec(a4(1,1),a(1,1)), prec(a(1,1),c(1,2)), prec(c(1,2),a4(1,1)).</span>
+<span class="go">:- prec(a4(1,1),a(1,1)), prec(a(1,1),c(1,1)), prec(c(1,1),a4(1,1)).</span>
+<span class="go">:- prec(a4(1,1),a(1,1)), prec(a(1,1),c(2,2)), prec(c(2,2),a4(1,1)).</span>
+<span class="go">:- prec(a4(1,1),a(1,1)), prec(a(1,1),c(2,1)), prec(c(2,1),a4(1,1)).</span>
+<span class="go">:- prec(a4(1,1),a(1,2)), prec(a(1,2),c(1,2)), prec(c(1,2),a4(1,1)).</span>
+<span class="go">:- prec(a4(1,1),a(1,2)), prec(a(1,2),c(1,1)), prec(c(1,1),a4(1,1)).</span>
+<span class="go">:- prec(a4(1,1),a(1,2)), prec(a(1,2),c(2,2)), prec(c(2,2),a4(1,1)).</span>
+<span class="go">:- prec(a4(1,1),a(1,2)), prec(a(1,2),c(2,1)), prec(c(2,1),a4(1,1)).</span>
+<span class="go">:- prec(a4(1,2),a(2,1)), prec(a(2,1),c(1,2)), prec(c(1,2),a4(1,2)).</span>
+<span class="go">:- prec(a4(1,2),a(2,1)), prec(a(2,1),c(1,1)), prec(c(1,1),a4(1,2)).</span>
+<span class="go">:- prec(a4(1,2),a(2,1)), prec(a(2,1),c(2,2)), prec(c(2,2),a4(1,2)).</span>
+<span class="go">:- prec(a4(1,2),a(2,1)), prec(a(2,1),c(2,1)), prec(c(2,1),a4(1,2)).</span>
+<span class="go">:- prec(a4(1,2),a(2,2)), prec(a(2,2),c(1,2)), prec(c(1,2),a4(1,2)).</span>
+<span class="go">:- prec(a4(1,2),a(2,2)), prec(a(2,2),c(1,1)), prec(c(1,1),a4(1,2)).</span>
+<span class="go">:- prec(a4(1,2),a(2,2)), prec(a(2,2),c(2,2)), prec(c(2,2),a4(1,2)).</span>
+<span class="go">:- prec(a4(1,2),a(2,2)), prec(a(2,2),c(2,1)), prec(c(2,1),a4(1,2)).</span>
+<span class="go">:- prec(a4(1,2),a(1,1)), prec(a(1,1),c(1,2)), prec(c(1,2),a4(1,2)).</span>
+<span class="go">:- prec(a4(1,2),a(1,1)), prec(a(1,1),c(1,1)), prec(c(1,1),a4(1,2)).</span>
+<span class="go">:- prec(a4(1,2),a(1,1)), prec(a(1,1),c(2,2)), prec(c(2,2),a4(1,2)).</span>
+<span class="go">:- prec(a4(1,2),a(1,1)), prec(a(1,1),c(2,1)), prec(c(2,1),a4(1,2)).</span>
+<span class="go">:- prec(a4(1,2),a(1,2)), prec(a(1,2),c(1,2)), prec(c(1,2),a4(1,2)).</span>
+<span class="go">:- prec(a4(1,2),a(1,2)), prec(a(1,2),c(1,1)), prec(c(1,1),a4(1,2)).</span>
+<span class="go">:- prec(a4(1,2),a(1,2)), prec(a(1,2),c(2,2)), prec(c(2,2),a4(1,2)).</span>
+<span class="go">:- prec(a4(1,2),a(1,2)), prec(a(1,2),c(2,1)), prec(c(2,1),a4(1,2)).</span>
+<span class="go">:- prec(a4(2,1),a(2,1)), prec(a(2,1),c(1,2)), prec(c(1,2),a4(2,1)).</span>
+<span class="go">:- prec(a4(2,1),a(2,1)), prec(a(2,1),c(1,1)), prec(c(1,1),a4(2,1)).</span>
+<span class="go">:- prec(a4(2,1),a(2,1)), prec(a(2,1),c(2,2)), prec(c(2,2),a4(2,1)).</span>
+<span class="go">:- prec(a4(2,1),a(2,1)), prec(a(2,1),c(2,1)), prec(c(2,1),a4(2,1)).</span>
+<span class="go">:- prec(a4(2,1),a(2,2)), prec(a(2,2),c(1,2)), prec(c(1,2),a4(2,1)).</span>
+<span class="go">:- prec(a4(2,1),a(2,2)), prec(a(2,2),c(1,1)), prec(c(1,1),a4(2,1)).</span>
+<span class="go">:- prec(a4(2,1),a(2,2)), prec(a(2,2),c(2,2)), prec(c(2,2),a4(2,1)).</span>
+<span class="go">:- prec(a4(2,1),a(2,2)), prec(a(2,2),c(2,1)), prec(c(2,1),a4(2,1)).</span>
+<span class="go">:- prec(a4(2,1),a(1,1)), prec(a(1,1),c(1,2)), prec(c(1,2),a4(2,1)).</span>
+<span class="go">:- prec(a4(2,1),a(1,1)), prec(a(1,1),c(1,1)), prec(c(1,1),a4(2,1)).</span>
+<span class="go">:- prec(a4(2,1),a(1,1)), prec(a(1,1),c(2,2)), prec(c(2,2),a4(2,1)).</span>
+<span class="go">:- prec(a4(2,1),a(1,1)), prec(a(1,1),c(2,1)), prec(c(2,1),a4(2,1)).</span>
+<span class="go">:- prec(a4(2,1),a(1,2)), prec(a(1,2),c(1,2)), prec(c(1,2),a4(2,1)).</span>
+<span class="go">:- prec(a4(2,1),a(1,2)), prec(a(1,2),c(1,1)), prec(c(1,1),a4(2,1)).</span>
+<span class="go">:- prec(a4(2,1),a(1,2)), prec(a(1,2),c(2,2)), prec(c(2,2),a4(2,1)).</span>
+<span class="go">:- prec(a4(2,1),a(1,2)), prec(a(1,2),c(2,1)), prec(c(2,1),a4(2,1)).</span>
+<span class="go">:- prec(a4(2,2),a(2,1)), prec(a(2,1),c(1,2)), prec(c(1,2),a4(2,2)).</span>
+<span class="go">:- prec(a4(2,2),a(2,1)), prec(a(2,1),c(1,1)), prec(c(1,1),a4(2,2)).</span>
+<span class="go">:- prec(a4(2,2),a(2,1)), prec(a(2,1),c(2,2)), prec(c(2,2),a4(2,2)).</span>
+<span class="go">:- prec(a4(2,2),a(2,1)), prec(a(2,1),c(2,1)), prec(c(2,1),a4(2,2)).</span>
+<span class="go">:- prec(a4(2,2),a(2,2)), prec(a(2,2),c(1,2)), prec(c(1,2),a4(2,2)).</span>
+<span class="go">:- prec(a4(2,2),a(2,2)), prec(a(2,2),c(1,1)), prec(c(1,1),a4(2,2)).</span>
+<span class="go">:- prec(a4(2,2),a(2,2)), prec(a(2,2),c(2,2)), prec(c(2,2),a4(2,2)).</span>
+<span class="go">:- prec(a4(2,2),a(2,2)), prec(a(2,2),c(2,1)), prec(c(2,1),a4(2,2)).</span>
+<span class="go">:- prec(a4(2,2),a(1,1)), prec(a(1,1),c(1,2)), prec(c(1,2),a4(2,2)).</span>
+<span class="go">:- prec(a4(2,2),a(1,1)), prec(a(1,1),c(1,1)), prec(c(1,1),a4(2,2)).</span>
+<span class="go">:- prec(a4(2,2),a(1,1)), prec(a(1,1),c(2,2)), prec(c(2,2),a4(2,2)).</span>
+<span class="go">:- prec(a4(2,2),a(1,1)), prec(a(1,1),c(2,1)), prec(c(2,1),a4(2,2)).</span>
+<span class="go">:- prec(a4(2,2),a(1,2)), prec(a(1,2),c(1,2)), prec(c(1,2),a4(2,2)).</span>
+<span class="go">:- prec(a4(2,2),a(1,2)), prec(a(1,2),c(1,1)), prec(c(1,1),a4(2,2)).</span>
+<span class="go">:- prec(a4(2,2),a(1,2)), prec(a(1,2),c(2,2)), prec(c(2,2),a4(2,2)).</span>
+<span class="go">:- prec(a4(2,2),a(1,2)), prec(a(1,2),c(2,1)), prec(c(2,1),a4(2,2)).</span>
+<span class="go">:- prec(a4(1,1),c(1,2)), prec(c(1,2),a(2,1)), prec(a(2,1),a4(1,1)).</span>
+<span class="go">:- prec(a4(1,1),c(1,2)), prec(c(1,2),a(2,2)), prec(a(2,2),a4(1,1)).</span>
+<span class="go">:- prec(a4(1,1),c(1,2)), prec(c(1,2),a(1,1)), prec(a(1,1),a4(1,1)).</span>
+<span class="go">:- prec(a4(1,1),c(1,2)), prec(c(1,2),a(1,2)), prec(a(1,2),a4(1,1)).</span>
+<span class="go">:- prec(a4(1,1),c(1,1)), prec(c(1,1),a(2,1)), prec(a(2,1),a4(1,1)).</span>
+<span class="go">:- prec(a4(1,1),c(1,1)), prec(c(1,1),a(2,2)), prec(a(2,2),a4(1,1)).</span>
+<span class="go">:- prec(a4(1,1),c(1,1)), prec(c(1,1),a(1,1)), prec(a(1,1),a4(1,1)).</span>
+<span class="go">:- prec(a4(1,1),c(1,1)), prec(c(1,1),a(1,2)), prec(a(1,2),a4(1,1)).</span>
+<span class="go">:- prec(a4(1,1),c(2,2)), prec(c(2,2),a(2,1)), prec(a(2,1),a4(1,1)).</span>
+<span class="go">:- prec(a4(1,1),c(2,2)), prec(c(2,2),a(2,2)), prec(a(2,2),a4(1,1)).</span>
+<span class="go">:- prec(a4(1,1),c(2,2)), prec(c(2,2),a(1,1)), prec(a(1,1),a4(1,1)).</span>
+<span class="go">:- prec(a4(1,1),c(2,2)), prec(c(2,2),a(1,2)), prec(a(1,2),a4(1,1)).</span>
+<span class="go">:- prec(a4(1,1),c(2,1)), prec(c(2,1),a(2,1)), prec(a(2,1),a4(1,1)).</span>
+<span class="go">:- prec(a4(1,1),c(2,1)), prec(c(2,1),a(2,2)), prec(a(2,2),a4(1,1)).</span>
+<span class="go">:- prec(a4(1,1),c(2,1)), prec(c(2,1),a(1,1)), prec(a(1,1),a4(1,1)).</span>
+<span class="go">:- prec(a4(1,1),c(2,1)), prec(c(2,1),a(1,2)), prec(a(1,2),a4(1,1)).</span>
+<span class="go">:- prec(a4(1,2),c(1,2)), prec(c(1,2),a(2,1)), prec(a(2,1),a4(1,2)).</span>
+<span class="go">:- prec(a4(1,2),c(1,2)), prec(c(1,2),a(2,2)), prec(a(2,2),a4(1,2)).</span>
+<span class="go">:- prec(a4(1,2),c(1,2)), prec(c(1,2),a(1,1)), prec(a(1,1),a4(1,2)).</span>
+<span class="go">:- prec(a4(1,2),c(1,2)), prec(c(1,2),a(1,2)), prec(a(1,2),a4(1,2)).</span>
+<span class="go">:- prec(a4(1,2),c(1,1)), prec(c(1,1),a(2,1)), prec(a(2,1),a4(1,2)).</span>
+<span class="go">:- prec(a4(1,2),c(1,1)), prec(c(1,1),a(2,2)), prec(a(2,2),a4(1,2)).</span>
+<span class="go">:- prec(a4(1,2),c(1,1)), prec(c(1,1),a(1,1)), prec(a(1,1),a4(1,2)).</span>
+<span class="go">:- prec(a4(1,2),c(1,1)), prec(c(1,1),a(1,2)), prec(a(1,2),a4(1,2)).</span>
+<span class="go">:- prec(a4(1,2),c(2,2)), prec(c(2,2),a(2,1)), prec(a(2,1),a4(1,2)).</span>
+<span class="go">:- prec(a4(1,2),c(2,2)), prec(c(2,2),a(2,2)), prec(a(2,2),a4(1,2)).</span>
+<span class="go">:- prec(a4(1,2),c(2,2)), prec(c(2,2),a(1,1)), prec(a(1,1),a4(1,2)).</span>
+<span class="go">:- prec(a4(1,2),c(2,2)), prec(c(2,2),a(1,2)), prec(a(1,2),a4(1,2)).</span>
+<span class="go">:- prec(a4(1,2),c(2,1)), prec(c(2,1),a(2,1)), prec(a(2,1),a4(1,2)).</span>
+<span class="go">:- prec(a4(1,2),c(2,1)), prec(c(2,1),a(2,2)), prec(a(2,2),a4(1,2)).</span>
+<span class="go">:- prec(a4(1,2),c(2,1)), prec(c(2,1),a(1,1)), prec(a(1,1),a4(1,2)).</span>
+<span class="go">:- prec(a4(1,2),c(2,1)), prec(c(2,1),a(1,2)), prec(a(1,2),a4(1,2)).</span>
+<span class="go">:- prec(a4(2,1),c(1,2)), prec(c(1,2),a(2,1)), prec(a(2,1),a4(2,1)).</span>
+<span class="go">:- prec(a4(2,1),c(1,2)), prec(c(1,2),a(2,2)), prec(a(2,2),a4(2,1)).</span>
+<span class="go">:- prec(a4(2,1),c(1,2)), prec(c(1,2),a(1,1)), prec(a(1,1),a4(2,1)).</span>
+<span class="go">:- prec(a4(2,1),c(1,2)), prec(c(1,2),a(1,2)), prec(a(1,2),a4(2,1)).</span>
+<span class="go">:- prec(a4(2,1),c(1,1)), prec(c(1,1),a(2,1)), prec(a(2,1),a4(2,1)).</span>
+<span class="go">:- prec(a4(2,1),c(1,1)), prec(c(1,1),a(2,2)), prec(a(2,2),a4(2,1)).</span>
+<span class="go">:- prec(a4(2,1),c(1,1)), prec(c(1,1),a(1,1)), prec(a(1,1),a4(2,1)).</span>
+<span class="go">:- prec(a4(2,1),c(1,1)), prec(c(1,1),a(1,2)), prec(a(1,2),a4(2,1)).</span>
+<span class="go">:- prec(a4(2,1),c(2,2)), prec(c(2,2),a(2,1)), prec(a(2,1),a4(2,1)).</span>
+<span class="go">:- prec(a4(2,1),c(2,2)), prec(c(2,2),a(2,2)), prec(a(2,2),a4(2,1)).</span>
+<span class="go">:- prec(a4(2,1),c(2,2)), prec(c(2,2),a(1,1)), prec(a(1,1),a4(2,1)).</span>
+<span class="go">:- prec(a4(2,1),c(2,2)), prec(c(2,2),a(1,2)), prec(a(1,2),a4(2,1)).</span>
+<span class="go">:- prec(a4(2,1),c(2,1)), prec(c(2,1),a(2,1)), prec(a(2,1),a4(2,1)).</span>
+<span class="go">:- prec(a4(2,1),c(2,1)), prec(c(2,1),a(2,2)), prec(a(2,2),a4(2,1)).</span>
+<span class="go">:- prec(a4(2,1),c(2,1)), prec(c(2,1),a(1,1)), prec(a(1,1),a4(2,1)).</span>
+<span class="go">:- prec(a4(2,1),c(2,1)), prec(c(2,1),a(1,2)), prec(a(1,2),a4(2,1)).</span>
+<span class="go">:- prec(a4(2,2),c(1,2)), prec(c(1,2),a(2,1)), prec(a(2,1),a4(2,2)).</span>
+<span class="go">:- prec(a4(2,2),c(1,2)), prec(c(1,2),a(2,2)), prec(a(2,2),a4(2,2)).</span>
+<span class="go">:- prec(a4(2,2),c(1,2)), prec(c(1,2),a(1,1)), prec(a(1,1),a4(2,2)).</span>
+<span class="go">:- prec(a4(2,2),c(1,2)), prec(c(1,2),a(1,2)), prec(a(1,2),a4(2,2)).</span>
+<span class="go">:- prec(a4(2,2),c(1,1)), prec(c(1,1),a(2,1)), prec(a(2,1),a4(2,2)).</span>
+<span class="go">:- prec(a4(2,2),c(1,1)), prec(c(1,1),a(2,2)), prec(a(2,2),a4(2,2)).</span>
+<span class="go">:- prec(a4(2,2),c(1,1)), prec(c(1,1),a(1,1)), prec(a(1,1),a4(2,2)).</span>
+<span class="go">:- prec(a4(2,2),c(1,1)), prec(c(1,1),a(1,2)), prec(a(1,2),a4(2,2)).</span>
+<span class="go">:- prec(a4(2,2),c(2,2)), prec(c(2,2),a(2,1)), prec(a(2,1),a4(2,2)).</span>
+<span class="go">:- prec(a4(2,2),c(2,2)), prec(c(2,2),a(2,2)), prec(a(2,2),a4(2,2)).</span>
+<span class="go">:- prec(a4(2,2),c(2,2)), prec(c(2,2),a(1,1)), prec(a(1,1),a4(2,2)).</span>
+<span class="go">:- prec(a4(2,2),c(2,2)), prec(c(2,2),a(1,2)), prec(a(1,2),a4(2,2)).</span>
+<span class="go">:- prec(a4(2,2),c(2,1)), prec(c(2,1),a(2,1)), prec(a(2,1),a4(2,2)).</span>
+<span class="go">:- prec(a4(2,2),c(2,1)), prec(c(2,1),a(2,2)), prec(a(2,2),a4(2,2)).</span>
+<span class="go">:- prec(a4(2,2),c(2,1)), prec(c(2,1),a(1,1)), prec(a(1,1),a4(2,2)).</span>
+<span class="go">:- prec(a4(2,2),c(2,1)), prec(c(2,1),a(1,2)), prec(a(1,2),a4(2,2)).</span>
+<span class="go">:- prec(c(1,2),a(2,1)), prec(a(2,1),a4(1,1)), prec(a4(1,1),c(1,2)).</span>
+<span class="go">:- prec(c(1,2),a(2,1)), prec(a(2,1),a4(1,2)), prec(a4(1,2),c(1,2)).</span>
+<span class="go">:- prec(c(1,2),a(2,1)), prec(a(2,1),a4(2,1)), prec(a4(2,1),c(1,2)).</span>
+<span class="go">:- prec(c(1,2),a(2,1)), prec(a(2,1),a4(2,2)), prec(a4(2,2),c(1,2)).</span>
+<span class="go">:- prec(c(1,2),a(2,2)), prec(a(2,2),a4(1,1)), prec(a4(1,1),c(1,2)).</span>
+<span class="go">:- prec(c(1,2),a(2,2)), prec(a(2,2),a4(1,2)), prec(a4(1,2),c(1,2)).</span>
+<span class="go">:- prec(c(1,2),a(2,2)), prec(a(2,2),a4(2,1)), prec(a4(2,1),c(1,2)).</span>
+<span class="go">:- prec(c(1,2),a(2,2)), prec(a(2,2),a4(2,2)), prec(a4(2,2),c(1,2)).</span>
+<span class="go">:- prec(c(1,2),a(1,1)), prec(a(1,1),a4(1,1)), prec(a4(1,1),c(1,2)).</span>
+<span class="go">:- prec(c(1,2),a(1,1)), prec(a(1,1),a4(1,2)), prec(a4(1,2),c(1,2)).</span>
+<span class="go">:- prec(c(1,2),a(1,1)), prec(a(1,1),a4(2,1)), prec(a4(2,1),c(1,2)).</span>
+<span class="go">:- prec(c(1,2),a(1,1)), prec(a(1,1),a4(2,2)), prec(a4(2,2),c(1,2)).</span>
+<span class="go">:- prec(c(1,2),a(1,2)), prec(a(1,2),a4(1,1)), prec(a4(1,1),c(1,2)).</span>
+<span class="go">:- prec(c(1,2),a(1,2)), prec(a(1,2),a4(1,2)), prec(a4(1,2),c(1,2)).</span>
+<span class="go">:- prec(c(1,2),a(1,2)), prec(a(1,2),a4(2,1)), prec(a4(2,1),c(1,2)).</span>
+<span class="go">:- prec(c(1,2),a(1,2)), prec(a(1,2),a4(2,2)), prec(a4(2,2),c(1,2)).</span>
+<span class="go">:- prec(c(1,1),a(2,1)), prec(a(2,1),a4(1,1)), prec(a4(1,1),c(1,1)).</span>
+<span class="go">:- prec(c(1,1),a(2,1)), prec(a(2,1),a4(1,2)), prec(a4(1,2),c(1,1)).</span>
+<span class="go">:- prec(c(1,1),a(2,1)), prec(a(2,1),a4(2,1)), prec(a4(2,1),c(1,1)).</span>
+<span class="go">:- prec(c(1,1),a(2,1)), prec(a(2,1),a4(2,2)), prec(a4(2,2),c(1,1)).</span>
+<span class="go">:- prec(c(1,1),a(2,2)), prec(a(2,2),a4(1,1)), prec(a4(1,1),c(1,1)).</span>
+<span class="go">:- prec(c(1,1),a(2,2)), prec(a(2,2),a4(1,2)), prec(a4(1,2),c(1,1)).</span>
+<span class="go">:- prec(c(1,1),a(2,2)), prec(a(2,2),a4(2,1)), prec(a4(2,1),c(1,1)).</span>
+<span class="go">:- prec(c(1,1),a(2,2)), prec(a(2,2),a4(2,2)), prec(a4(2,2),c(1,1)).</span>
+<span class="go">:- prec(c(1,1),a(1,1)), prec(a(1,1),a4(1,1)), prec(a4(1,1),c(1,1)).</span>
+<span class="go">:- prec(c(1,1),a(1,1)), prec(a(1,1),a4(1,2)), prec(a4(1,2),c(1,1)).</span>
+<span class="go">:- prec(c(1,1),a(1,1)), prec(a(1,1),a4(2,1)), prec(a4(2,1),c(1,1)).</span>
+<span class="go">:- prec(c(1,1),a(1,1)), prec(a(1,1),a4(2,2)), prec(a4(2,2),c(1,1)).</span>
+<span class="go">:- prec(c(1,1),a(1,2)), prec(a(1,2),a4(1,1)), prec(a4(1,1),c(1,1)).</span>
+<span class="go">:- prec(c(1,1),a(1,2)), prec(a(1,2),a4(1,2)), prec(a4(1,2),c(1,1)).</span>
+<span class="go">:- prec(c(1,1),a(1,2)), prec(a(1,2),a4(2,1)), prec(a4(2,1),c(1,1)).</span>
+<span class="go">:- prec(c(1,1),a(1,2)), prec(a(1,2),a4(2,2)), prec(a4(2,2),c(1,1)).</span>
+<span class="go">:- prec(c(2,2),a(2,1)), prec(a(2,1),a4(1,1)), prec(a4(1,1),c(2,2)).</span>
+<span class="go">:- prec(c(2,2),a(2,1)), prec(a(2,1),a4(1,2)), prec(a4(1,2),c(2,2)).</span>
+<span class="go">:- prec(c(2,2),a(2,1)), prec(a(2,1),a4(2,1)), prec(a4(2,1),c(2,2)).</span>
+<span class="go">:- prec(c(2,2),a(2,1)), prec(a(2,1),a4(2,2)), prec(a4(2,2),c(2,2)).</span>
+<span class="go">:- prec(c(2,2),a(2,2)), prec(a(2,2),a4(1,1)), prec(a4(1,1),c(2,2)).</span>
+<span class="go">:- prec(c(2,2),a(2,2)), prec(a(2,2),a4(1,2)), prec(a4(1,2),c(2,2)).</span>
+<span class="go">:- prec(c(2,2),a(2,2)), prec(a(2,2),a4(2,1)), prec(a4(2,1),c(2,2)).</span>
+<span class="go">:- prec(c(2,2),a(2,2)), prec(a(2,2),a4(2,2)), prec(a4(2,2),c(2,2)).</span>
+<span class="go">:- prec(c(2,2),a(1,1)), prec(a(1,1),a4(1,1)), prec(a4(1,1),c(2,2)).</span>
+<span class="go">:- prec(c(2,2),a(1,1)), prec(a(1,1),a4(1,2)), prec(a4(1,2),c(2,2)).</span>
+<span class="go">:- prec(c(2,2),a(1,1)), prec(a(1,1),a4(2,1)), prec(a4(2,1),c(2,2)).</span>
+<span class="go">:- prec(c(2,2),a(1,1)), prec(a(1,1),a4(2,2)), prec(a4(2,2),c(2,2)).</span>
+<span class="go">:- prec(c(2,2),a(1,2)), prec(a(1,2),a4(1,1)), prec(a4(1,1),c(2,2)).</span>
+<span class="go">:- prec(c(2,2),a(1,2)), prec(a(1,2),a4(1,2)), prec(a4(1,2),c(2,2)).</span>
+<span class="go">:- prec(c(2,2),a(1,2)), prec(a(1,2),a4(2,1)), prec(a4(2,1),c(2,2)).</span>
+<span class="go">:- prec(c(2,2),a(1,2)), prec(a(1,2),a4(2,2)), prec(a4(2,2),c(2,2)).</span>
+<span class="go">:- prec(c(2,1),a(2,1)), prec(a(2,1),a4(1,1)), prec(a4(1,1),c(2,1)).</span>
+<span class="go">:- prec(c(2,1),a(2,1)), prec(a(2,1),a4(1,2)), prec(a4(1,2),c(2,1)).</span>
+<span class="go">:- prec(c(2,1),a(2,1)), prec(a(2,1),a4(2,1)), prec(a4(2,1),c(2,1)).</span>
+<span class="go">:- prec(c(2,1),a(2,1)), prec(a(2,1),a4(2,2)), prec(a4(2,2),c(2,1)).</span>
+<span class="go">:- prec(c(2,1),a(2,2)), prec(a(2,2),a4(1,1)), prec(a4(1,1),c(2,1)).</span>
+<span class="go">:- prec(c(2,1),a(2,2)), prec(a(2,2),a4(1,2)), prec(a4(1,2),c(2,1)).</span>
+<span class="go">:- prec(c(2,1),a(2,2)), prec(a(2,2),a4(2,1)), prec(a4(2,1),c(2,1)).</span>
+<span class="go">:- prec(c(2,1),a(2,2)), prec(a(2,2),a4(2,2)), prec(a4(2,2),c(2,1)).</span>
+<span class="go">:- prec(c(2,1),a(1,1)), prec(a(1,1),a4(1,1)), prec(a4(1,1),c(2,1)).</span>
+<span class="go">:- prec(c(2,1),a(1,1)), prec(a(1,1),a4(1,2)), prec(a4(1,2),c(2,1)).</span>
+<span class="go">:- prec(c(2,1),a(1,1)), prec(a(1,1),a4(2,1)), prec(a4(2,1),c(2,1)).</span>
+<span class="go">:- prec(c(2,1),a(1,1)), prec(a(1,1),a4(2,2)), prec(a4(2,2),c(2,1)).</span>
+<span class="go">:- prec(c(2,1),a(1,2)), prec(a(1,2),a4(1,1)), prec(a4(1,1),c(2,1)).</span>
+<span class="go">:- prec(c(2,1),a(1,2)), prec(a(1,2),a4(1,2)), prec(a4(1,2),c(2,1)).</span>
+<span class="go">:- prec(c(2,1),a(1,2)), prec(a(1,2),a4(2,1)), prec(a4(2,1),c(2,1)).</span>
+<span class="go">:- prec(c(2,1),a(1,2)), prec(a(1,2),a4(2,2)), prec(a4(2,2),c(2,1)).</span>
+<span class="go">:- prec(c(1,2),a4(1,1)), prec(a4(1,1),a(2,1)), prec(a(2,1),c(1,2)).</span>
+<span class="go">:- prec(c(1,2),a4(1,1)), prec(a4(1,1),a(2,2)), prec(a(2,2),c(1,2)).</span>
+<span class="go">:- prec(c(1,2),a4(1,1)), prec(a4(1,1),a(1,1)), prec(a(1,1),c(1,2)).</span>
+<span class="go">:- prec(c(1,2),a4(1,1)), prec(a4(1,1),a(1,2)), prec(a(1,2),c(1,2)).</span>
+<span class="go">:- prec(c(1,2),a4(1,2)), prec(a4(1,2),a(2,1)), prec(a(2,1),c(1,2)).</span>
+<span class="go">:- prec(c(1,2),a4(1,2)), prec(a4(1,2),a(2,2)), prec(a(2,2),c(1,2)).</span>
+<span class="go">:- prec(c(1,2),a4(1,2)), prec(a4(1,2),a(1,1)), prec(a(1,1),c(1,2)).</span>
+<span class="go">:- prec(c(1,2),a4(1,2)), prec(a4(1,2),a(1,2)), prec(a(1,2),c(1,2)).</span>
+<span class="go">:- prec(c(1,2),a4(2,1)), prec(a4(2,1),a(2,1)), prec(a(2,1),c(1,2)).</span>
+<span class="go">:- prec(c(1,2),a4(2,1)), prec(a4(2,1),a(2,2)), prec(a(2,2),c(1,2)).</span>
+<span class="go">:- prec(c(1,2),a4(2,1)), prec(a4(2,1),a(1,1)), prec(a(1,1),c(1,2)).</span>
+<span class="go">:- prec(c(1,2),a4(2,1)), prec(a4(2,1),a(1,2)), prec(a(1,2),c(1,2)).</span>
+<span class="go">:- prec(c(1,2),a4(2,2)), prec(a4(2,2),a(2,1)), prec(a(2,1),c(1,2)).</span>
+<span class="go">:- prec(c(1,2),a4(2,2)), prec(a4(2,2),a(2,2)), prec(a(2,2),c(1,2)).</span>
+<span class="go">:- prec(c(1,2),a4(2,2)), prec(a4(2,2),a(1,1)), prec(a(1,1),c(1,2)).</span>
+<span class="go">:- prec(c(1,2),a4(2,2)), prec(a4(2,2),a(1,2)), prec(a(1,2),c(1,2)).</span>
+<span class="go">:- prec(c(1,1),a4(1,1)), prec(a4(1,1),a(2,1)), prec(a(2,1),c(1,1)).</span>
+<span class="go">:- prec(c(1,1),a4(1,1)), prec(a4(1,1),a(2,2)), prec(a(2,2),c(1,1)).</span>
+<span class="go">:- prec(c(1,1),a4(1,1)), prec(a4(1,1),a(1,1)), prec(a(1,1),c(1,1)).</span>
+<span class="go">:- prec(c(1,1),a4(1,1)), prec(a4(1,1),a(1,2)), prec(a(1,2),c(1,1)).</span>
+<span class="go">:- prec(c(1,1),a4(1,2)), prec(a4(1,2),a(2,1)), prec(a(2,1),c(1,1)).</span>
+<span class="go">:- prec(c(1,1),a4(1,2)), prec(a4(1,2),a(2,2)), prec(a(2,2),c(1,1)).</span>
+<span class="go">:- prec(c(1,1),a4(1,2)), prec(a4(1,2),a(1,1)), prec(a(1,1),c(1,1)).</span>
+<span class="go">:- prec(c(1,1),a4(1,2)), prec(a4(1,2),a(1,2)), prec(a(1,2),c(1,1)).</span>
+<span class="go">:- prec(c(1,1),a4(2,1)), prec(a4(2,1),a(2,1)), prec(a(2,1),c(1,1)).</span>
+<span class="go">:- prec(c(1,1),a4(2,1)), prec(a4(2,1),a(2,2)), prec(a(2,2),c(1,1)).</span>
+<span class="go">:- prec(c(1,1),a4(2,1)), prec(a4(2,1),a(1,1)), prec(a(1,1),c(1,1)).</span>
+<span class="go">:- prec(c(1,1),a4(2,1)), prec(a4(2,1),a(1,2)), prec(a(1,2),c(1,1)).</span>
+<span class="go">:- prec(c(1,1),a4(2,2)), prec(a4(2,2),a(2,1)), prec(a(2,1),c(1,1)).</span>
+<span class="go">:- prec(c(1,1),a4(2,2)), prec(a4(2,2),a(2,2)), prec(a(2,2),c(1,1)).</span>
+<span class="go">:- prec(c(1,1),a4(2,2)), prec(a4(2,2),a(1,1)), prec(a(1,1),c(1,1)).</span>
+<span class="go">:- prec(c(1,1),a4(2,2)), prec(a4(2,2),a(1,2)), prec(a(1,2),c(1,1)).</span>
+<span class="go">:- prec(c(2,2),a4(1,1)), prec(a4(1,1),a(2,1)), prec(a(2,1),c(2,2)).</span>
+<span class="go">:- prec(c(2,2),a4(1,1)), prec(a4(1,1),a(2,2)), prec(a(2,2),c(2,2)).</span>
+<span class="go">:- prec(c(2,2),a4(1,1)), prec(a4(1,1),a(1,1)), prec(a(1,1),c(2,2)).</span>
+<span class="go">:- prec(c(2,2),a4(1,1)), prec(a4(1,1),a(1,2)), prec(a(1,2),c(2,2)).</span>
+<span class="go">:- prec(c(2,2),a4(1,2)), prec(a4(1,2),a(2,1)), prec(a(2,1),c(2,2)).</span>
+<span class="go">:- prec(c(2,2),a4(1,2)), prec(a4(1,2),a(2,2)), prec(a(2,2),c(2,2)).</span>
+<span class="go">:- prec(c(2,2),a4(1,2)), prec(a4(1,2),a(1,1)), prec(a(1,1),c(2,2)).</span>
+<span class="go">:- prec(c(2,2),a4(1,2)), prec(a4(1,2),a(1,2)), prec(a(1,2),c(2,2)).</span>
+<span class="go">:- prec(c(2,2),a4(2,1)), prec(a4(2,1),a(2,1)), prec(a(2,1),c(2,2)).</span>
+<span class="go">:- prec(c(2,2),a4(2,1)), prec(a4(2,1),a(2,2)), prec(a(2,2),c(2,2)).</span>
+<span class="go">:- prec(c(2,2),a4(2,1)), prec(a4(2,1),a(1,1)), prec(a(1,1),c(2,2)).</span>
+<span class="go">:- prec(c(2,2),a4(2,1)), prec(a4(2,1),a(1,2)), prec(a(1,2),c(2,2)).</span>
+<span class="go">:- prec(c(2,2),a4(2,2)), prec(a4(2,2),a(2,1)), prec(a(2,1),c(2,2)).</span>
+<span class="go">:- prec(c(2,2),a4(2,2)), prec(a4(2,2),a(2,2)), prec(a(2,2),c(2,2)).</span>
+<span class="go">:- prec(c(2,2),a4(2,2)), prec(a4(2,2),a(1,1)), prec(a(1,1),c(2,2)).</span>
+<span class="go">:- prec(c(2,2),a4(2,2)), prec(a4(2,2),a(1,2)), prec(a(1,2),c(2,2)).</span>
+<span class="go">:- prec(c(2,1),a4(1,1)), prec(a4(1,1),a(2,1)), prec(a(2,1),c(2,1)).</span>
+<span class="go">:- prec(c(2,1),a4(1,1)), prec(a4(1,1),a(2,2)), prec(a(2,2),c(2,1)).</span>
+<span class="go">:- prec(c(2,1),a4(1,1)), prec(a4(1,1),a(1,1)), prec(a(1,1),c(2,1)).</span>
+<span class="go">:- prec(c(2,1),a4(1,1)), prec(a4(1,1),a(1,2)), prec(a(1,2),c(2,1)).</span>
+<span class="go">:- prec(c(2,1),a4(1,2)), prec(a4(1,2),a(2,1)), prec(a(2,1),c(2,1)).</span>
+<span class="go">:- prec(c(2,1),a4(1,2)), prec(a4(1,2),a(2,2)), prec(a(2,2),c(2,1)).</span>
+<span class="go">:- prec(c(2,1),a4(1,2)), prec(a4(1,2),a(1,1)), prec(a(1,1),c(2,1)).</span>
+<span class="go">:- prec(c(2,1),a4(1,2)), prec(a4(1,2),a(1,2)), prec(a(1,2),c(2,1)).</span>
+<span class="go">:- prec(c(2,1),a4(2,1)), prec(a4(2,1),a(2,1)), prec(a(2,1),c(2,1)).</span>
+<span class="go">:- prec(c(2,1),a4(2,1)), prec(a4(2,1),a(2,2)), prec(a(2,2),c(2,1)).</span>
+<span class="go">:- prec(c(2,1),a4(2,1)), prec(a4(2,1),a(1,1)), prec(a(1,1),c(2,1)).</span>
+<span class="go">:- prec(c(2,1),a4(2,1)), prec(a4(2,1),a(1,2)), prec(a(1,2),c(2,1)).</span>
+<span class="go">:- prec(c(2,1),a4(2,2)), prec(a4(2,2),a(2,1)), prec(a(2,1),c(2,1)).</span>
+<span class="go">:- prec(c(2,1),a4(2,2)), prec(a4(2,2),a(2,2)), prec(a(2,2),c(2,1)).</span>
+<span class="go">:- prec(c(2,1),a4(2,2)), prec(a4(2,2),a(1,1)), prec(a(1,1),c(2,1)).</span>
+<span class="go">:- prec(c(2,1),a4(2,2)), prec(a4(2,2),a(1,2)), prec(a(1,2),c(2,1)).</span>
+
+<span class="gp">%</span><span class="o">[</span>COMMENT<span class="o">]</span>:<span class="w"> </span>Global<span class="w"> </span>SAT<span class="w"> </span>and<span class="w"> </span><span class="o">(</span>un<span class="o">)</span>found<span class="w"> </span>rules.
+<span class="go">:- not sat.</span>
+<span class="go">sat :- sat_r4.</span>
+<span class="go">:- r4_4_unfound(1,2), a4(2,1).</span>
+<span class="go">:- r4_4_unfound(2,1), a4(1,2).</span>
+<span class="go">:- r4_4_unfound(1,1), a4(1,1).</span>
+<span class="go">:- r4_4_unfound(2,2), a4(2,2).</span>
+<span class="go">:- a4(2,1), #sum{1,0 : r4_unfound(2,1)} &gt;=1 .</span>
+<span class="go">:- a4(1,1), #sum{1,0 : r4_unfound(1,1)} &gt;=1 .</span>
+<span class="go">:- a4(2,2), #sum{1,0 : r4_unfound(2,2)} &gt;=1 .</span>
+<span class="go">:- a4(1,2), #sum{1,0 : r4_unfound(1,2)} &gt;=1 .</span>
+
+<span class="gp">%</span><span class="o">[</span>COMMENT<span class="o">]</span>:<span class="w"> </span>Final<span class="w"> </span>show<span class="w"> </span>statements.
+<span class="gp">#</span>show<span class="w"> </span>d/1.
+<span class="gp">#</span>show<span class="w"> </span>c/2.
+<span class="gp">#</span>show<span class="w"> </span>a/2.
+</pre></div>
+</div>
+<p>Although the above program is significantly larger, for certain scenarios it actually outperforms the <em>shared-cycle-body-predicates</em>,
+especially for <em>dense</em> bodies, where <em>dense</em> means a body with many variables, which would have to be grounded by a complete enumeration,
+and the maximum arity of the literals is low.
+Note that the output is still correct:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>clingo<span class="w"> </span>--project<span class="w"> </span>--model<span class="w"> </span><span class="m">0</span><span class="w"> </span>output.lp
+<span class="go">clingo version 5.6.2</span>
+<span class="go">Reading from output.lp</span>
+<span class="go">Solving...</span>
+<span class="go">Answer: 1</span>
+<span class="go">d(1) c(1,2) c(1,1) a(2,1) a(1,1) a(1,2) c(2,1)</span>
+<span class="go">SATISFIABLE</span>
+
+<span class="go">Models       : 1</span>
+<span class="go">Calls        : 1</span>
+<span class="go">Time         : 0.020s (Solving: 0.00s 1st Model: 0.00s Unsat: 0.00s)</span>
+<span class="go">CPU Time     : 0.013s</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="quick_start.html" class="btn btn-neutral float-left" title="Quick-Start" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="how_it_works.html" class="btn btn-neutral float-right" title="How it Works" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, The Authors</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

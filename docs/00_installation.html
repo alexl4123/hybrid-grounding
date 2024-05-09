@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Installation Guide &mdash; NaGG 1.0.0 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="How To Use" href="how_to_use.html" />
+    <link rel="prev" title="NaGG Documentation" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+      </nav>
+
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="installation-guide">
+<span id="installation-reference"></span><h1>Installation Guide<a class="headerlink" href="#installation-guide" title="Permalink to this heading"></a></h1>
+<p>By following this guide you will be able to install the nagg prototype.</p>
+<section id="requirements">
+<h2>Requirements<a class="headerlink" href="#requirements" title="Permalink to this heading"></a></h2>
+<p>In addition to the the pip-packages listed below, it is necessary to have Python3 installed, where we support python versions <em>&gt;=3.11</em>.</p>
+<section id="pip-packages-requirements">
+<h3>PIP-Packages Requirements<a class="headerlink" href="#pip-packages-requirements" title="Permalink to this heading"></a></h3>
+<ul class="simple">
+<li><p>clingo&gt;=5.6.2</p></li>
+<li><p>clingox</p></li>
+<li><p>networkx</p></li>
+<li><p>future-fstrings</p></li>
+</ul>
+</section>
+</section>
+<section id="general-installation">
+<h2>General Installation<a class="headerlink" href="#general-installation" title="Permalink to this heading"></a></h2>
+<p>For using the nagg prototype an installation is not required, but recommended, as all dependencies are automatically installed.</p>
+<section id="general-installation-method">
+<h3>General Installation Method<a class="headerlink" href="#general-installation-method" title="Permalink to this heading"></a></h3>
+<p>You can install the prototype by typing the following command in your CLI:</p>
+<p>First check your python version (should be <strong>&gt;=3.11</strong>):</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>python<span class="w"> </span>--version
+</pre></div>
+</div>
+<p>Then install the prototype:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>python<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>.
+</pre></div>
+</div>
+<p>Check the installation:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>nagg<span class="w"> </span>--help
+</pre></div>
+</div>
+<p>Which output should be:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>nagg<span class="w"> </span>--help
+<span class="go">usage: nagg [files]</span>
+
+<span class="go">positional arguments:</span>
+<span class="go">  files</span>
+
+<span class="go">options:</span>
+<span class="go">  -h, --help            show this help message and exit</span>
+<span class="go">  --no-show             Do not print #show-statements to avoid compatibility issues.</span>
+<span class="go">  --mode {rewrite-aggregates-ground-partly,rewrite-aggregates-no-ground,rewrite-aggregates-ground-fully}</span>
+<span class="go">  --aggregate-strategy {RA,RS,RS-PLUS,RS-STAR,RECURSIVE}</span>
+<span class="go">  --cyclic-strategy {assume-tight,level-mappings,shared-cycle-body-predicates,level-mappings-AAAI}</span>
+</pre></div>
+</div>
+</section>
+<section id="general-installation-via-make">
+<h3>General Installation via make<a class="headerlink" href="#general-installation-via-make" title="Permalink to this heading"></a></h3>
+<p>If you have the <em>make</em> environment installed, you can use it to install nagg.
+To install the general version, execute the following command.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>make<span class="w"> </span>install
+</pre></div>
+</div>
+<p>Check if nagg was correctly installed:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>nagg<span class="w"> </span>--help
+<span class="go">usage: nagg [files]</span>
+
+<span class="go">positional arguments:</span>
+<span class="go">  files</span>
+
+<span class="go">options:</span>
+<span class="go">  -h, --help            show this help message and exit</span>
+<span class="go">  --no-show             Do not print #show-statements to avoid compatibility issues.</span>
+<span class="go">  --mode {rewrite-aggregates-ground-partly,rewrite-aggregates-no-ground,rewrite-aggregates-ground-fully}</span>
+<span class="go">  --aggregate-strategy {RA,RS,RS-PLUS,RS-STAR,RECURSIVE}</span>
+<span class="go">  --cyclic-strategy {assume-tight,level-mappings,shared-cycle-body-predicates,level-mappings-AAAI}</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="uninstall">
+<h2>Uninstall<a class="headerlink" href="#uninstall" title="Permalink to this heading"></a></h2>
+<p>Although we would be very sad, if you would do it, you can uninstall nagg with the following command:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>python<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>uninstall<span class="w"> </span>nagg
+</pre></div>
+</div>
+<p>Or by using make:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>make<span class="w"> </span>uninstall
+</pre></div>
+</div>
+</section>
+<section id="installation-for-development">
+<h2>Installation for development<a class="headerlink" href="#installation-for-development" title="Permalink to this heading"></a></h2>
+<p>We provide several different options for installation for specific purposes,
+which effectively means that you install additional dependencies that are not required for the prototype,
+but for development.
+This includes dependencies for code-linting, documentation and formatting.</p>
+<section id="installation-for-documentation">
+<h3>Installation for Documentation<a class="headerlink" href="#installation-for-documentation" title="Permalink to this heading"></a></h3>
+<p>You can install the additional dependencies for installation by:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>python<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>.<span class="o">[</span>doc<span class="o">]</span>
+</pre></div>
+</div>
+<p>Or use the Makefile:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>make<span class="w"> </span>install-doc
+</pre></div>
+</div>
+<p>When installed you are able to compile the documentation via Sphinx.
+For doing this navigate to <em>docs/sphinx</em> and enter:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">docs/sphinx$ sphinx-build -M html source/ build/</span>
+</pre></div>
+</div>
+<p>The resulting documentation is placed in the build folder.
+You can see a local preview of the documentation page by using a simple local http-server, which you can do e.g. by:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">docs/sphinx/build/html$ python -m http.server</span>
+</pre></div>
+</div>
+</section>
+<section id="autoformatting-linting-installing-nox">
+<h3>Autoformatting/Linting - Installing nox<a class="headerlink" href="#autoformatting-linting-installing-nox" title="Permalink to this heading"></a></h3>
+<b>NOTE THAT WE DO NOT PROVIDE LINTING/AUTOFORMATTING IN THE SUBMISSION</b>
+<p><a class="reference external" href="https://nox.thea.codes/en/stable/">nox</a> environments are used for linting and autoformatting.
+Therefore we recommend you to install nox for these purposes.
+This can be done in the following way:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>python<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>nox
+</pre></div>
+</div>
+<section id="autoformatting-with-nox">
+<h4>Autoformatting with nox<a class="headerlink" href="#autoformatting-with-nox" title="Permalink to this heading"></a></h4>
+<p>For autoformatting the nagg directory, use:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>nox<span class="w"> </span>-s<span class="w"> </span>format
+</pre></div>
+</div>
+</section>
+<section id="linting-with-nox">
+<h4>Linting with nox<a class="headerlink" href="#linting-with-nox" title="Permalink to this heading"></a></h4>
+<p>We lint with two linters: <a class="reference external" href="https://pypi.org/project/pylint/">Pylint</a> and <a class="reference external" href="https://flake8.pycqa.org/en/latest/">Flake8</a>.
+For linting with Pylint enter:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>nox<span class="w"> </span>-s<span class="w"> </span>lint_pylint
+</pre></div>
+</div>
+<p>For linting with Flake8 enter:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>nox<span class="w"> </span>-s<span class="w"> </span>lint_flake8
+</pre></div>
+</div>
+</section>
+</section>
+<section id="installation-for-autoformatting">
+<h3>Installation for Autoformatting<a class="headerlink" href="#installation-for-autoformatting" title="Permalink to this heading"></a></h3>
+<p>It is not recommended to use the autoformatter directly!
+We recommend using the autoformatter with <a class="reference external" href="https://nox.thea.codes/en/stable/">nox</a>, e.g. by:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>nox<span class="w"> </span>-s<span class="w"> </span>format
+</pre></div>
+</div>
+<p>If you want to do it manually, you can install the dependencies for the autoformatter by entering the following command:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>python<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>.<span class="o">[</span>format<span class="o">]</span>
+</pre></div>
+</div>
+<p>Or use the Makefile:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>make<span class="w"> </span>install-format
+</pre></div>
+</div>
+</section>
+<section id="installation-for-linting">
+<h3>Installation for Linting<a class="headerlink" href="#installation-for-linting" title="Permalink to this heading"></a></h3>
+<p>It is not recommended to directly use the linters, but use <a class="reference external" href="https://nox.thea.codes/en/stable/">nox</a> instead.
+Therefore, for linting with Pylint enter:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>nox<span class="w"> </span>-s<span class="w"> </span>lint_pylint
+</pre></div>
+</div>
+<p>For linting with Flake8 enter:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>nox<span class="w"> </span>-s<span class="w"> </span>lint_flake8
+</pre></div>
+</div>
+<p>But if you still want to install the linters, you can do this in the following way.</p>
+<section id="install-dependencies-for-pylint">
+<h4>Install Dependencies for Pylint<a class="headerlink" href="#install-dependencies-for-pylint" title="Permalink to this heading"></a></h4>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>python<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>.<span class="o">[</span>lint_pylint<span class="o">]</span>
+</pre></div>
+</div>
+<p>Or use the Makefile:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>make<span class="w"> </span>install-lint-pylint
+</pre></div>
+</div>
+</section>
+<section id="install-dependencies-for-flake8">
+<h4>Install Dependencies for Flake8<a class="headerlink" href="#install-dependencies-for-flake8" title="Permalink to this heading"></a></h4>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>python<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>.<span class="o">[</span>lint_flake8<span class="o">]</span>
+</pre></div>
+</div>
+<p>Or use the Makefile:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>make<span class="w"> </span>install-lint-flake8
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+<section id="install-everything">
+<h2>Install Everything<a class="headerlink" href="#install-everything" title="Permalink to this heading"></a></h2>
+<p>If you have make installed and want to install all dependencies,
+you can do this with:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>make<span class="w"> </span>install-all
+</pre></div>
+</div>
+</section>
+<section id="direct-usage-without-installation">
+<h2>Direct Usage without Installation<a class="headerlink" href="#direct-usage-without-installation" title="Permalink to this heading"></a></h2>
+<p>Although an installation is generally recommended, it is possible to directly start the prototype with a Python script, without explicitly installing the prototype.
+For this first install the requirements with:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>python<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.txt
+</pre></div>
+</div>
+<p>And then directly call the prototype script:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>python<span class="w"> </span>start_nagg.py<span class="w"> </span>--help
+<span class="go">usage: nagg [files]</span>
+
+<span class="go">positional arguments:</span>
+<span class="go">  files</span>
+
+<span class="go">options:</span>
+<span class="go">  -h, --help            show this help message and exit</span>
+<span class="go">  --no-show             Do not print #show-statements to avoid compatibility issues.</span>
+<span class="go">  --mode {rewrite-aggregates-ground-partly,rewrite-aggregates-no-ground,rewrite-aggregates-ground-fully}</span>
+<span class="go">  --aggregate-strategy {RA,RS,RS-PLUS,RS-STAR,RECURSIVE}</span>
+<span class="go">  --cyclic-strategy {assume-tight,level-mappings,shared-cycle-body-predicates,level-mappings-AAAI}</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="nagg Documentation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="how_to_use.html" class="btn btn-neutral float-right" title="How To Use" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, The Authors</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

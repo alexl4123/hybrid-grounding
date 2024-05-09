@@ -6,14 +6,14 @@ import resource
 
 import clingo
 
-from newground.newground import Newground
-from newground.default_output_printer import DefaultOutputPrinter
+from nagg.nagg import NaGG
+from nagg.default_output_printer import DefaultOutputPrinter
 
-from newground.aggregate_strategies.aggregate_mode import AggregateMode
+from nagg.aggregate_strategies.aggregate_mode import AggregateMode
 
-from newground.cyclic_strategy import CyclicStrategy
+from nagg.cyclic_strategy import CyclicStrategy
 
-from newground.grounding_modes import GroundingModes
+from nagg.grounding_modes import GroundingModes
 
 from .regression_test_mode import RegressionTestStrategy
 
@@ -55,10 +55,10 @@ class EquivChecker:
     def __init__(self, chosenRegressionTestMode):
         self.chosenRegressiontestMode = chosenRegressionTestMode
         self.clingo_output = []
-        self.newground_output = []
+        self.nagg_output = []
 
         self.clingo_hashes = {}
-        self.newground_hashes = {}
+        self.nagg_hashes = {}
 
     def on_model(self, m, output, hashes):
         symbols = m.symbols(shown=True)
@@ -72,7 +72,7 @@ class EquivChecker:
         hashes[(hash(tuple(output[cur_pos])))] = cur_pos
 
     def parse(self):
-        parser = argparse.ArgumentParser(prog='Answerset Equivalence Checker', description='Checks equivalence of answersets produced by newground and clingo.')
+        parser = argparse.ArgumentParser(prog='Answerset Equivalence Checker', description='Checks equivalence of answersets produced by nagg and clingo.')
 
         parser.add_argument('instance')
         parser.add_argument('encoding')
@@ -97,7 +97,7 @@ class EquivChecker:
 
     def start(self, instance_file_contents, encoding_file_contents, verbose = True, one_directional_equivalence = True):
         """ 
-            one_directional_equivalence: If True, then only the direction clingo -> newground is checked, i.e. it must be the case, that for each answer set in the clingo result, there must be one in the newground result as well (but therefore it could be, that newground has more answersets)
+            one_directional_equivalence: If True, then only the direction clingo -> nagg is checked, i.e. it must be the case, that for each answer set in the clingo result, there must be one in the nagg result as well (but therefore it could be, that nagg has more answersets)
         """
 
         regression_test_strategy_string = ""
@@ -141,7 +141,7 @@ class EquivChecker:
             grounding_mode = GroundingModes.REWRITE_AGGREGATES_GROUND_PARTLY
             ground_guess = False
 
-            regression_test_strategy_string = "Checking Newground with partly rewriting "
+            regression_test_strategy_string = "Checking nagg with partly rewriting "
 
             if self.chosenRegressiontestMode == RegressionTestStrategy.REWRITING_TIGHT:
                 cyclic_strategy = CyclicStrategy.ASSUME_TIGHT
@@ -162,7 +162,7 @@ class EquivChecker:
             grounding_mode = GroundingModes.REWRITE_AGGREGATES_GROUND_FULLY
             ground_guess = True
 
-            regression_test_strategy_string = "Checking Newground with fully rewriting "
+            regression_test_strategy_string = "Checking nagg with fully rewriting "
 
             if self.chosenRegressiontestMode == RegressionTestStrategy.FULLY_GROUNDED_TIGHT:
                 cyclic_strategy = CyclicStrategy.ASSUME_TIGHT
@@ -196,33 +196,33 @@ class EquivChecker:
 
             custom_printer = CustomOutputPrinter()
 
-            newground = Newground(no_show = no_show, ground_guess = ground_guess, output_printer = custom_printer, aggregate_mode = aggregate_mode[1], cyclic_strategy=cyclic_strategy, grounding_mode=grounding_mode)
-            newground.start(total_content)
+            nagg = NaGG(no_show = no_show, ground_guess = ground_guess, output_printer = custom_printer, aggregate_mode = aggregate_mode[1], cyclic_strategy=cyclic_strategy, grounding_mode=grounding_mode)
+            nagg.start(total_content)
             
-            self.start_clingo(custom_printer.get_string(), self.newground_output, self.newground_hashes)
+            self.start_clingo(custom_printer.get_string(), self.nagg_output, self.nagg_hashes)
 
-            if not one_directional_equivalence and len(self.clingo_output) != len(self.newground_output):
+            if not one_directional_equivalence and len(self.clingo_output) != len(self.nagg_output):
                 works = False
             else:
                 for clingo_key in self.clingo_hashes.keys():
-                    if clingo_key not in self.newground_hashes:
+                    if clingo_key not in self.nagg_hashes:
                         works = False
                         if verbose:
-                            print(f"[ERROR] Used Aggregate Mode: {aggregate_mode[0]} - Could not find corresponding stable model in newground for hash {clingo_key}")
+                            print(f"[ERROR] Used Aggregate Mode: {aggregate_mode[0]} - Could not find corresponding stable model in nagg for hash {clingo_key}")
                             print(f"[ERROR] This corresponds to the answer set: ")
                             print(self.clingo_output[self.clingo_hashes[clingo_key]])
-                            print("Output of Newground:")
-                            print(self.newground_output)
+                            print("Output of nagg:")
+                            print(self.nagg_output)
 
-                for newground_key in self.newground_hashes.keys():
-                    if newground_key not in self.clingo_hashes:
+                for nagg_key in self.nagg_hashes.keys():
+                    if nagg_key not in self.clingo_hashes:
                         works = False
                         if verbose:
-                            print(f"[ERROR] Used Aggregate Mode: {aggregate_mode[0]} - Could not find corresponding stable model in clingo for hash {newground_key}")
+                            print(f"[ERROR] Used Aggregate Mode: {aggregate_mode[0]} - Could not find corresponding stable model in clingo for hash {nagg_key}")
                             print(f"[ERROR] This corresponds to the answer set: ")
-                            print(self.newground_output[self.newground_hashes[newground_key]])
-                            print("Output of Newground:")
-                            print(self.newground_output)
+                            print(self.nagg_output[self.nagg_hashes[nagg_key]])
+                            print("Output of nagg:")
+                            print(self.nagg_output)
 
 
         if not works:
@@ -232,14 +232,14 @@ class EquivChecker:
                 print("[INFO] ----------------------")
                 print("[INFO] The answersets DIFFER!")
                 print(f"[INFO] Clingo produced a total of {len(self.clingo_output)}")
-                print(f"[INFO] newground produced a total of {len(self.newground_output)}")
+                print(f"[INFO] nagg produced a total of {len(self.nagg_output)}")
 
-            return (False, len(self.clingo_output), len(self.newground_output))
+            return (False, len(self.clingo_output), len(self.nagg_output))
         else: # works
             if verbose:
                 print("[INFO] The answersets are the SAME!")
 
-            return (True, len(self.clingo_output), len(self.newground_output))
+            return (True, len(self.clingo_output), len(self.nagg_output))
         
     
     def start_clingo(self, program_input, output, hashes, timeout=1800):
