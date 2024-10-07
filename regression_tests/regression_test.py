@@ -12,7 +12,7 @@ class RegressionTest:
     @classmethod
     def start(cls):
 
-        parser = argparse.ArgumentParser(prog='Regression test for Answerset Equivalence Checker', description='Checks equivalence of answersets produced by newground and clingo on all instance-encoding pairs in a subfolder.')
+        parser = argparse.ArgumentParser(prog='Regression test for Answerset Equivalence Checker', description='Checks equivalence of answersets produced by nagg and clingo on all instance-encoding pairs in a subfolder.')
 
         all_test = "test-all"
         rewriting_modes = [
@@ -96,7 +96,7 @@ class RegressionTest:
 
             for rewriting_strategy in rewriting_modes:
                 if folder_path == "__DEFAULT__" and rewriting_strategy in rewriting_modes:
-                    rewriting_folder = os.path.join("regression_tests","newground_tests")
+                    rewriting_folder = os.path.join("regression_tests","tight_non_tight_tests")
                 else:
                     rewriting_folder = folder_path
 
@@ -119,9 +119,9 @@ class RegressionTest:
     def regression_test_a_strategy_helper(cls, chosenRegressionTestMode, folder_path):
         sub_directories = []
 
-        sub_folder_pattern = re.compile("^[0-9]{2,3}_test$")
-        encoding_pattern = re.compile("^encoding_[0-9]{2,3}_test\.lp$")
-        instance_pattern = re.compile("^instance_[0-9]{2,3}_test\.lp$")
+        sub_folder_pattern = re.compile(r"^[0-9]{2,3}_test$")
+        encoding_pattern = re.compile(r"^encoding_[0-9]{2,3}_test\.lp$")
+        instance_pattern = re.compile(r"^instance_[0-9]{2,3}_test\.lp$")
 
         for f in os.scandir(folder_path):
             if f.is_dir():
@@ -170,15 +170,15 @@ class RegressionTest:
             start_time = time.time()
 
             checker = EquivChecker(chosenRegressionTestMode)
-            result, clingo_answersets, newground_answersets = checker.start(instance_file_contents, encoding_file_contents)
+            result, clingo_answersets, nagg_answersets = checker.start(instance_file_contents, encoding_file_contents)
 
             end_time = time.time()
 
             if result:
-                print(f"[INFO] \"{sub}\" test was SUCCESSFUL, clingo-answersets: {clingo_answersets}, newground-answersets: {newground_answersets}")
+                print(f"[INFO] \"{sub}\" test was SUCCESSFUL, clingo-answersets: {clingo_answersets}, nagg-answersets: {nagg_answersets}")
             else:
-                print(f"[INFO] \"{sub}\" test FAILED, clingo-answersets: {clingo_answersets}, newground-answersets: {newground_answersets}")
-                failed_tests[sub] = {"clingo_answersets":clingo_answersets, "newground_answersets":newground_answersets}
+                print(f"[INFO] \"{sub}\" test FAILED, clingo-answersets: {clingo_answersets}, nagg-answersets: {nagg_answersets}")
+                failed_tests[sub] = {"clingo_answersets":clingo_answersets, "nagg_answersets":nagg_answersets}
 
             total_tests += 1
 
@@ -193,7 +193,7 @@ class RegressionTest:
         if number_failed_tests > 0:
             print(f"{number_failed_tests}/{total_tests} of executed tests failed:")
             for key in failed_tests.keys():
-                print(f"- {key} - Clingo Answersets: {failed_tests[key]['clingo_answersets']}, newground Answersets: {failed_tests[key]['newground_answersets']}")
+                print(f"- {key} - Clingo Answersets: {failed_tests[key]['clingo_answersets']}, nagg Answersets: {failed_tests[key]['nagg_answersets']}")
         else:
             print(f"All executed tests were SUCCESSFUL (In total {total_tests} were conducted and {total_tests - len(skipped_tests.keys())} were executed).")
 

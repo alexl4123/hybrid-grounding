@@ -1,12 +1,21 @@
-Newground3, which enables the efficient integration of state-of-the-art grounders with BDG, and can efficiently determine which parts of a program to ground with BDG,
-will be made available to the public in Q2 2025.
+# NaGG
 
-# newground
+This is our prototypical implementation of our grounder.
+It is called Novel AggreGate Grounder.## Installation / How it works
 
-Documentation page: [Documentation](https://www.dbai.tuwien.ac.at/proj/hypar/newground/index.html).
+Here we refer you to the folder `docs` and the three files in this folder:
 
-General project information: For more information visit the Documentation Page [project](https://www.dbai.tuwien.ac.at/proj/hypar/#systems).
+1. installation.html
+2. quick_start.html
+3. going_into_more_depth.html 
 
-Reduction of **non-ground** logic programs to **disjunctive** logic programs using body-decoupled grounding, extended by Aggregates. This is the prototype, which is mentioned in the paper: Viktor Besin, Markus Hecher, and Stefan Woltran. Body-decoupled grounding via solving: A novel approach on the asp bottleneck. In Lud De Raedt, editor, Proceedings of the Thirty-First International Joint Conference on Artificial Intelligence, IJCAI-22, pages 2546–2552. International Joint Conferences on Artificial Intelligence Organization, 7 2022. Main Track. [LINK](https://www.ijcai.org/proceedings/2022/353).
+## Example Files
 
+We provide you with two very small example files: `test.lp` and `test_agg.lp`, and the respective output in `test_output.lp` and `test_agg_output.lp`.
+
+# Newground and NaGG
+
+NaGG is a specialized version of [Newground](https://github.com/alexl4123/newground).
+For details and general information see the [documentation](https://www.dbai.tuwien.ac.at/proj/hypar/newground/index.html) page of Newground,
+or the respective documentation folder.
 
