@@ -27,7 +27,7 @@ class GenerateNewFoundednessPart:
         rule_literals_signums,
         current_rule,
         strongly_connected_components,
-        ground_guess,
+        ground_entire_output,
         unfounded_rules,
         cyclic_strategy,
         strongly_connected_components_heads,
@@ -46,7 +46,7 @@ class GenerateNewFoundednessPart:
         self.rule_literals_signums = rule_literals_signums
         self.current_rule = current_rule
         self.rule_strongly_restricted_components = strongly_connected_components
-        self.ground_guess = ground_guess
+        self.ground_entire_output = ground_entire_output
         self.unfounded_rules = unfounded_rules
         self.cyclic_strategy = cyclic_strategy
         self.rule_strongly_restricted_components_heads = (
@@ -136,6 +136,12 @@ class GenerateNewFoundednessPart:
 
             head_variable_literals.append(head_variable_with_variable)
 
+        if len(head_variables) > 0:
+            head_variable_string = "," + ",".join(head_variables)
+            head_variable_empty_string = "," + ",".join(["_" for head_variable in head_variables])
+        else:
+            head_variable_string = ""
+            head_variable_empty_string = ""
 
         other_variables = [v for v in self.rule_variables if v not in head_variables] 
         for variable in other_variables:  # other variables
@@ -147,65 +153,83 @@ class GenerateNewFoundednessPart:
                 self.rule_variables_predicates,
             )
 
+            # self.choice_rule_function(TODO)    
            
             not_head_variable_name = f"f{self.current_rule_position}_{variable}"
 
-            choice_rule_string = "{"
-            for value_index in range(len(values)):
+            parsed_variables = []
+            for value in values:
+                parsed_variables.append(f"f'{self.current_rule_position}_{variable}({value}{head_variable_string})")
 
-                value = values[value_index]
-                print_literal_list = []
+            self.printer.custom_print( 
+                "1{" + ";".join(parsed_variables) + "}1 :- " + ",".join(head_variable_literals) + "."
+            )
 
-                for literal in self.rule_literals:
-                    if literal == self.rule_head:
-                        continue
 
-                    new_arguments = []
+            self.printer.custom_print(
+                f"f{self.current_rule_position}_{variable}({variable}) :- f'{self.current_rule_position}_{variable}({variable}{head_variable_empty_string})."
+            )
 
-                    for argument in literal.arguments:
-                        if str(argument) in head_variables: # Head Variable
-                            new_arguments.append(str(argument))
-                        elif str(argument) == variable: # Current Variable
-                            new_arguments.append(value)
-                        elif str(argument) in self.rule_variables: # Other variable
-                            new_arguments.append("_")
-                        else: # Everything else (like constants)
-                            new_arguments.append(str(argument))
 
-                    if len(new_arguments) > 0:
-                        new_literal = f"{literal.name}({",".join(new_arguments)})"
-                    else:
-                        new_literal = f"{literal.name}"
-                    print_literal_list.append(new_literal)
+            # self.print_sum_constraint_string(not_head_variable_name)
 
-                if len(print_literal_list + head_variable_literals) > 0:
-                    not_head_variables_body = f":{",".join(head_variable_literals + print_literal_list)}"
+
+
+    def print_sum_constraint_string(self, not_head_variable_name):
+        # Sum-Constraint String:
+        self.printer.custom_print(
+            ":- #sum{" + f"1,{not_head_variable_name}(X): {not_head_variable_name}(X);-1,{not_head_variable_name}(Y):{not_head_variable_name}(Y),found" + "} >= 2."
+        )
+
+
+    def choice_rule_function(self, todo):
+
+        choice_rule_string = "{"
+        for value_index in range(len(values)):
+
+            value = values[value_index]
+            print_literal_list = []
+
+            for literal in self.rule_literals:
+                if literal == self.rule_head:
+                    continue
+
+                new_arguments = []
+
+                for argument in literal.arguments:
+                    if str(argument) in head_variables: # Head Variable
+                        new_arguments.append(str(argument))
+                    elif str(argument) == variable: # Current Variable
+                        new_arguments.append(value)
+                    elif str(argument) in self.rule_variables: # Other variable
+                        new_arguments.append("_")
+                    else: # Everything else (like constants)
+                        new_arguments.append(str(argument))
+
+                if len(new_arguments) > 0:
+                    new_literal = f"{literal.name}({",".join(new_arguments)})"
                 else:
-                    not_head_variables_body = ""
-            
-                if value_index < len(values) - 1:
-                    choice_rule_string += f"{not_head_variable_name}({value}){not_head_variables_body};"
-                else:
-                    choice_rule_string += f"{not_head_variable_name}({value}){not_head_variables_body}"
+                    new_literal = f"{literal.name}"
+                print_literal_list.append(new_literal)
 
-            if len(head_variables) > 0:
-                choice_rule_string += "}" + f" :- {",".join(head_variable_literals)}."
+            if len(print_literal_list + head_variable_literals) > 0:
+                not_head_variables_body = f":{",".join(head_variable_literals + print_literal_list)}"
             else:
-                choice_rule_string += "}" + f"."
+                not_head_variables_body = ""
+        
+            if value_index < len(values) - 1:
+                choice_rule_string += f"{not_head_variable_name}({value}){not_head_variables_body};"
+            else:
+                choice_rule_string += f"{not_head_variable_name}({value}){not_head_variables_body}"
 
-            self.printer.custom_print(
-                choice_rule_string
-            )
+        if len(head_variables) > 0:
+            choice_rule_string += "}" + f" :- {",".join(head_variable_literals)}."
+        else:
+            choice_rule_string += "}" + f"."
 
-
-
-            # Sum-Constraint String:
-
-
-            self.printer.custom_print(
-                ":- #sum{" + f"1,{not_head_variable_name}(X): {not_head_variable_name}(X);-1,{not_head_variable_name}(Y):{not_head_variable_name}(Y),found" + "} >= 2."
-            )
-
+        self.printer.custom_print(
+            choice_rule_string
+        )
 
 
 
