@@ -76,13 +76,13 @@ class GenerateNewFoundednessPart:
 
         self._generate_sat_variable_possibilities(head_vars)
 
-        covered_subsets, current_function_symbol_index, founded_auxiliary_rule_body = self._generate_sat_comparisons()
+        covered_subsets, current_function_symbol_index, founded_auxiliary_rule_body = self._generate_sat_comparisons(founded_auxiliary_rule_body=[], current_function_symbol_index=-1)
 
         founded_auxiliary_rule_body = self._generate_sat_functions(self.rule_head, covered_subsets, current_function_symbol_index, founded_auxiliary_rule_body)
 
-        ####################################################################
-        # Add rule found_r <- found_p1, ..., found_pn, not found_p(n+1), ...
-        ####################################################################
+        ######################################################################
+        # Add rule found_r <- found_p1, ..., found_pn, not found_p(n+1), ... #
+        ######################################################################
 
         founded_auxiliary_rule_body = list(set(founded_auxiliary_rule_body))
 
