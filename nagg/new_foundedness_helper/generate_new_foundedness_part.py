@@ -136,12 +136,104 @@ class GenerateNewFoundednessPart:
 
             head_variable_literals.append(head_variable_with_variable)
 
+        if not self.ground_entire_output:
+            self.generate_variable_possibilities_not_ground(head_variables, head_variable_literals)
+        else:
+            self.generate_variable_possibilities_ground(head_variables)
+
+        
+    def generate_variable_possibilities_ground(self, head_variables): 
+
+        other_variables = [v for v in self.rule_variables if v not in head_variables] 
+
+        variable_index_lookup = {}
+        index_to_variable_lookup = {}
+        dom_list = []
+
+        index = 0
+        for variable in head_variables:
+            domain = HelperPart.get_domain_values_from_rule_variable(
+                str(self.current_rule_position),
+                variable,
+                self.domain_lookup_dict,
+                self.safe_variables_rules,
+                self.rule_variables_predicates,
+            )
+
+            dom_list.append(domain)
+
+            variable_index_lookup[variable] = index
+            index_to_variable_lookup[index] = variable
+
+            index += 1
+
+        combinations = [p for p in itertools.product(*dom_list)]
+
+        for combination in combinations:
+
+            head_variable_literals = []
+            head_instantiated_variables = []
+
+            for combination_index in range(len(combination)):
+                head_variable_literals.append(f"f{self.current_rule_position}_{index_to_variable_lookup[combination_index]}({combination[combination_index]})")
+                head_instantiated_variables.append(combination[combination_index])
+
+            if len(head_instantiated_variables) > 0:
+                head_variable_string = "," + ",".join(head_instantiated_variables)
+                head_literals_instantiated = " :- " + ",".join(head_variable_literals)
+            else:
+                head_variable_string = ""
+                head_literals_instantiated = ""
+
+            
+            for other_variable in other_variables:
+
+                values = HelperPart.get_domain_values_from_rule_variable(
+                    self.current_rule_position,
+                    other_variable,
+                    self.domain_lookup_dict,
+                    self.safe_variables_rules,
+                    self.rule_variables_predicates,
+                )
+                
+                parsed_variables = []
+                for value in values:
+                    parsed_variables.append(f"f'{self.current_rule_position}_{other_variable}({value}{head_variable_string})")
+
+                self.printer.custom_print( 
+                    "1{" + ";".join(parsed_variables) + "}1 " + head_literals_instantiated + "."
+                )
+
+
+        if len(head_variables) > 0:
+            head_variable_empty_string = "," + ",".join(["_" for head_variable in head_variables])
+        else:
+            head_variable_empty_string = ""
+
+        for other_variable in other_variables:
+
+            values = HelperPart.get_domain_values_from_rule_variable(
+                self.current_rule_position,
+                other_variable,
+                self.domain_lookup_dict,
+                self.safe_variables_rules,
+                self.rule_variables_predicates,
+            )
+            
+            for value in values:
+                self.printer.custom_print(
+                    f"f{self.current_rule_position}_{other_variable}({value}) :- f'{self.current_rule_position}_{other_variable}({value}{head_variable_empty_string})."
+                )
+
+    def generate_variable_possibilities_not_ground(self, head_variables, head_variable_literals): 
+
         if len(head_variables) > 0:
             head_variable_string = "," + ",".join(head_variables)
             head_variable_empty_string = "," + ",".join(["_" for head_variable in head_variables])
         else:
             head_variable_string = ""
             head_variable_empty_string = ""
+
 
         other_variables = [v for v in self.rule_variables if v not in head_variables] 
         for variable in other_variables:  # other variables
@@ -152,9 +244,7 @@ class GenerateNewFoundednessPart:
                 self.safe_variables_rules,
                 self.rule_variables_predicates,
             )
-
-            # self.choice_rule_function(TODO)    
-           
+            
             not_head_variable_name = f"f{self.current_rule_position}_{variable}"
 
             parsed_variables = []
@@ -169,67 +259,6 @@ class GenerateNewFoundednessPart:
             self.printer.custom_print(
                 f"f{self.current_rule_position}_{variable}({variable}) :- f'{self.current_rule_position}_{variable}({variable}{head_variable_empty_string})."
             )
-
-
-            # self.print_sum_constraint_string(not_head_variable_name)
-
-
-
-    def print_sum_constraint_string(self, not_head_variable_name):
-        # Sum-Constraint String:
-        self.printer.custom_print(
-            ":- #sum{" + f"1,{not_head_variable_name}(X): {not_head_variable_name}(X);-1,{not_head_variable_name}(Y):{not_head_variable_name}(Y),found" + "} >= 2."
-        )
-
-
-    def choice_rule_function(self, todo):
-
-        choice_rule_string = "{"
-        for value_index in range(len(values)):
-
-            value = values[value_index]
-            print_literal_list = []
-
-            for literal in self.rule_literals:
-                if literal == self.rule_head:
-                    continue
-
-                new_arguments = []
-
-                for argument in literal.arguments:
-                    if str(argument) in head_variables: # Head Variable
-                        new_arguments.append(str(argument))
-                    elif str(argument) == variable: # Current Variable
-                        new_arguments.append(value)
-                    elif str(argument) in self.rule_variables: # Other variable
-                        new_arguments.append("_")
-                    else: # Everything else (like constants)
-                        new_arguments.append(str(argument))
-
-                if len(new_arguments) > 0:
-                    new_literal = f"{literal.name}({",".join(new_arguments)})"
-                else:
-                    new_literal = f"{literal.name}"
-                print_literal_list.append(new_literal)
-
-            if len(print_literal_list + head_variable_literals) > 0:
-                not_head_variables_body = f":{",".join(head_variable_literals + print_literal_list)}"
-            else:
-                not_head_variables_body = ""
-        
-            if value_index < len(values) - 1:
-                choice_rule_string += f"{not_head_variable_name}({value}){not_head_variables_body};"
-            else:
-                choice_rule_string += f"{not_head_variable_name}({value}){not_head_variables_body}"
-
-        if len(head_variables) > 0:
-            choice_rule_string += "}" + f" :- {",".join(head_variable_literals)}."
-        else:
-            choice_rule_string += "}" + f"."
-
-        self.printer.custom_print(
-            choice_rule_string
-        )
 
 
 
