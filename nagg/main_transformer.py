@@ -12,10 +12,12 @@ from clingo.ast import Transformer
 from .aggregate_transformer import AggregateMode
 from .cyclic_strategy import CyclicStrategy
 from .main_transformer_helpers.generate_foundedness_part import GenerateFoundednessPart
+from .new_foundedness_helper.generate_new_foundedness_part import GenerateNewFoundednessPart
 from .main_transformer_helpers.generate_satisfiability_part import (
     GenerateSatisfiabilityPart,
 )
 from .main_transformer_helpers.guess_head_part import GuessHeadPart
+from .foundedness_strategy import FoundednessStrategy
 
 
 class MainTransformer(Transformer):
@@ -39,6 +41,7 @@ class MainTransformer(Transformer):
         rule_strongly_connected_comps_heads,
         predicates_strongly_connected_comps,
         scc_rule_functions_scc_lookup,
+        foundedness_strategy,
     ):
         self.terms = terms
         self.facts = facts
@@ -84,6 +87,9 @@ class MainTransformer(Transformer):
 
         self.unfounded_rules = {}
         self.current_rule_position = 0
+
+
+        self._foundedness_strategy = foundedness_strategy
 
     def _reset_after_rule(self):
         self.rule_variables = []
@@ -585,7 +591,6 @@ class MainTransformer(Transformer):
                     self.current_rule,
                     self.rule_strongly_connected_components,
                     self.ground_entire_output,
-                    self.unfounded_rules,
                     self.cyclic_strategy,
                     self.predicates_strongly_connected_comps,
                     self.scc_rule_functions_scc_lookup,
@@ -593,27 +598,51 @@ class MainTransformer(Transformer):
                 )
                 guess_head_generator.guess_head()
 
-            foundedness_generator = GenerateFoundednessPart(
-                head,
-                self.current_rule_position,
-                self.printer,
-                self.domain,
-                self.safe_variables_rules,
-                self.rule_variables,
-                self.rule_comparisons,
-                self.rule_predicate_functions,
-                self.rule_literals_signums,
-                self.current_rule,
-                self.rule_strongly_connected_components,
-                self.ground_entire_output,
-                self.unfounded_rules,
-                self.cyclic_strategy,
-                self.rule_strongly_connected_components_heads,
-                self.program_rules,
-                self.additional_foundedness_part,
-                self.rule_variables_predicates,
-            )
-            foundedness_generator.generate_foundedness_part()
+
+            if self._foundedness_strategy == FoundednessStrategy.SATURATION:
+                foundedness_generator = GenerateNewFoundednessPart(
+                    head,
+                    self.current_rule_position,
+                    self.printer,
+                    self.domain,
+                    self.safe_variables_rules,
+                    self.rule_variables,
+                    self.rule_comparisons,
+                    self.rule_predicate_functions,
+                    self.rule_literals_signums,
+                    self.current_rule,
+                    self.rule_strongly_connected_components,
+                    self.ground_entire_output,
+                    self.unfounded_rules,
+                    self.cyclic_strategy,
+                    self.rule_strongly_connected_components_heads,
+                    self.program_rules,
+                    self.additional_foundedness_part,
+                    self.rule_variables_predicates,
+                )
+                foundedness_generator.generate_foundedness_part()
+            else:
+                foundedness_generator = GenerateFoundednessPart(
+                    head,
+                    self.current_rule_position,
+                    self.printer,
+                    self.domain,
+                    self.safe_variables_rules,
+                    self.rule_variables,
+                    self.rule_comparisons,
+                    self.rule_predicate_functions,
+                    self.rule_literals_signums,
+                    self.current_rule,
+                    self.rule_strongly_connected_components,
+                    self.ground_entire_output,
+                    self.unfounded_rules,
+                    self.cyclic_strategy,
+                    self.rule_strongly_connected_components_heads,
+                    self.program_rules,
+                    self.additional_foundedness_part,
+                    self.rule_variables_predicates,
+                )
+                foundedness_generator.generate_foundedness_part()
 
         return True
 
@@ -622,6 +651,7 @@ class MainTransformer(Transformer):
         Handle rule which shall be rewritten and is ground.
         """
 
+        """
         pred = str(node.head).split("(", 1)[0]
         arguments = re.sub(r"^.*?\(", "", str(node.head))[:-1].split(",")
         arity = len(arguments)
@@ -650,4 +680,6 @@ class MainTransformer(Transformer):
             )
             self.g_counter = chr(ord(self.g_counter) + 1)
         # print rule as it is
+        """
+
         self._output_node_format_conform(node)

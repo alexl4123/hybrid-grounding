@@ -17,6 +17,7 @@ from .grounding_modes import GroundingModes
 from .main_transformer import MainTransformer
 from .main_transformer_helpers.level_mappings_part import LevelMappingsPart
 from .term_transformer import TermTransformer
+from .foundedness_strategy import FoundednessStrategy
 
 
 class NaGG:
@@ -34,6 +35,7 @@ class NaGG:
         aggregate_mode=AggregateMode.RA,
         cyclic_strategy=CyclicStrategy.ASSUME_TIGHT,
         grounding_mode=GroundingModes.REWRITE_AGGREGATES_GROUND_PARTLY,
+        foundedness_strategy=None,
     ):
         self.no_show = no_show
         self.ground_guess = ground_guess
@@ -47,6 +49,8 @@ class NaGG:
 
         if self.grounding_mode == GroundingModes.REWRITE_AGGREGATES_GROUND_FULLY:
             self.ground_guess = True
+
+        self.foundedness_strategy = foundedness_strategy
 
     def start(self, contents):
         """
@@ -65,6 +69,8 @@ class NaGG:
 
         if "0_terms" not in domain and len(domain.keys()) > 0:
             # No domain could be inferred, therefore return nothing.
+            
+            raise NotImplementedError
             return
 
         shown_predicates, rewritten_program = self.start_aggregate_transformer(
@@ -181,6 +187,7 @@ class NaGG:
                 rule_strongly_connected_comps_heads,
                 predicates_strongly_connected_comps,
                 scc_rule_functions_scc_lookup,
+                self.foundedness_strategy,
             )
 
             parse_string(
@@ -232,29 +239,45 @@ class NaGG:
             """
 
     def _add_global_foundedness_statements(self, transformer):
-        additional_foundedness_set = set(transformer.additional_foundedness_part)
-        for additional_rule in additional_foundedness_set:
-            self.output_printer.custom_print(additional_rule)
 
-        for key in transformer.unfounded_rules.keys():
-            unfounded_rules_heads = transformer.unfounded_rules[key]
+        if self.foundedness_strategy == FoundednessStrategy.SATURATION:
+            if len(list(transformer.unfounded_rules.keys())) > 0:
+                body_string = f":- {",".join(list(transformer.unfounded_rules.keys()))}"
+            else:
+                body_string = ""
 
-            sum_strings = []
+            self.output_printer.custom_print(
+                f"found {body_string}."
+            )
 
-            for rule_key in unfounded_rules_heads.keys():
-                unfounded_rules_list = unfounded_rules_heads[rule_key]
-                unfounded_rules_list = list(
-                    set(unfounded_rules_list)
-                )  # Remove duplicates
+            self.output_printer.custom_print(
+                ":- not found."
+            )
 
-                sum_list = []
-                for index in range(len(unfounded_rules_list)):
-                    unfounded_rule = unfounded_rules_list[index]
-                    sum_list.append(f"1,{index} : {unfounded_rule}")
+        else:
+            additional_foundedness_set = set(transformer.additional_foundedness_part)
+            for additional_rule in additional_foundedness_set:
+                self.output_printer.custom_print(additional_rule)
 
-                sum_strings.append(f"#sum{{{'; '.join(sum_list)}}} >=1 ")
+            for key in transformer.unfounded_rules.keys():
+                unfounded_rules_heads = transformer.unfounded_rules[key]
 
-            self.output_printer.custom_print(f":- {key}, {','.join(sum_strings)}.")
+                sum_strings = []
+
+                for rule_key in unfounded_rules_heads.keys():
+                    unfounded_rules_list = unfounded_rules_heads[rule_key]
+                    unfounded_rules_list = list(
+                        set(unfounded_rules_list)
+                    )  # Remove duplicates
+
+                    sum_list = []
+                    for index in range(len(unfounded_rules_list)):
+                        unfounded_rule = unfounded_rules_list[index]
+                        sum_list.append(f"1,{index} : {unfounded_rule}")
+
+                    sum_strings.append(f"#sum{{{'; '.join(sum_list)}}} >=1 ")
+
+                self.output_printer.custom_print(f":- {key}, {','.join(sum_strings)}.")
 
     def _add_global_sat_statements(self, program_builder, transformer):
         parse_string(":- not sat.", lambda stm: program_builder.add(stm))

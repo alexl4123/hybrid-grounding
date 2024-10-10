@@ -31,7 +31,6 @@ class GuessHeadPart:
         current_rule,
         strongly_connected_components,
         ground_guess,
-        unfounded_rules,
         cyclic_strategy,
         predicates_strongly_connected_comps,
         scc_rule_functions_scc_lookup,
@@ -49,7 +48,6 @@ class GuessHeadPart:
         self.current_rule = current_rule
         self.rule_strongly_connected_components = strongly_connected_components
         self.ground_guess = ground_guess
-        self.unfounded_rules = unfounded_rules
         self.cyclic_strategy = cyclic_strategy
         self.predicates_strongly_connected_comps = predicates_strongly_connected_comps
         self.scc_rule_functions_scc_lookup = scc_rule_functions_scc_lookup

@@ -12,7 +12,7 @@ from .cyclic_strategy import CyclicStrategy
 from .default_output_printer import DefaultOutputPrinter
 from .grounding_modes import GroundingModes
 from .nagg import NaGG
-
+from .foundedness_strategy import FoundednessStrategy
 
 def main():
     """
@@ -59,6 +59,17 @@ def main():
         },
     }
 
+    foundedness_choices = {
+        "SATURATION": {
+            "cmd_line": "saturation",
+            "enum_mode": FoundednessStrategy.SATURATION,
+        },
+        "DEFAULT": {
+            "cmd_line": "default",
+            "enum_mode": FoundednessStrategy.DEFAULT,
+        },
+    }
+
     parser = argparse.ArgumentParser(prog="nagg", usage="%(prog)s [files]")
     parser.add_argument(
         "--no-show",
@@ -85,6 +96,13 @@ def main():
         default=cyclic_choices["TIGHT"]["cmd_line"],
         choices=[cyclic_choices[key]["cmd_line"] for key in cyclic_choices.keys()],
     )
+
+    parser.add_argument(
+        "--foundedness-strategy",
+        default=foundedness_choices["DEFAULT"]["cmd_line"],
+        choices=[foundedness_choices[key]["cmd_line"] for key in foundedness_choices.keys()],
+    )
+
     parser.add_argument("files", type=argparse.FileType("r"), nargs="+")
     args = parser.parse_args()
 
@@ -98,6 +116,11 @@ def main():
     for key in grounding_modes_choices.keys():
         if args.mode == grounding_modes_choices[key]["cmd_line"]:
             grounding_mode = grounding_modes_choices[key]["enum_mode"]
+
+    foundedness_strategy = None
+    for key in foundedness_choices.keys():
+        if args.foundedness_strategy == foundedness_choices[key]["cmd_line"]:
+            foundedness_strategy = foundedness_choices[key]["enum_mode"]
 
     if (
         grounding_mode
@@ -126,5 +149,6 @@ def main():
         aggregate_mode=aggregate_strategy,
         cyclic_strategy=normal_strategy,
         grounding_mode=grounding_mode,
+        foundedness_strategy=foundedness_strategy,
     )
     nagg.start(contents)
