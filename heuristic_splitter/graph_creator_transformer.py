@@ -67,8 +67,8 @@ class GraphCreatorTransformer(Transformer):
 
             tmp_head_choice_name = f"{node.name}{self.current_rule_position}{self.head_element_index}"
 
-            self.graph_ds.add_edge(node.name, tmp_head_choice_name, -1)
-            self.graph_ds.add_edge(tmp_head_choice_name, node.name,  -1)
+            self.graph_ds.add_edge(node.name, tmp_head_choice_name, -1, is_choice_rule_head = True)
+            self.graph_ds.add_edge(tmp_head_choice_name, node.name, -1, is_choice_rule_head = True)
 
         elif self.in_head and self.head_is_choice_rule and self.head_aggregate_element_head:
             # For the "b" and "d" in {a:b;c:d} :- e.
@@ -76,6 +76,9 @@ class GraphCreatorTransformer(Transformer):
         elif self.in_head and str(self.current_function) == str(self.current_head):
             # For the "a" in a :- b, not c.
             self.head_functions.append(node)
+
+            self.graph_ds.add_vertex(node.name)
+
         elif self.in_head:
             print("HEAD TYPE NOT IMPLEMENTED:_")
             print(self.current_head)

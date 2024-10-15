@@ -7,22 +7,37 @@ class GraphDataStructure:
     def __init__(self):
 
         self.current_node_index = 0
-
         self.predicate_to_index_lookup = {}
         self.index_to_predicate_lookup = {}
 
         self.not_stratified_index = {}
+        self.positive_predicate_scc_index = {}
 
-        self.graph = nx.DiGraph()
+        self.full_graph = nx.DiGraph()
+        self.positive_graph = nx.DiGraph()
 
-    def add_edge(self, head_literal, body_literal, signum):
+    def add_vertex(self, predicate):
+
+        if predicate not in self.predicate_to_index_lookup:
+            self.predicate_to_index_lookup[predicate] = self.current_node_index
+            self.index_to_predicate_lookup[self.current_node_index] = predicate
+
+            self.full_graph.add_node(self.current_node_index)
+            self.positive_graph.add_node(self.current_node_index)
+
+            self.current_node_index += 1
+
+    def add_edge(self, head_literal, body_literal, signum, is_choice_rule_head = False):
         """
         - Head and body literals as strings
         - Signum as 1 (positive, e.g., "a"), or -1 (negative - e.g., "not a")
         """
 
         if body_literal not in self.predicate_to_index_lookup:
-            self.graph.add_node(self.current_node_index)
+            self.full_graph.add_node(self.current_node_index)
+
+            if signum > 0 and is_choice_rule_head is False:
+                self.positive_graph.add_node(self.current_node_index)
 
             self.predicate_to_index_lookup[body_literal] = self.current_node_index
             self.index_to_predicate_lookup[self.current_node_index] = body_literal
@@ -30,7 +45,10 @@ class GraphDataStructure:
             self.current_node_index += 1
 
         if head_literal not in self.predicate_to_index_lookup:
-            self.graph.add_node(self.current_node_index)
+            self.full_graph.add_node(self.current_node_index)
+
+            if signum > 0 and is_choice_rule_head is False:
+                self.positive_graph.add_node(self.current_node_index)
 
             self.predicate_to_index_lookup[head_literal] = self.current_node_index
             self.index_to_predicate_lookup[self.current_node_index] = head_literal
@@ -40,17 +58,47 @@ class GraphDataStructure:
         body_index = self.predicate_to_index_lookup[body_literal]
         head_index = self.predicate_to_index_lookup[head_literal]
 
-        self.graph.add_edge(body_index, head_index, label=signum)
+        self.full_graph.add_edge(body_index, head_index, label=signum)
+
+        if signum > 0 and is_choice_rule_head is False:
+            self.positive_graph.add_edge(body_index, head_index)
+
 
     def add_not_stratified_index(self, node_index):
-
         self.not_stratified_index[node_index] = True
 
+    def predicate_is_stratified(self, node):
+        """
+        - Return true if node is stratified
+        - False otherwise
+        """
+        if node.name in self.predicate_to_index_lookup:
+            node_index = self.predicate_to_index_lookup[node.name]
+            if node_index in self.not_stratified_index:
+                # not_stratified contains those that are NOT stratified
+                return False
+            else:
+                return True
+
+        else:
+            print(f"[ERROR] -> Predicate name not found: {node.name}")
+            raise Exception()
+
+    def add_positive_dg_predicate_to_scc_index(self, atom_name, scc_index):
+
+        if atom_name in self.positive_graph:
+            print(f"[ERROR] - Atom name {atom_name} already in lookup table!")
+            raise Exception()
+
+        self.positive_predicate_scc_index[atom_name] = scc_index
+
+    def get_scc_index_of_atom(self, atom_name):
+        return self.positive_predicate_scc_index[atom_name]
 
 
     def plot_graph(self):
         # Define edge labels for visualization
-        G = self.graph
+        G = self.full_graph
         edge_labels = {(u, v): d['label'] for u, v, d in G.edges(data=True)}
 
         # Draw the graph
@@ -65,8 +113,13 @@ class GraphDataStructure:
         # Show the plot
         plt.show()
 
-    def get_nx_object(self):
-        return self.graph
+    def get_full_nx_object(self):
+        return self.full_graph
+
+    def get_positive_nx_object(self):
+        return self.positive_graph
+
+
 
 
 

@@ -10,6 +10,8 @@ import sys
 from heuristic_splitter.heuristic_strategy import HeuristicStrategy
 from heuristic_splitter.heuristic_splitter import HeuristicSplitter
 
+from heuristic_splitter.treewidth_computation_strategy import TreewidthComputationStrategy
+
 def main():
     """
     Main Entry Point into the prototype.
@@ -29,16 +31,38 @@ def main():
     }
 
 
+    treewidth_strategies = {
+        "NETWORKX": {
+            "cmd_line": "networkx",
+            "enum_mode": TreewidthComputationStrategy.NETWORKX_HEUR
+            },
+        "TWALGOR": {
+            "cmd_line": "twalgor-exact",
+            "enum_mode": TreewidthComputationStrategy.TWALGOR_EXACT,
+        },
+    }
+
+
 
     parser = argparse.ArgumentParser(prog="heuristic", usage="%(prog)s [files]")
     parser.add_argument(
         "--heuristic-method",
-        default=HeuristicStrategy.VARIABLE,
+        default=heuristic_methods["TREEWIDTH_PURE"]["cmd_line"],
         choices=[
             heuristic_methods[key]["cmd_line"]
             for key in heuristic_methods.keys()
         ],
     )
+    parser.add_argument(
+        "--treewidth-strategy",
+        default=treewidth_strategies["NETWORKX"]["cmd_line"],
+        choices=[
+            treewidth_strategies[key]["cmd_line"]
+            for key in treewidth_strategies.keys()
+        ],
+    )
+
+
 
     parser.add_argument("files", type=argparse.FileType("r"), nargs="+")
     args = parser.parse_args()
@@ -48,11 +72,18 @@ def main():
         if args.heuristic_method == heuristic_methods[key]["cmd_line"]:
             heuristic_method = heuristic_methods[key]["enum_mode"]
 
+    treewidth_strategy = None
+    for key in treewidth_strategies.keys():
+        if args.treewidth_strategy == treewidth_strategies[key]["cmd_line"]:
+            treewidth_strategy = treewidth_strategies[key]["enum_mode"]
+
+
     contents = ""
     for f in args.files:
         contents += f.read()
 
     heuristic = HeuristicSplitter(
-        HeuristicStrategy
+        heuristic_method,
+        treewidth_strategy,
     )
     heuristic.start(contents)
