@@ -15,7 +15,8 @@ class Heuristic0(HeuristicInterface):
             head_atoms_scc_membership, body_atoms_scc_membership,
             maximum_rule_arity, is_constraint,
             has_aggregate,
-            ast_rule_node):
+            ast_rule_node,
+            rule_position):
 
         full_variable_graph = variable_graph.clone()
 
@@ -36,13 +37,13 @@ class Heuristic0(HeuristicInterface):
         is_tight = len([True for head_key in head_atoms_scc_membership.keys() if head_key in body_atoms_scc_membership]) == 0
 
         if is_constraint is True and tw_effective > maximum_rule_arity:
-            bdg_rules.append(ast_rule_node)
+            bdg_rules.append(rule_position)
 
         elif is_tight is True and tw_effective > maximum_rule_arity * 2:
-            bdg_rules.append(ast_rule_node)
+            bdg_rules.append(rule_position)
         
         elif is_tight is False and tw_effective > maximum_rule_arity * 3:
-            bdg_rules.append(ast_rule_node)
+            bdg_rules.append(rule_position)
         
         else:
-            sota_rules.append(ast_rule_node)
+            sota_rules.append(rule_position)

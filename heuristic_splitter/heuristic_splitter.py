@@ -12,6 +12,8 @@ from heuristic_splitter.treewidth_computation_strategy import TreewidthComputati
 
 from heuristic_splitter.heuristic_0 import Heuristic0
 
+from heuristic_splitter.grounding_strategy_generator import GroundingStrategyGenerator
+
 class HeuristicSplitter:
 
     def __init__(self, heuristic_strategy: HeuristicStrategy, treewidth_strategy: TreewidthComputationStrategy):
@@ -23,8 +25,9 @@ class HeuristicSplitter:
     def start(self, contents):
 
         graph_ds = GraphDataStructure()
+        rule_dictionary = {}
 
-        graph_transformer = GraphCreatorTransformer(graph_ds)
+        graph_transformer = GraphCreatorTransformer(graph_ds, rule_dictionary)
         parse_string(contents, lambda stm: graph_transformer(stm))
 
 
@@ -32,21 +35,37 @@ class HeuristicSplitter:
         graph_analyzer.start()
 
         if self.heuristic_strategy == HeuristicStrategy.TREEWIDTH_PURE:
-            heuristic = Heuristic0(self.treewidth_strategy)
+            heuristic = Heuristic0(self.treewidth_strategy, rule_dictionary)
         else:
             raise NotImplementedError()
 
         bdg_rules = []
         sota_rules = []
         lpopt_rules = []
+        constraint_rules = []
         
-        heuristic_transformer = HeuristicTransformer(graph_ds, heuristic, bdg_rules, sota_rules, lpopt_rules)
+        heuristic_transformer = HeuristicTransformer(graph_ds, heuristic, bdg_rules, sota_rules, lpopt_rules, constraint_rules)
         parse_string(contents, lambda stm: heuristic_transformer(stm))
 
         if len(lpopt_rules) > 0:
             raise NotImplementedError()
 
-        
+        print(bdg_rules)
+        print(sota_rules)
+        print(lpopt_rules)
+        print(constraint_rules)
+
+        generator_grounding_strategy = GroundingStrategyGenerator(graph_ds, bdg_rules, sota_rules, lpopt_rules, constraint_rules)
+        grounding_strategy = generator_grounding_strategy.generate_grounding_strategy()
+
+        print(grounding_strategy)
+
+
+
+
+
+
+        """ 
         for sota_rule in sota_rules:
             print(str(sota_rule))
 
@@ -55,3 +74,4 @@ class HeuristicSplitter:
 
             for bdg_rule in bdg_rules:
                 print(str(bdg_rule))
+        """

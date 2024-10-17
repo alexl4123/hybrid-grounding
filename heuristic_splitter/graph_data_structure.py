@@ -16,6 +16,9 @@ class GraphDataStructure:
         self.full_graph = nx.DiGraph()
         self.positive_graph = nx.DiGraph()
 
+        self.node_to_rule_lookup = {}
+
+
     def add_vertex(self, predicate):
 
         if predicate not in self.predicate_to_index_lookup:
@@ -119,6 +122,15 @@ class GraphDataStructure:
     def get_positive_nx_object(self):
         return self.positive_graph
 
+
+
+    def add_node_to_rule_lookup(self, current_rule_position, predicate_name):
+        vertex_index = self.predicate_to_index_lookup[predicate_name]
+
+        if vertex_index not in self.node_to_rule_lookup:
+            self.node_to_rule_lookup[vertex_index] = []
+
+        self.node_to_rule_lookup[vertex_index].append(current_rule_position)
 
 
 

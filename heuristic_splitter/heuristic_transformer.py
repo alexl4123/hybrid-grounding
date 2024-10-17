@@ -17,7 +17,8 @@ class HeuristicTransformer(Transformer):
     """
 
     def __init__(self, graph_ds: GraphDataStructure, used_heuristic,
-        bdg_rules, sota_rules, lpopt_rules):
+            bdg_rules, sota_rules, lpopt_rules,
+            constraint_rules):
 
         self.graph_ds = graph_ds
         self.variable_graph = None
@@ -58,6 +59,8 @@ class HeuristicTransformer(Transformer):
 
         self.is_constraint = False
 
+        self.constraint_rules = constraint_rules
+
 
     def visit_Rule(self, node):
         """
@@ -71,6 +74,7 @@ class HeuristicTransformer(Transformer):
 
             if str(node.head) == "#false":
                 self.is_constraint = True
+                self.constraint_rules.append(self.current_rule_position)
 
             self.in_head = True
             old = getattr(node, "head")
@@ -89,7 +93,8 @@ class HeuristicTransformer(Transformer):
             self.head_atoms_scc_membership, self.body_atoms_scc_membership,
             self.maximum_rule_arity, self.is_constraint,
             self.has_aggregate,
-            node)
+            node,
+            self.current_rule_position)
 
         self.current_rule_position += 1
         self._reset_temporary_rule_variables()

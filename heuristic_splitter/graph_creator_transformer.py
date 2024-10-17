@@ -8,14 +8,15 @@ from clingo.ast import Transformer
 
 from heuristic_splitter.graph_data_structure import GraphDataStructure
 
+from heuristic_splitter.rule import Rule
+
 
 class GraphCreatorTransformer(Transformer):
     """
-    Necessary for domain inference.
-    In conjunction with the Term-transformer used to infer the domain.
+    Creates dependency graph.
     """
 
-    def __init__(self, graph_ds: GraphDataStructure):
+    def __init__(self, graph_ds: GraphDataStructure, rule_dictionary):
 
         self.graph_ds = graph_ds
 
@@ -30,12 +31,16 @@ class GraphCreatorTransformer(Transformer):
 
         self.current_rule_position = 0
 
+        self.rule_dictionary = rule_dictionary
+
 
     def visit_Rule(self, node):
         """
         Visits an clingo-AST rule.
         """
         self.current_head = node.head
+
+        self.rule_dictionary[self.current_rule_position] = Rule(node)
 
         if "head" in node.child_keys:
             self.in_head = True
@@ -70,6 +75,8 @@ class GraphCreatorTransformer(Transformer):
             self.graph_ds.add_edge(node.name, tmp_head_choice_name, -1, is_choice_rule_head = True)
             self.graph_ds.add_edge(tmp_head_choice_name, node.name, -1, is_choice_rule_head = True)
 
+            self.graph_ds.add_node_to_rule_lookup(self.current_rule_position, node.name)
+
         elif self.in_head and self.head_is_choice_rule and self.head_aggregate_element_head:
             # For the "b" and "d" in {a:b;c:d} :- e.
             self.graph_ds.add_edge(self.current_head_function.name, node.name, self.node_signum)
@@ -78,6 +85,8 @@ class GraphCreatorTransformer(Transformer):
             self.head_functions.append(node)
 
             self.graph_ds.add_vertex(node.name)
+
+            self.graph_ds.add_node_to_rule_lookup(self.current_rule_position, node.name)
 
         elif self.in_head:
             print("HEAD TYPE NOT IMPLEMENTED:_")
