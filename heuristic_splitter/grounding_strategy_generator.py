@@ -16,6 +16,19 @@ class GroundingStrategyGenerator:
         self.constraint_rules = constraint_rules
 
 
+    def add_grounding_strategy_level(self, grounding_strategy, current_sota_grounded_rules, current_bdg_grounded_rules, current_lpopt_grounded_rules):
+
+        if len(current_sota_grounded_rules) > 0 or len(current_bdg_grounded_rules) > 0 or len(current_lpopt_grounded_rules) > 0:
+            grounding_strategy.append({
+                "sota":current_sota_grounded_rules.copy(),
+                "bdg":current_bdg_grounded_rules.copy(),
+                "lpopt": current_lpopt_grounded_rules.copy()
+            })
+            
+            current_sota_grounded_rules.clear()
+            current_lpopt_grounded_rules.clear()
+            current_bdg_grounded_rules.clear()
+
     def generate_grounding_strategy(self):
 
         grounding_strategy = []
@@ -38,7 +51,7 @@ class GroundingStrategyGenerator:
             exists_bdg_grounded_rule = False
 
             for node in subgraph.nodes:
-
+                # All those rules that have "node" as a head.
                 rules = self.graph_ds.node_to_rule_lookup[node]
 
                 for rule in rules:
@@ -47,21 +60,12 @@ class GroundingStrategyGenerator:
 
             
             if exists_bdg_grounded_rule is True:
-                grounding_strategy.append({
-                    "sota":current_sota_grounded_rules,
-                    "bdg":current_bdg_grounded_rules,
-                    "lpopt": current_lpopt_grounded_rules
-                })
-
-                current_sota_grounded_rules = []
-                current_lpopt_grounded_rules = []
-                current_bdg_grounded_rules = []
+                self.add_grounding_strategy_level(grounding_strategy, current_sota_grounded_rules,
+                    current_bdg_grounded_rules, current_lpopt_grounded_rules)
  
             for node in subgraph.nodes:
 
                 rules = self.graph_ds.node_to_rule_lookup[node]
-
-                print(rules)
 
                 for rule in rules:
                     if rule in self.sota_rules:
@@ -72,18 +76,11 @@ class GroundingStrategyGenerator:
                         current_lpopt_grounded_rules.append(rule)
                     else:
                         print(f"[ERROR] - Cannot associate rules: {rule}")
+                        raise NotImplementedError()
 
             if exists_bdg_grounded_rule is True:
-                grounding_strategy.append({
-                    "sota":current_sota_grounded_rules,
-                    "bdg":current_bdg_grounded_rules,
-                    "lpopt": current_lpopt_grounded_rules
-                })
-
-                current_sota_grounded_rules = []
-                current_lpopt_grounded_rules = []
-                current_bdg_grounded_rules = []
-
+                self.add_grounding_strategy_level(grounding_strategy, current_sota_grounded_rules,
+                    current_bdg_grounded_rules, current_lpopt_grounded_rules)
 
         ## CONSTRAINT HANDLING: 
 
@@ -94,15 +91,8 @@ class GroundingStrategyGenerator:
                 exists_bdg_grounded_rule = True
 
         if exists_bdg_grounded_rule is True:
-            grounding_strategy.append({
-                "sota":current_sota_grounded_rules,
-                "bdg":current_bdg_grounded_rules,
-                "lpopt": current_lpopt_grounded_rules
-            })
-
-            current_sota_grounded_rules = []
-            current_lpopt_grounded_rules = []
-            current_bdg_grounded_rules = []
+            self.add_grounding_strategy_level(grounding_strategy, current_sota_grounded_rules,
+                current_bdg_grounded_rules, current_lpopt_grounded_rules)
 
         for rule in self.constraint_rules: 
             if rule in self.sota_rules:
@@ -111,17 +101,11 @@ class GroundingStrategyGenerator:
                 current_bdg_grounded_rules.append(rule)
             elif rule in self.lpopt_rules:
                 current_lpopt_grounded_rules.append(rule)
+            else:
+                print(f"[ERROR] - Cannot associate rules: {rule}")
+                raise NotImplementedError()
 
-        grounding_strategy.append({
-            "sota":current_sota_grounded_rules,
-            "bdg":current_bdg_grounded_rules,
-            "lpopt": current_lpopt_grounded_rules
-        })
-
-        current_sota_grounded_rules = []
-        current_lpopt_grounded_rules = []
-        current_bdg_grounded_rules = []
-
-
+        self.add_grounding_strategy_level(grounding_strategy, current_sota_grounded_rules,
+            current_bdg_grounded_rules, current_lpopt_grounded_rules)
 
         return grounding_strategy

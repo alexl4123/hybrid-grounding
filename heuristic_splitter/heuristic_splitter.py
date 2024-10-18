@@ -13,6 +13,7 @@ from heuristic_splitter.treewidth_computation_strategy import TreewidthComputati
 from heuristic_splitter.heuristic_0 import Heuristic0
 
 from heuristic_splitter.grounding_strategy_generator import GroundingStrategyGenerator
+from heuristic_splitter.grounding_strategy_handler import GroundingStrategyHandler
 
 class HeuristicSplitter:
 
@@ -50,16 +51,16 @@ class HeuristicSplitter:
         if len(lpopt_rules) > 0:
             raise NotImplementedError()
 
-        print(bdg_rules)
-        print(sota_rules)
-        print(lpopt_rules)
-        print(constraint_rules)
-
         generator_grounding_strategy = GroundingStrategyGenerator(graph_ds, bdg_rules, sota_rules, lpopt_rules, constraint_rules)
         grounding_strategy = generator_grounding_strategy.generate_grounding_strategy()
 
+        print(">>>>> GROUNDING STRATEGY:")
         print(grounding_strategy)
+        print("<<<<")
 
+
+        grounding_handler = GroundingStrategyHandler(grounding_strategy, rule_dictionary)
+        grounding_handler.ground()
 
 
 

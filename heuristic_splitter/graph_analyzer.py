@@ -16,7 +16,7 @@ class GraphAnalyzer:
 
 
     def compute_stratification_labels(self):
-        
+       
         G = self.graph_ds.get_full_nx_object()
         nx.set_node_attributes(G, False, "nstrat")
         

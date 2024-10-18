@@ -15,7 +15,8 @@ class Rule:
     def set_effective_treewidth(self, effective_treewidth):
         self.effective_treewidth = effective_treewidth
 
-
+    def __str__(self):
+        return str(self.ast_rule)
 
 
 
