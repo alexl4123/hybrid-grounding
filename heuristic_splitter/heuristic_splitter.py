@@ -51,7 +51,7 @@ class HeuristicSplitter:
         if len(lpopt_rules) > 0:
             raise NotImplementedError()
 
-        generator_grounding_strategy = GroundingStrategyGenerator(graph_ds, bdg_rules, sota_rules, lpopt_rules, constraint_rules)
+        generator_grounding_strategy = GroundingStrategyGenerator(graph_ds, bdg_rules, sota_rules, lpopt_rules, constraint_rules, rule_dictionary)
         grounding_strategy = generator_grounding_strategy.generate_grounding_strategy()
 
         print(">>>>> GROUNDING STRATEGY:")
@@ -59,7 +59,7 @@ class HeuristicSplitter:
         print("<<<<")
 
 
-        grounding_handler = GroundingStrategyHandler(grounding_strategy, rule_dictionary)
+        grounding_handler = GroundingStrategyHandler(grounding_strategy, rule_dictionary, graph_ds)
         grounding_handler.ground()
 
 

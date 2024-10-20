@@ -22,6 +22,7 @@ class DomainTransformer(Transformer):
         self.current_function = None
         self.current_head_function = None
         self.head_functions = []
+        self.current_rule = None
 
         self.node_signum = None
 
@@ -29,12 +30,37 @@ class DomainTransformer(Transformer):
 
         self.current_rule_position = 0
 
+        # A dict. of all domain values
+        self.total_domain = {}
+
+        """
+        Definition of domain-dictionary:
+        ------------
+        self.domain_dictionary[node.name] = {
+            "tuples": {
+                "sure_true": {...},
+                "maybe_true": {
+                    str(TUPLE): True
+                },
+            },
+            "tuples_size": {
+                "sure_true": INT VALUE,
+                "maybe_true": INT VALUE
+            }
+            "terms": [POSITION IN LIST IS DOMAIN OF POSITION IN FUNCTION],
+            "terms_size": [POSITION IN LIST IS DOMAIN-SIZE OF POSITION IN FUNCTION]
+        }
+        for term in term_tuple:
+            -> Here the terms are added
+            self.domain_dictionary[node.name]["terms"].append({term:True})
+        """
         self.domain_dictionary = {}
 
     def visit_Rule(self, node):
         """
         Visits an clingo-AST rule.
         """
+        self.current_rule = node
         self.current_head = node.head
 
         if "head" in node.child_keys:
@@ -111,6 +137,9 @@ class DomainTransformer(Transformer):
         Takes care of most things about domain-inference.
         """
 
+        print(f"[ERROR] - FOUND VARIABLE IN GROUNDED PART: {node.name}, in Function: {self.current_function}, in Rule: {self.current_rule}")
+        raise NotImplementedError()
+
         self.visit_children(node)
 
         return node
@@ -140,6 +169,7 @@ class DomainTransformer(Transformer):
         self.head_element_index = 0
 
     def _reset_temporary_rule_variables(self):
+        self.current_rule = None
         self.current_head = None
         self.current_head_function = None
         self.head_is_choice_rule = False
@@ -153,7 +183,7 @@ class DomainTransformer(Transformer):
 
     def add_node_to_domain(self, node):
         """
-        May only be called for nodes (expected AST-Functions) in heads of rules.
+        May only be called for (grounded) nodes (expected AST-Functions) in heads of rules.
         """
 
         term_tuple = [str(argument) for argument in node.arguments]
@@ -171,6 +201,9 @@ class DomainTransformer(Transformer):
 
             for term in term_tuple:
                 self.domain_dictionary[node.name]["terms"].append({term:True})
+
+                if term not in self.total_domain:
+                    self.total_domain[term] = True
         else:
             if str(term_tuple) not in self.domain_dictionary[node.name]["tuples"]["maybe_true"]:
                 self.domain_dictionary[node.name]["tuples"]["maybe_true"][str(term_tuple)] = True
@@ -181,4 +214,24 @@ class DomainTransformer(Transformer):
 
                 if term not in self.domain_dictionary[node.name]["terms"][term_index]:
                     self.domain_dictionary[node.name]["terms"][term_index][term] = True
+                if term not in self.total_domain:
+                    self.total_domain[term] = True
+
+    def update_domain_sizes(self):
+        """
+        Computes an update of the tuple_size and term_size keys of the domain object.
+        -> This is done for efficiencies sake (not to recompute this)
+        """
+
+        for _tuple in self.domain_dictionary.keys():
+            self.domain_dictionary[_tuple]["tuples_size"] = {}
+
+            self.domain_dictionary[_tuple]["tuples_size"]["sure_true"] = len(self.domain_dictionary[_tuple]["tuples"]["sure_true"].keys())
+            self.domain_dictionary[_tuple]["tuples_size"]["maybe_true"] = len(self.domain_dictionary[_tuple]["tuples"]["maybe_true"].keys())
+
+            self.domain_dictionary[_tuple]["terms_size"] = []
+
+            for _term_index in range(len(self.domain_dictionary[_tuple]["terms"])):
+
+                self.domain_dictionary[_tuple]["terms_size"].append(len(self.domain_dictionary[_tuple]["terms"][_term_index].keys()))
 

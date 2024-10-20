@@ -11,16 +11,19 @@ from heuristic_splitter.graph_data_structure import GraphDataStructure
 from heuristic_splitter.rule import Rule
 
 
-class ApproximateGeneratedTuplesTransformer(Transformer):
+class ApproximateGeneratedSotaRulesTransformer(Transformer):
     """
     Approx. gen. tuples.
+    May only be called with 1 rule!
     """
 
     def __init__(self, domain_transformer):
 
         self.domain_transformer = domain_transformer
-        self.tuples = 1
-        self.considered_variables = []
+        self.rule_tuples = 1
+        self.variable_domains = {}
+        self.variable_domains_in_function = {}
+        self.symbolic_term_positions_in_function = []
 
         self.current_head = None
         self.current_function = None
@@ -32,8 +35,7 @@ class ApproximateGeneratedTuplesTransformer(Transformer):
         self.head_is_choice_rule = False
 
         self.current_rule_position = 0
-
-        # TODO: Implement the estimation of number of generated rules.
+        self.current_function_position = 0
 
     def visit_Rule(self, node):
         """
@@ -62,12 +64,56 @@ class ApproximateGeneratedTuplesTransformer(Transformer):
             # For the "b" and "c" in a :- b, not c.
             # For the "e" in {a:b;c:d} :- e.
 
-
             self.visit_children(node)
 
+            tuples_maybe_function = self.domain_transformer.domain_dictionary[node.name]["tuples_size"]["maybe_true"]
+            tuples_true_function = self.domain_transformer.domain_dictionary[node.name]["tuples_size"]["sure_true"]
+
+            tuples_function = tuples_maybe_function + tuples_true_function
 
 
+            variable_intersection_reduction_factor = 1
 
+            for variable in self.variable_domains_in_function:
+
+                if variable in self.variable_domains:
+
+                    if self.variable_domains[variable] < self.variable_domains_in_function[variable]:
+
+                        self.variable_domains[variable] = self.variable_domains_in_function[variable]
+                    
+                    variable_intersection_reduction_factor *= self.variable_domains[variable]
+
+                else:
+                    # Variable not in domain --> Add it:
+                    self.variable_domains[variable] = self.variable_domains_in_function[variable]
+
+
+            # ------------------------------------------------
+            # General join:
+            new_tuples = (tuples_function * self.rule_tuples)
+
+
+            # --------------------------------------------------
+            # Variable intersection join:
+            new_tuples = new_tuples / variable_intersection_reduction_factor
+
+            # -----------------------------------
+            # Account for symbolic terms:
+            # for example the "1" in p(X,1,Y)
+            # -> reduces the tuples of p by the domain of the position of "1"
+
+            symbolic_term_reduction_factor = 1
+            for function_position in self.symbolic_term_positions_in_function:
+                symbolic_term_reduction_factor *= self.domain_transformer.domain_dictionary[node.name]["terms_size"][function_position]
+
+
+            new_tuples = new_tuples / symbolic_term_reduction_factor
+
+
+            # -----------------------------------------
+            # Multiplicative addition of new-tuples:
+            self.rule_tuples = new_tuples
 
         self._reset_temporary_function_variables()
         return node
@@ -79,7 +125,13 @@ class ApproximateGeneratedTuplesTransformer(Transformer):
         """
 
         self.visit_children(node)
+
+        self.variable_domains_in_function[node.name] = self.domain_transformer.domain_dictionary[self.current_function.name]["terms_size"][self.current_function_position]
+
+
         self.current_function_position += 1
+
+
 
         return node
 
@@ -88,7 +140,11 @@ class ApproximateGeneratedTuplesTransformer(Transformer):
         Visits an clingo-AST symbolic term (constant).
         """
         if self.current_function:
+            self.symbolic_term_positions_in_function.append(self.current_function_position) 
+
             self.current_function_position += 1
+
+
 
         return node
 
@@ -128,4 +184,7 @@ class ApproximateGeneratedTuplesTransformer(Transformer):
     def _reset_temporary_function_variables(self):
         self.current_function = None
         self.current_function_position = 0
+
+        self.symbolic_term_positions_in_function = []
+        self.variable_domains_in_function = {}
 

@@ -39,11 +39,15 @@ class Heuristic0(HeuristicInterface):
         if is_constraint is True and tw_effective > maximum_rule_arity:
             bdg_rules.append(rule_position)
 
-        elif is_tight is True and tw_effective > maximum_rule_arity * 2:
+        elif is_tight is True and tw_effective > maximum_rule_arity * 1:
             bdg_rules.append(rule_position)
         
-        elif is_tight is False and tw_effective > maximum_rule_arity * 3:
+        elif is_tight is False and tw_effective > maximum_rule_arity * 1:
             bdg_rules.append(rule_position)
         
         else:
             sota_rules.append(rule_position)
+
+        self.rule_dictionary[rule_position].add_variable_graph(full_variable_graph)
+        self.rule_dictionary[rule_position].add_is_tight(is_tight)
+        self.rule_dictionary[rule_position].add_is_constraint(is_constraint)

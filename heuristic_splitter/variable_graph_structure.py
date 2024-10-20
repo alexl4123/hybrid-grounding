@@ -142,7 +142,8 @@ class VariableGraphDataStructure:
         
         return int(bag_size)
 
-
+    def is_reachable(self, v1, v2):
+        return nx.has_path(self.graph, v1, v2)
 
 
 
