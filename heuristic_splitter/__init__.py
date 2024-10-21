@@ -4,6 +4,7 @@ Main Entry Point into the heuristic_splitter.
 Parses arguments.
 """
 
+import time
 import argparse
 import sys
 
@@ -116,6 +117,7 @@ def main():
     for f in args.files:
         contents += f.read()
 
+    start_time = time.time()
     heuristic = HeuristicSplitter(
         heuristic_method,
         treewidth_strategy,
@@ -123,3 +125,7 @@ def main():
         debug_mode,
     )
     heuristic.start(contents)
+
+    end_time = time.time()
+    if debug_mode is True:
+        print(f"--> Total elapsed time for generation: {end_time - start_time}")

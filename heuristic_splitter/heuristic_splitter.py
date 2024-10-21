@@ -1,4 +1,5 @@
 
+
 from clingo.ast import ProgramBuilder, parse_string
 
 from heuristic_splitter.graph_creator_transformer import GraphCreatorTransformer

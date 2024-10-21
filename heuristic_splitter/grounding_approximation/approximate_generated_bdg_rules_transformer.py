@@ -40,6 +40,7 @@ class ApproximateGeneratedBDGRulesTransformer(Transformer):
 
         self.node_signum = None
 
+
     def visit_Rule(self, node):
         """
         Visits an clingo-AST rule.

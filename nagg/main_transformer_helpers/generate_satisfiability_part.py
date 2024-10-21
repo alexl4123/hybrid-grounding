@@ -5,6 +5,8 @@ Module for ensuring satisfiability.
 import itertools
 import re
 
+import time
+
 from ..comparison_tools import ComparisonTools
 from .helper_part import HelperPart
 
@@ -46,7 +48,10 @@ class GenerateSatisfiabilityPart:
 
         covered_subsets = self._generate_sat_comparisons()
 
+        start_time = time.time()
         self._generate_sat_functions(self.rule_head, covered_subsets)
+        end_time = time.time()
+        print(f"> ELAPSED FUNCTION TIME: {end_time - start_time}")
 
     def _generate_sat_variable_possibilities(self):
         # MOD
@@ -211,8 +216,12 @@ class GenerateSatisfiabilityPart:
                 variable_associations[variable] = index
                 index += 1
 
+            start_time = time.time()
             combinations = [p for p in itertools.product(*dom_list)]
+            end_time = time.time()
+            print(f"--> ELAPSED COMBINATION GENERATION TIME: {end_time - start_time}")
 
+            start_time = time.time()
             for current_combination in combinations:
                 current_function_arguments_string = ""
 
@@ -244,6 +253,11 @@ class GenerateSatisfiabilityPart:
                     sat_atom,
                     sat_body_list,
                 )
+
+            end_time = time.time()
+            print(f"--> ELAPSED COMBINATION LOOP TIME: {end_time - start_time}")
+
+
 
     def _check_covered_subsets(self, sat_atom, covered_subsets, sat_body_dict):
         if sat_atom in covered_subsets:  # Check for covered subsets

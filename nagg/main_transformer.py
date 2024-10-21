@@ -28,8 +28,6 @@ class MainTransformer(Transformer):
     def __init__(
         self,
         terms,
-        facts,
-        ng_heads,
         shown_predicates,
         ground_guess,
         printer,
@@ -44,8 +42,7 @@ class MainTransformer(Transformer):
         foundedness_strategy,
     ):
         self.terms = terms
-        self.facts = facts
-        self.ng_heads = ng_heads
+
         self.shown_predicates = shown_predicates
         self.ground_entire_output = ground_guess
         self.printer = printer
@@ -70,7 +67,6 @@ class MainTransformer(Transformer):
 
         self.foundedness_check = {}
         self.non_ground_rules = {}
-        self.g_counter = "A"
 
         self.program_rules = False
         self.program_count = False
@@ -292,77 +288,6 @@ class MainTransformer(Transformer):
 
         return node
 
-    def _generate_combination_information(self, h_args, f_vars_needed, c, head):
-        interpretation = []  # interpretation-list
-        interpretation_incomplete = []  # uncomplete; without removed vars
-        nnv = []  # not needed vars
-        combs_covered = (
-            []
-        )  # combinations covered with the (reduced combinations); len=1 when no variable is removed
-
-        if h_args == [""]:  # catch head/0
-            return (
-                interpretation,
-                interpretation_incomplete,
-                [[""]],
-                [
-                    str(h_args.index(v))
-                    for v in h_args
-                    if v in f_vars_needed or v in self.terms
-                ],
-            )
-
-        for _, v in enumerate(h_args):
-            if v not in f_vars_needed and v not in self.terms:
-                nnv.append(v)
-            else:
-                interpretation_incomplete.append(
-                    c[f_vars_needed.index(v)] if v in f_vars_needed else v
-                )
-            interpretation.append(
-                c[f_vars_needed.index(v)] if v in f_vars_needed else v
-            )
-
-        head_interpretation = ",".join(interpretation)  # can include vars
-
-        if (
-            head.name in self.facts
-            and len(h_args) in self.facts[head.name]
-            and head_interpretation in self.facts[head.name][len(h_args)]
-        ):
-            # no foundation check for this combination, its a fact!
-            return None, None, None, None
-        combs_covered.append(interpretation)
-
-        index_vars = [
-            str(h_args.index(v))
-            for v in h_args
-            if v in f_vars_needed or v in self.terms
-        ]
-
-        return interpretation, interpretation_incomplete, combs_covered, index_vars
-
-    def _add_to_foundedness_check(self, pred, arity, combinations, rule, indices):
-        indices = tuple(indices)
-
-        for c in combinations:
-            c = tuple(c)
-            if pred not in self.foundedness_check:
-                self.foundedness_check[pred] = {}
-                self.foundedness_check[pred][arity] = {}
-                self.foundedness_check[pred][arity][c] = {}
-                self.foundedness_check[pred][arity][c][rule] = {indices}
-            elif arity not in self.foundedness_check[pred]:
-                self.foundedness_check[pred][arity] = {}
-                self.foundedness_check[pred][arity][c] = {}
-                self.foundedness_check[pred][arity][c][rule] = {indices}
-            elif c not in self.foundedness_check[pred][arity]:
-                self.foundedness_check[pred][arity][c] = {}
-                self.foundedness_check[pred][arity][c][rule] = {indices}
-            elif rule not in self.foundedness_check[pred][arity][c]:
-                self.foundedness_check[pred][arity][c][rule] = {indices}
-            else:
-                self.foundedness_check[pred][arity][c][rule].add(indices)
 
     def _output_node_format_conform(self, rule):
         """
@@ -649,37 +574,6 @@ class MainTransformer(Transformer):
     def handle_ground_rule(self, node):
         """
         Handle rule which shall be rewritten and is ground.
-        """
-
-        """
-        pred = str(node.head).split("(", 1)[0]
-        arguments = re.sub(r"^.*?\(", "", str(node.head))[:-1].split(",")
-        arity = len(arguments)
-        arguments = ",".join(arguments)
-
-        if (
-            pred in self.ng_heads
-            and arity in self.ng_heads[pred]
-            and not (
-                pred in self.facts
-                and arity in self.facts[pred]
-                and arguments in self.facts[pred][arity]
-            )
-        ):
-            for body_atom in node.body:
-                if str(body_atom).startswith("not "):
-                    neg = ""
-                else:
-                    neg = "not "
-                self.printer.custom_print(
-                    f"r{self.g_counter}_unfound({arguments}) :- "
-                    f"{ neg + str(body_atom)}."
-                )
-            self._add_to_foundedness_check(
-                pred, arity, [arguments.split(",")], self.g_counter, range(0, arity)
-            )
-            self.g_counter = chr(ord(self.g_counter) + 1)
-        # print rule as it is
         """
 
         self._output_node_format_conform(node)

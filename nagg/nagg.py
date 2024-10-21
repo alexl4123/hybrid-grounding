@@ -5,6 +5,8 @@ Contains the nagg class,
 which is used for the tranformations.
 """
 
+import time
+
 import networkx as nx
 from clingo.ast import ProgramBuilder, parse_string
 from clingo.control import Control
@@ -52,20 +54,38 @@ class NaGG:
 
         self.foundedness_strategy = foundedness_strategy
 
-    def start(self, contents):
+    def start(self, contents, domain_inference = None):
         """
         Start method of the nagg.
         Call this method to start the rewriting procedure.
         """
-        (
-            domain,
-            safe_variables,
-            term_transformer,
-            rule_strongly_connected_comps,
-            predicates_strongly_connected_comps,
-            rule_strongly_connected_comps_heads,
-            scc_rule_functions_scc_lookup,
-        ) = self.start_domain_inference(contents)
+
+        start_time = time.time()
+        if domain_inference is None:
+            (
+                domain,
+                safe_variables,
+                term_transformer,
+                rule_strongly_connected_comps,
+                predicates_strongly_connected_comps,
+                rule_strongly_connected_comps_heads,
+                scc_rule_functions_scc_lookup,
+            ) = self.start_domain_inference(contents)
+        else:
+
+            domain = domain_inference.nagg_domain
+            safe_variables = domain_inference.nagg_safe_variables
+            term_transformer = domain_inference.term_transformer
+
+            rule_strongly_connected_comps = {}
+            predicates_strongly_connected_comps = {}
+            rule_strongly_connected_comps_heads = {}
+            scc_rule_functions_scc_lookup = {}
+
+        end_time = time.time()
+        print(f"> ELAPSED DOMAIN INFERENCE TIME: {end_time - start_time}")
+
+
 
         if "0_terms" not in domain and len(domain.keys()) > 0:
             # No domain could be inferred, therefore return nothing.
@@ -79,6 +99,7 @@ class NaGG:
         aggregate_transformer_output_program = "\n".join(shown_predicates + rewritten_program)
 
 
+        start_time = time.time()
         if self.grounding_mode == GroundingModes.REWRITE_AGGREGATES_NO_GROUND:
             # Only rewrite
             self.output_printer.custom_print(aggregate_transformer_output_program)
@@ -95,6 +116,8 @@ class NaGG:
                 scc_rule_functions_scc_lookup,
                 shown_predicates
             )
+        end_time = time.time()
+        print(f"> ELAPSED MAIN TRANSFORMER TIME: {end_time - start_time}")
 
     def start_aggregate_transformer(self, contents, domain):
         """
@@ -174,8 +197,6 @@ class NaGG:
         with ProgramBuilder(ctl) as program_builder:
             transformer = MainTransformer(
                 term_transformer.terms,
-                term_transformer.facts,
-                term_transformer.ng_heads,
                 term_transformer.shown_predicates,
                 self.ground_guess,
                 self.output_printer,

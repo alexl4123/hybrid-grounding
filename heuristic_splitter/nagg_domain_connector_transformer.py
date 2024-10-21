@@ -1,6 +1,6 @@
 # pylint: disable=C0103
 """
-Necessary for Tuples Approx.
+TODO
 """
 
 import clingo
@@ -11,19 +11,12 @@ from heuristic_splitter.graph_data_structure import GraphDataStructure
 from heuristic_splitter.rule import Rule
 
 
-class VariableDomainInferenceTransformer(Transformer):
+class NaGGDomainConnectorTransformer(Transformer):
     """
-    Infer Domain of variables of BDG rule (intersections between domains):
-    May only be called with 1 rule!
+     TODO
     """
 
-    def __init__(self, domain_transformer, rule):
-
-        self.domain_transformer = domain_transformer
-        self.variable_domains_helper = {}
-        self.variable_domains = {}
-        self.variable_domains_in_function = {}
-
+    def __init__(self):
         self.current_head = None
         self.current_function = None
         self.current_head_function = None
@@ -35,10 +28,13 @@ class VariableDomainInferenceTransformer(Transformer):
         self.current_rule_position = 0
         self.current_function_position = 0
 
-        self.head_variables = {}
-
         self.in_body = False
         self.in_head = False
+
+        self.shown_predicates = {}
+
+
+        self.nagg_safe_variables = {}
 
     def visit_Rule(self, node):
         """
@@ -58,9 +54,6 @@ class VariableDomainInferenceTransformer(Transformer):
             self._dispatch(old)
             self.in_body = False
 
-        for variable in self.variable_domains_helper.keys():
-            self.variable_domains[variable] = len(self.variable_domains_helper[variable])
-
         self.current_rule_position += 1
         self._reset_temporary_rule_variables()
         return node
@@ -73,22 +66,11 @@ class VariableDomainInferenceTransformer(Transformer):
 
         self.visit_children(node)
 
-        if self.in_body:
-            # Only consider body stuff
-            # For the "b" and "c" in a :- b, not c.
-            # For the "e" in {a:b;c:d} :- e.
+        if str(node) not in self.shown_predicates:
 
+            arity = len(list(str(node).split(",")))
 
-            for variable in self.variable_domains_in_function.keys():
-
-                if variable in self.variable_domains_helper:
-
-                    # Domain Intersection:
-                    self.variable_domains_helper[variable] = set(list(self.variable_domains_helper[variable])).intersection(set(list(self.variable_domains_in_function[variable])))
-
-                else:
-                    # Variable not in domain --> Add it:
-                    self.variable_domains_helper[variable] = list(self.variable_domains_in_function[variable].keys())
+            self.shown_predicates[str(node.name)] = {arity}
 
 
         self._reset_temporary_function_variables()
@@ -102,17 +84,21 @@ class VariableDomainInferenceTransformer(Transformer):
 
         self.visit_children(node)
 
-        if self.in_body is True:
-            if self.current_function is not None and self.current_function.name in self.domain_transformer.domain_dictionary:
-                if node.name not in self.variable_domains_in_function:
-                    self.variable_domains_in_function[node.name] = self.domain_transformer.domain_dictionary[self.current_function.name]["terms"][self.current_function_position]
-                elif len(self.variable_domains_in_function[node.name].keys()) > len(self.domain_transformer.domain_dictionary[self.current_function.name]["terms"][self.current_function_position].keys()):
-                    self.variable_domains_in_function[node.name] = self.domain_transformer.domain_dictionary[self.current_function.name]["terms"][self.current_function_position]
-            else:
-                self.variable_domains_in_function[node.name] = self.domain_transformer.total_domain           
+        if self.in_body is True and self.node_signum > 0 and self.current_function is not None:
 
-        elif self.in_head is True:
-            self.head_variables[node.name] = self.current_function_position
+            if self.current_rule_position not in self.nagg_safe_variables:
+                self.nagg_safe_variables[self.current_rule_position] = {}
+
+            if str(node) not in self.nagg_safe_variables[self.current_rule_position]:
+                self.nagg_safe_variables[self.current_rule_position][str(node)] = []
+
+            to_add_dict = {}
+            to_add_dict["type"] = "function"
+            to_add_dict["name"] = str(self.current_function.name)
+            to_add_dict["position"] = str(self.current_function_position)
+            to_add_dict["signum"] = str(0) # NaGG uses 0 as positive, but the heuristics +1
+
+            self.nagg_safe_variables[self.current_rule_position][str(node)].append(to_add_dict)
 
         self.current_function_position += 1
 
@@ -163,4 +149,5 @@ class VariableDomainInferenceTransformer(Transformer):
         self.current_function_position = 0
 
         self.variable_domains_in_function = {}
+
 
