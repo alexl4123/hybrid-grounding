@@ -103,8 +103,11 @@ class VariableDomainInferenceTransformer(Transformer):
         self.visit_children(node)
 
         if self.in_body is True:
-            if self.current_function.name in self.domain_transformer.domain_dictionary:
-                self.variable_domains_in_function[node.name] = self.domain_transformer.domain_dictionary[self.current_function.name]["terms"][self.current_function_position]
+            if self.current_function is not None and self.current_function.name in self.domain_transformer.domain_dictionary:
+                if node.name not in self.variable_domains_in_function:
+                    self.variable_domains_in_function[node.name] = self.domain_transformer.domain_dictionary[self.current_function.name]["terms"][self.current_function_position]
+                elif len(self.variable_domains_in_function[node.name].keys()) > len(self.domain_transformer.domain_dictionary[self.current_function.name]["terms"][self.current_function_position].keys()):
+                    self.variable_domains_in_function[node.name] = self.domain_transformer.domain_dictionary[self.current_function.name]["terms"][self.current_function_position]
             else:
                 self.variable_domains_in_function[node.name] = self.domain_transformer.total_domain
 

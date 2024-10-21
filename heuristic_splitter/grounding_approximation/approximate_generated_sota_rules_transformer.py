@@ -38,6 +38,7 @@ class ApproximateGeneratedSotaRulesTransformer(Transformer):
 
         self.current_rule_position = 0
         self.current_function_position = 0
+        self.current_function = None
 
     def visit_Rule(self, node):
         """
@@ -143,12 +144,14 @@ class ApproximateGeneratedSotaRulesTransformer(Transformer):
 
         self.visit_children(node)
 
-        if self.current_function.name in self.domain_transformer.domain_dictionary:
-            self.variable_domains_in_function[node.name] = self.domain_transformer.domain_dictionary[self.current_function.name]["terms_size"][self.current_function_position]
+        if self.current_function is not None and self.current_function.name in self.domain_transformer.domain_dictionary:
+            if node.name not in self.variable_domains_in_function:
+                self.variable_domains_in_function[node.name] = self.domain_transformer.domain_dictionary[self.current_function.name]["terms_size"][self.current_function_position]
+            elif self.variable_domains_in_function[node.name] > self.domain_transformer.domain_dictionary[self.current_function.name]["terms_size"][self.current_function_position]:
+                self.variable_domains_in_function[node.name] = self.domain_transformer.domain_dictionary[self.current_function.name]["terms_size"][self.current_function_position]
         else:  
             total_domain = len(self.domain_transformer.total_domain.keys())
             self.variable_domains_in_function[node.name] = total_domain 
-
 
         self.current_function_position += 1
 

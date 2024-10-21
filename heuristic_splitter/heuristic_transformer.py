@@ -10,6 +10,8 @@ from heuristic_splitter.variable_graph_structure import VariableGraphDataStructu
 from heuristic_splitter.graph_data_structure import GraphDataStructure
 from heuristic_splitter.heuristic import HeuristicInterface
 
+from nagg.comparison_tools import ComparisonTools
+
 class HeuristicTransformer(Transformer):
     """
     Necessary for domain inference.
@@ -40,26 +42,39 @@ class HeuristicTransformer(Transformer):
 
         self.stratified_variables = []
 
+        # Output -> How to ground the rule according to the heuristic used.
         self.bdg_rules = bdg_rules
         self.sota_rules = sota_rules
         self.lpopt_rules = lpopt_rules
+        self.constraint_rules = constraint_rules
 
+        # Used to determine if a rule is tight, or non-tight.
         self.head_atoms_scc_membership = {}
         self.body_atoms_scc_membership = {}
 
         self.heuristic = used_heuristic
 
+        # Inside a function, to check on what position of the arguments we currently are.
         self.current_function_position = 0
 
         self.head_aggregate_element_head = False
         self.head_aggregate_element_body = False
         self.in_head_aggregate = False
 
+        # Used for heuristic decision.
         self.maximum_rule_arity = 0
 
+        # To check if the rule is a constraint (used for heuristic decision).
         self.is_constraint = False
 
-        self.constraint_rules = constraint_rules
+        # Used in comparison (for variable graph)
+        self.is_comparison = False
+        self.current_comparison_variables = []
+
+        # Dictionary storing all variables from functions, and comparisons.
+        # In order to check if they are induced by either.
+        self.all_positive_function_variables = {}
+        self.all_comparison_variables = {}
 
 
     def visit_Rule(self, node):
@@ -94,7 +109,9 @@ class HeuristicTransformer(Transformer):
             self.maximum_rule_arity, self.is_constraint,
             self.has_aggregate,
             node,
-            self.current_rule_position)
+            self.current_rule_position,
+            self.all_positive_function_variables,
+            self.all_comparison_variables,)
 
         self.current_rule_position += 1
         self._reset_temporary_rule_variables()
@@ -207,13 +224,24 @@ class HeuristicTransformer(Transformer):
         Visits an clingo-AST variable.
         """
 
-        if self.in_head_aggregate is False and self.head_is_choice_rule is False:
+        if self.is_comparison is True:
+            self.current_comparison_variables.append(str(node))
+
+            if str(node) not in self.all_comparison_variables:
+                self.all_comparison_variables[str(node)] = True
+
+        elif self.in_head_aggregate is False and self.head_is_choice_rule is False:
             if self.current_function is not None:
                 # Derived from predicate:
                 self.current_function_variables.append(str(node))
 
+            if self.node_signum > 0 and self.current_function is not None:
+                if str(node) not in self.all_positive_function_variables:
+                    self.all_positive_function_variables[str(node)] = True
+
         if self.current_function:
             self.current_function_position += 1
+    
 
 
         self.visit_children(node)
@@ -250,6 +278,31 @@ class HeuristicTransformer(Transformer):
         self._reset_temporary_literal_variables()
 
         return node
+
+    def visit_Comparison(self, node):
+        """
+        Visits a clinto-AST comparison.
+        """
+
+        self.is_comparison = True
+        self.visit_children(node)
+
+        for variable_0_index in range(len(self.current_comparison_variables)):
+            for variable_1_index in range(variable_0_index + 1, len(self.current_comparison_variables)):
+
+                variable_0 = self.current_comparison_variables[variable_0_index]
+                variable_1 = self.current_comparison_variables[variable_1_index]
+
+                self.variable_graph.add_edge(str(variable_0),str(variable_1))
+
+
+
+        self.current_comparison_variables = []
+        self.is_comparison = False
+
+        return node
+
+
 
 
 

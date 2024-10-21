@@ -1,4 +1,5 @@
 # pylint: disable=C0103
+
 """
 Approx. gen. bdg rules.
 """
@@ -34,6 +35,8 @@ class ApproximateGeneratedBDGRulesTransformer(Transformer):
 
         self.function_variables = {}
         self.current_function_position = 0
+
+        self.comparison_variables = {}
 
         self.node_signum = None
 
@@ -165,60 +168,7 @@ class ApproximateGeneratedBDGRulesTransformer(Transformer):
             self.bdg_rules += head_rules
 
         elif self.in_body is True:
-
-            # ------ SAT PART ------ :
-            sat_rules = 1
-            for function_variable in self.function_variables.keys():
-                sat_rules *= self.variable_domains[function_variable]
-
-            self.sat_rules += sat_rules
-
-            if self.rule.is_constraint is False:
-                # ------- NEW FOUNDEDNESS PART -----
-                n_found_rules = 1
-                for function_variable in self.function_variables.keys():
-                    n_found_rules *= self.variable_domains[function_variable]
-                self.found_new_rules += n_found_rules
-
-                # ------- OLD FOUNDEDNESS PART ------
-                reachable = False
-                for head_variable in self.head_variables.keys():
-                    for function_variable in self.function_variables.keys():
-
-                        v_head_variable = self.rule.variable_graph.predicate_to_index_lookup[head_variable]
-                        v_function_variable = self.rule.variable_graph.predicate_to_index_lookup[function_variable]
-
-                        is_reachable = self.rule.variable_graph.is_reachable(v_head_variable, v_function_variable)
-
-                        if is_reachable is True:
-                            reachable = is_reachable
-                            break
-                    
-                    if reachable is True:
-                        break
-                
-                if reachable is False:
-                    # No Variable Justifying independence:
-                    o_found_rules = 1
-                    for function_variable in self.function_variables.keys():
-                        o_found_rules *= self.variable_domains[function_variable]
-                    self.found_old_rules += o_found_rules
-                else:
-                    # Worst case 2*artiy exponential:
-                    # Head variables + variables in function differing from head variables (union of variables):
-                    to_ground_variables = list(set(list(self.head_variables.keys()) + list(self.function_variables.keys())))
-
-                    combinations = 1
-                    for to_ground_variable in to_ground_variables:
-                        combinations *= self.variable_domains[to_ground_variable]
-
-                    self.found_old_rules += combinations
-           
-
-
-
-            
-
+            self._estimate_body_literal_bdg_rules(self.function_variables)
         else:
             print("[ERROR] - Neither head nor body")
             raise NotImplementedError()
@@ -240,6 +190,8 @@ class ApproximateGeneratedBDGRulesTransformer(Transformer):
             self.function_variables[node.name] = self.current_function_position
 
             self.current_function_position += 1
+        elif self.is_comparison:
+            self.comparison_variables[node.name] = 0
 
         return node
 
@@ -273,6 +225,20 @@ class ApproximateGeneratedBDGRulesTransformer(Transformer):
 
         return node
 
+    def visit_Comparison(self, node):
+        """
+        Visits a clinto-AST comparison.
+        """
+
+        self.is_comparison = True
+        self.visit_children(node)
+
+        self._estimate_body_literal_bdg_rules(self.comparison_variables)
+
+        self.comparison_variables = {}
+        self.is_comparison = False
+
+        return node
 
 
     def _reset_temporary_literal_variables(self):
@@ -287,4 +253,56 @@ class ApproximateGeneratedBDGRulesTransformer(Transformer):
         self.current_function_position = 0
 
         self.function_variables = {}
+
+    def _estimate_body_literal_bdg_rules(self, function_variables):
+
+        # ------ SAT PART ------ :
+        sat_rules = 1
+        for function_variable in function_variables.keys():
+            sat_rules *= self.variable_domains[function_variable]
+
+        self.sat_rules += sat_rules
+
+        if self.rule.is_constraint is False:
+            # ------- NEW FOUNDEDNESS PART -----
+            n_found_rules = 1
+            for function_variable in function_variables.keys():
+                n_found_rules *= self.variable_domains[function_variable]
+            self.found_new_rules += n_found_rules
+
+            # ------- OLD FOUNDEDNESS PART ------
+            reachable = False
+            for head_variable in self.head_variables.keys():
+                for function_variable in function_variables.keys():
+
+                    v_head_variable = self.rule.variable_graph.predicate_to_index_lookup[head_variable]
+                    v_function_variable = self.rule.variable_graph.predicate_to_index_lookup[function_variable]
+
+                    is_reachable = self.rule.variable_graph.is_reachable(v_head_variable, v_function_variable)
+
+                    if is_reachable is True:
+                        reachable = is_reachable
+                        break
+                
+                if reachable is True:
+                    break
+            
+            if reachable is False:
+                # No Variable Justifying independence:
+                o_found_rules = 1
+                for function_variable in function_variables.keys():
+                    o_found_rules *= self.variable_domains[function_variable]
+                self.found_old_rules += o_found_rules
+            else:
+                # Worst case 2*artiy exponential:
+                # Head variables + variables in function differing from head variables (union of variables):
+                to_ground_variables = list(set(list(self.head_variables.keys()) + list(function_variables.keys())))
+
+                combinations = 1
+                for to_ground_variable in to_ground_variables:
+                    combinations *= self.variable_domains[to_ground_variable]
+
+                self.found_old_rules += combinations
+        
+
 

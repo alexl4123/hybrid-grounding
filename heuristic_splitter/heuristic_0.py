@@ -16,13 +16,18 @@ class Heuristic0(HeuristicInterface):
             maximum_rule_arity, is_constraint,
             has_aggregate,
             ast_rule_node,
-            rule_position):
+            rule_position,
+            all_positive_function_variables,
+            all_comparison_variables,):
+
+        # If variables are induced by a comparison, they are not handled by BDG (inefficient domain inference) 
+        all_comparison_variables_safe_by_predicate = set(all_comparison_variables.keys()).issubset(set(all_positive_function_variables.keys()))
 
         full_variable_graph = variable_graph.clone()
 
+        # Stratified variables are not considered in the rewriting, as they are not grounded in SOTA grounders.
         for stratified_variable in set(stratified_variables):
             variable_graph.remove_variable(str(stratified_variable))
-
 
         # The +1 comes from the number of variables (tw is max bag-size -1, so we need to add 1 again)
         if self.treewidth_strategy == TreewidthComputationStrategy.NETWORKX_HEUR:
@@ -36,15 +41,14 @@ class Heuristic0(HeuristicInterface):
         
         is_tight = len([True for head_key in head_atoms_scc_membership.keys() if head_key in body_atoms_scc_membership]) == 0
 
-        if is_constraint is True and tw_effective > maximum_rule_arity:
+        if is_constraint is True and tw_effective > maximum_rule_arity and all_comparison_variables_safe_by_predicate is True:
             bdg_rules.append(rule_position)
 
-        elif is_tight is True and tw_effective > maximum_rule_arity * 1:
+        elif is_tight is True and tw_effective > maximum_rule_arity * 1 and all_comparison_variables_safe_by_predicate is True:
             bdg_rules.append(rule_position)
         
-        elif is_tight is False and tw_effective > maximum_rule_arity * 1:
+        elif is_tight is False and tw_effective > maximum_rule_arity * 1 and all_comparison_variables_safe_by_predicate is True:
             bdg_rules.append(rule_position)
-        
         else:
             sota_rules.append(rule_position)
 

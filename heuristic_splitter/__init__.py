@@ -9,6 +9,7 @@ import sys
 
 from heuristic_splitter.heuristic_strategy import HeuristicStrategy
 from heuristic_splitter.heuristic_splitter import HeuristicSplitter
+from heuristic_splitter.grounding_strategy import GroundingStrategy
 
 from heuristic_splitter.treewidth_computation_strategy import TreewidthComputationStrategy
 
@@ -18,6 +19,16 @@ def main():
     Parses arguments and calls heurstic_splitter class.
     """
 
+    grounding_strategies = {
+        "FULL": {
+            "cmd_line": "full",
+            "enum_mode": GroundingStrategy.FULL
+            },
+        "SUGGEST_USAGE": {
+            "cmd_line": "suggest-bdg-usage",
+            "enum_mode": GroundingStrategy.SUGGEST_USAGE,
+        },
+    }
 
     heuristic_methods = {
         "VARIABLE": {
@@ -53,6 +64,13 @@ def main():
             for key in heuristic_methods.keys()
         ],
     )
+
+    parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="Print debug information.",
+    )
+
     parser.add_argument(
         "--treewidth-strategy",
         default=treewidth_strategies["NETWORKX"]["cmd_line"],
@@ -61,6 +79,15 @@ def main():
             for key in treewidth_strategies.keys()
         ],
     )
+    parser.add_argument(
+        "--grounding-strategy",
+        default=grounding_strategies["FULL"]["cmd_line"],
+        choices=[
+            grounding_strategies[key]["cmd_line"]
+            for key in grounding_strategies.keys()
+        ],
+    )
+ 
 
 
 
@@ -77,6 +104,13 @@ def main():
         if args.treewidth_strategy == treewidth_strategies[key]["cmd_line"]:
             treewidth_strategy = treewidth_strategies[key]["enum_mode"]
 
+    grounding_strategy = None
+    for key in grounding_strategies.keys():
+        if args.grounding_strategy == grounding_strategies[key]["cmd_line"]:
+            grounding_strategy = grounding_strategies[key]["enum_mode"]
+
+    debug_mode = args.debug
+
 
     contents = ""
     for f in args.files:
@@ -85,5 +119,7 @@ def main():
     heuristic = HeuristicSplitter(
         heuristic_method,
         treewidth_strategy,
+        grounding_strategy,
+        debug_mode,
     )
     heuristic.start(contents)

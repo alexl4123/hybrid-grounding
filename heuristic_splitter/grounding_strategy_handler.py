@@ -33,11 +33,12 @@ class CustomOutputPrinter(DefaultOutputPrinter):
 
 class GroundingStrategyHandler:
 
-    def __init__(self, grounding_strategy: GroundingStrategyGenerator, rule_dictionary, graph_ds: GraphDataStructure):
+    def __init__(self, grounding_strategy: GroundingStrategyGenerator, rule_dictionary, graph_ds: GraphDataStructure, debug_mode):
 
         self.grounding_strategy = grounding_strategy
         self.rule_dictionary = rule_dictionary
         self.graph_ds = graph_ds
+        self.debug_mode = debug_mode
 
     def ground(self):
 
@@ -51,7 +52,8 @@ class GroundingStrategyHandler:
             bdg_rules = level["bdg"]
             lpopt_rules = level["lpopt"]
 
-            print(f"-- {level_index}: SOTA-RULES: {sota_rules}, BDG-RULES: {bdg_rules}")
+            if self.debug_mode is True:
+                print(f"-- {level_index}: SOTA-RULES: {sota_rules}, BDG-RULES: {bdg_rules}")
 
             if len(bdg_rules) > 0:
 
@@ -95,13 +97,14 @@ class GroundingStrategyHandler:
                     else:
                         used_method = "BDG_OLD"
 
-                    print("-------------------------")
-                    print(f"Rule: {rule}")
-                    print(f"SOTA: {approximated_sota_rule_instantiations}")
-                    print(f"BDG-OLD: {approximated_bdg_old_rule_instantiations}")
-                    print(f"BDG-NEW: {approximated_bdg_new_rule_instantiations}")
-                    print(f"USED-METHOD: {used_method}")
-                    print("-------------------------")
+                    if self.debug_mode is True:
+                        print("-------------------------")
+                        print(f"Rule: {rule}")
+                        print(f"SOTA: {approximated_sota_rule_instantiations}")
+                        print(f"BDG-OLD: {approximated_bdg_old_rule_instantiations}")
+                        print(f"BDG-NEW: {approximated_bdg_new_rule_instantiations}")
+                        print(f"USED-METHOD: {used_method}")
+                        print("-------------------------")
 
                     if used_method == "SOTA":
                         sota_rules.append(bdg_rule)
@@ -162,12 +165,14 @@ class GroundingStrategyHandler:
 
                 grounded_program = decoded_string
 
-                print("+++++")
-                print(sota_rules)
-                print(decoded_string)
-                print(domain_transformer.domain_dictionary)
+                if self.debug_mode is True:
+                    print("+++++")
+                    print(sota_rules)
+                    print(decoded_string)
+                    print(domain_transformer.domain_dictionary)
 
-        print("--- FINAL ---") 
+        if self.debug_mode is True:
+            print("--- FINAL ---") 
         print(grounded_program)
 
     def rule_list_to_rule_string(self, rules):
@@ -185,8 +190,6 @@ class GroundingStrategyHandler:
     def start_gringo(self, grounded_program, rules, timeout=1800):
 
         program_input = grounded_program + "\n" + self.rule_list_to_rule_string(rules) 
-        print(program_input)
-
 
         arguments = ["gringo", "-t"]
 

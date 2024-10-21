@@ -9,6 +9,7 @@ from heuristic_splitter.heuristic_transformer import HeuristicTransformer
 
 from heuristic_splitter.heuristic_strategy import HeuristicStrategy
 from heuristic_splitter.treewidth_computation_strategy import TreewidthComputationStrategy
+from heuristic_splitter.grounding_strategy import GroundingStrategy
 
 from heuristic_splitter.heuristic_0 import Heuristic0
 
@@ -17,10 +18,12 @@ from heuristic_splitter.grounding_strategy_handler import GroundingStrategyHandl
 
 class HeuristicSplitter:
 
-    def __init__(self, heuristic_strategy: HeuristicStrategy, treewidth_strategy: TreewidthComputationStrategy):
+    def __init__(self, heuristic_strategy: HeuristicStrategy, treewidth_strategy: TreewidthComputationStrategy, grounding_strategy:GroundingStrategy, debug_mode):
 
         self.heuristic_strategy = heuristic_strategy
         self.treewidth_strategy = treewidth_strategy
+        self.grounding_strategy = grounding_strategy
+        self.debug_mode = debug_mode
 
 
     def start(self, contents):
@@ -30,7 +33,6 @@ class HeuristicSplitter:
 
         graph_transformer = GraphCreatorTransformer(graph_ds, rule_dictionary)
         parse_string(contents, lambda stm: graph_transformer(stm))
-
 
         graph_analyzer = GraphAnalyzer(graph_ds)
         graph_analyzer.start()
@@ -54,25 +56,30 @@ class HeuristicSplitter:
         generator_grounding_strategy = GroundingStrategyGenerator(graph_ds, bdg_rules, sota_rules, lpopt_rules, constraint_rules, rule_dictionary)
         grounding_strategy = generator_grounding_strategy.generate_grounding_strategy()
 
-        print(">>>>> GROUNDING STRATEGY:")
-        print(grounding_strategy)
-        print("<<<<")
+        if self.debug_mode is True:
+            print(">>>>> GROUNDING STRATEGY:")
+            print(grounding_strategy)
+            print("<<<<")
 
+        if self.grounding_strategy == GroundingStrategy.FULL:
 
-        grounding_handler = GroundingStrategyHandler(grounding_strategy, rule_dictionary, graph_ds)
-        grounding_handler.ground()
+            grounding_handler = GroundingStrategyHandler(grounding_strategy, rule_dictionary, graph_ds, self.debug_mode)
+            grounding_handler.ground()
 
+        else:
 
+            for sota_rule in sota_rules:
+                print(str(rule_dictionary[sota_rule]))
 
+            if len(bdg_rules) > 0:
+                print("#program rules.")
 
+                for bdg_rule in bdg_rules:
+                    print(str(rule_dictionary[bdg_rule]))
 
-        """ 
-        for sota_rule in sota_rules:
-            print(str(sota_rule))
+            if len(lpopt_rules) > 0:
+                print("#program lpopt.")
 
-        if len(bdg_rules) > 0:
-            print("#program rules.")
+                for lpopt_rule in lpopt_rules:
+                    print(str(rule_dictionary[lpopt_rule]))
 
-            for bdg_rule in bdg_rules:
-                print(str(bdg_rule))
-        """
