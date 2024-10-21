@@ -223,15 +223,34 @@ class DomainTransformer(Transformer):
         -> This is done for efficiencies sake (not to recompute this)
         """
 
+        average = 0
+        count = 0
+
         for _tuple in self.domain_dictionary.keys():
             self.domain_dictionary[_tuple]["tuples_size"] = {}
 
-            self.domain_dictionary[_tuple]["tuples_size"]["sure_true"] = len(self.domain_dictionary[_tuple]["tuples"]["sure_true"].keys())
-            self.domain_dictionary[_tuple]["tuples_size"]["maybe_true"] = len(self.domain_dictionary[_tuple]["tuples"]["maybe_true"].keys())
+            number_sure_tuples = len(self.domain_dictionary[_tuple]["tuples"]["sure_true"].keys())
+            self.domain_dictionary[_tuple]["tuples_size"]["sure_true"] = number_sure_tuples
+            number_maybe_tuples = len(self.domain_dictionary[_tuple]["tuples"]["maybe_true"].keys())
+            self.domain_dictionary[_tuple]["tuples_size"]["maybe_true"] = number_maybe_tuples
 
             self.domain_dictionary[_tuple]["terms_size"] = []
 
+            domain_combinations = 1
+
             for _term_index in range(len(self.domain_dictionary[_tuple]["terms"])):
 
-                self.domain_dictionary[_tuple]["terms_size"].append(len(self.domain_dictionary[_tuple]["terms"][_term_index].keys()))
+                terms_size = len(self.domain_dictionary[_tuple]["terms"][_term_index].keys())
+                self.domain_dictionary[_tuple]["terms_size"].append(terms_size)
+
+                domain_combinations *= terms_size
+
+            percentage = (number_sure_tuples + number_maybe_tuples) / domain_combinations
+
+            average = average + (percentage - average) / (count + 1)
+
+        self.domain_dictionary["_average_domain_tuples"] = average
+        
+
+
 

@@ -3,6 +3,8 @@
 Necessary for Tuples Approx.
 """
 
+import math
+
 import clingo
 from clingo.ast import Transformer
 
@@ -66,8 +68,23 @@ class ApproximateGeneratedSotaRulesTransformer(Transformer):
 
             self.visit_children(node)
 
-            tuples_maybe_function = self.domain_transformer.domain_dictionary[node.name]["tuples_size"]["maybe_true"]
-            tuples_true_function = self.domain_transformer.domain_dictionary[node.name]["tuples_size"]["sure_true"]
+            if node.name in self.domain_transformer.domain_dictionary:
+                tuples_maybe_function = self.domain_transformer.domain_dictionary[node.name]["tuples_size"]["maybe_true"]
+                tuples_true_function = self.domain_transformer.domain_dictionary[node.name]["tuples_size"]["sure_true"]
+            else:
+
+                average_tuples = self.domain_transformer.domain_dictionary["_average_domain_tuples"]
+                total_domain = len(self.domain_transformer.total_domain.keys())
+
+                arity = len(str(self.current_function.name).split(","))
+
+                combinations = 1
+                for _ in range(arity):
+                    combinations *= total_domain
+                
+                tuples_maybe_function = int(math.ceil(average_tuples * combinations))
+                tuples_true_function = 0
+
 
             tuples_function = tuples_maybe_function + tuples_true_function
 
@@ -126,12 +143,14 @@ class ApproximateGeneratedSotaRulesTransformer(Transformer):
 
         self.visit_children(node)
 
-        self.variable_domains_in_function[node.name] = self.domain_transformer.domain_dictionary[self.current_function.name]["terms_size"][self.current_function_position]
+        if self.current_function.name in self.domain_transformer.domain_dictionary:
+            self.variable_domains_in_function[node.name] = self.domain_transformer.domain_dictionary[self.current_function.name]["terms_size"][self.current_function_position]
+        else:  
+            total_domain = len(self.domain_transformer.total_domain.keys())
+            self.variable_domains_in_function[node.name] = total_domain 
 
 
         self.current_function_position += 1
-
-
 
         return node
 

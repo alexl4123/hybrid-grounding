@@ -12,6 +12,25 @@ from heuristic_splitter.grounding_approximation.approximate_generated_sota_rules
 from heuristic_splitter.grounding_approximation.approximate_generated_bdg_rules_transformer import ApproximateGeneratedBDGRulesTransformer
 from heuristic_splitter.grounding_approximation.variable_domain_inference_transformer import VariableDomainInferenceTransformer
 
+from nagg.nagg import NaGG
+from nagg.default_output_printer import DefaultOutputPrinter
+from nagg.aggregate_strategies.aggregate_mode import AggregateMode
+from nagg.cyclic_strategy import CyclicStrategy
+from nagg.grounding_modes import GroundingModes
+from nagg.foundedness_strategy import FoundednessStrategy
+
+
+class CustomOutputPrinter(DefaultOutputPrinter):
+
+    def __init__(self):
+        self.string = ""
+
+    def custom_print(self, string):
+        self.string = self.string + str(string) + '\n'
+
+    def get_string(self):
+        return self.string
+
 class GroundingStrategyHandler:
 
     def __init__(self, grounding_strategy: GroundingStrategyGenerator, rule_dictionary, graph_ds: GraphDataStructure):
@@ -37,6 +56,8 @@ class GroundingStrategyHandler:
             if len(bdg_rules) > 0:
 
                 domain_transformer.update_domain_sizes()
+                tmp_bdg_old_found_rules = []
+                tmp_bdg_new_found_rules = []
 
                 for bdg_rule in bdg_rules:
 
@@ -84,10 +105,54 @@ class GroundingStrategyHandler:
 
                     if used_method == "SOTA":
                         sota_rules.append(bdg_rule)
+                    elif used_method == "BDG_OLD":
+                        tmp_bdg_old_found_rules.append(bdg_rule)
                     else:
-                        print("[ERROR] - Not yet implemented")
-                        # TODO -> Call BDG procedure, depending on OLD/NEW BDG
-                        raise NotImplementedError()
+                        tmp_bdg_new_found_rules.append(bdg_rule) 
+
+                no_show = False
+                ground_guess = True
+                # Custom printer keeps result of prototype (NaGG)
+                aggregate_mode = AggregateMode.RA
+                cyclic_strategy = CyclicStrategy.LEVEL_MAPPING
+                grounding_mode = GroundingModes.REWRITE_AGGREGATES_GROUND_PARTLY
+
+                if len(tmp_bdg_new_found_rules) > 0:
+                
+                    custom_printer = CustomOutputPrinter()
+                    program_input = grounded_program + "\n#program rules.\n" + self.rule_list_to_rule_string(tmp_bdg_new_found_rules)
+
+                    foundedness_strategy = FoundednessStrategy.SATURATION
+
+                    nagg = NaGG(no_show = no_show, ground_guess = ground_guess, output_printer = custom_printer,
+                        aggregate_mode = aggregate_mode, cyclic_strategy=cyclic_strategy,
+                        grounding_mode=grounding_mode, foundedness_strategy=foundedness_strategy)
+                    nagg.start(program_input)
+
+                    grounded_program = custom_printer.get_string()
+                    
+                if len(tmp_bdg_old_found_rules) > 0:
+
+                    custom_printer = CustomOutputPrinter()
+                    program_input = grounded_program + "\n#program rules.\n" + self.rule_list_to_rule_string(tmp_bdg_old_found_rules)
+                    
+                    foundedness_strategy = FoundednessStrategy.DEFAULT
+
+                    nagg = NaGG(no_show = no_show, ground_guess = ground_guess, output_printer = custom_printer,
+                        aggregate_mode = aggregate_mode, cyclic_strategy=cyclic_strategy,
+                        grounding_mode=grounding_mode, foundedness_strategy=foundedness_strategy)
+                    nagg.start(program_input)
+
+                    grounded_program = custom_printer.get_string()
+
+                if len(tmp_bdg_new_found_rules) > 0 or len(tmp_bdg_old_found_rules) > 0:
+                    # Ground SOTA rules with SOTA (gringo/IDLV):
+                    decoded_string = self.start_gringo(grounded_program, sota_rules)
+
+                    parse_string(decoded_string, lambda stm: domain_transformer(stm))
+
+                    grounded_program = decoded_string
+                    
 
             if len(sota_rules) > 0:
                 # Ground SOTA rules with SOTA (gringo/IDLV):
@@ -105,9 +170,8 @@ class GroundingStrategyHandler:
         print("--- FINAL ---") 
         print(grounded_program)
 
-    def start_gringo(self, grounded_program, rules, timeout=1800):
-
-        program_input = grounded_program + "\n"
+    def rule_list_to_rule_string(self, rules):
+        program_input = "\n"
         for rule in rules:
             if rule in self.rule_dictionary:
                 program_input += f"{str(self.rule_dictionary[rule])}\n"
@@ -115,6 +179,12 @@ class GroundingStrategyHandler:
                 print(f"[ERROR] - Could not find rule {rule} in rule-dictionary.")
                 raise NotImplementedError() # TBD Fallback
 
+        return program_input
+
+
+    def start_gringo(self, grounded_program, rules, timeout=1800):
+
+        program_input = grounded_program + "\n" + self.rule_list_to_rule_string(rules) 
         print(program_input)
 
 
