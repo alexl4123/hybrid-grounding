@@ -89,7 +89,7 @@ class HeuristicTransformer(Transformer):
 
             if str(node.head) == "#false":
                 self.is_constraint = True
-                self.constraint_rules.append(self.current_rule_position)
+                self.constraint_rules[self.current_rule_position] = True
 
             self.in_head = True
             old = getattr(node, "head")

@@ -1,5 +1,4 @@
 
-
 from clingo.ast import ProgramBuilder, parse_string
 
 from heuristic_splitter.graph_creator_transformer import GraphCreatorTransformer
@@ -43,11 +42,11 @@ class HeuristicSplitter:
         else:
             raise NotImplementedError()
 
-        bdg_rules = []
-        sota_rules = []
-        lpopt_rules = []
-        constraint_rules = []
-        
+        bdg_rules = {}
+        sota_rules = {}
+        lpopt_rules = {}
+        constraint_rules = {}
+
         heuristic_transformer = HeuristicTransformer(graph_ds, heuristic, bdg_rules, sota_rules, lpopt_rules, constraint_rules)
         parse_string(contents, lambda stm: heuristic_transformer(stm))
 
@@ -56,6 +55,7 @@ class HeuristicSplitter:
 
         generator_grounding_strategy = GroundingStrategyGenerator(graph_ds, bdg_rules, sota_rules, lpopt_rules, constraint_rules, rule_dictionary)
         grounding_strategy = generator_grounding_strategy.generate_grounding_strategy()
+
 
         if self.debug_mode is True:
             print(">>>>> GROUNDING STRATEGY:")
@@ -69,18 +69,18 @@ class HeuristicSplitter:
 
         else:
 
-            for sota_rule in sota_rules:
+            for sota_rule in sota_rules.keys():
                 print(str(rule_dictionary[sota_rule]))
 
-            if len(bdg_rules) > 0:
+            if len(list(bdg_rules.keys())) > 0:
                 print("#program rules.")
 
-                for bdg_rule in bdg_rules:
+                for bdg_rule in bdg_rules.keys():
                     print(str(rule_dictionary[bdg_rule]))
 
-            if len(lpopt_rules) > 0:
+            if len(list(lpopt_rules.keys())) > 0:
                 print("#program lpopt.")
 
-                for lpopt_rule in lpopt_rules:
+                for lpopt_rule in lpopt_rules.keys():
                     print(str(rule_dictionary[lpopt_rule]))
 

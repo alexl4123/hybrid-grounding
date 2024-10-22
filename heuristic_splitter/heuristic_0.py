@@ -42,15 +42,20 @@ class Heuristic0(HeuristicInterface):
         is_tight = len([True for head_key in head_atoms_scc_membership.keys() if head_key in body_atoms_scc_membership]) == 0
 
         if is_constraint is True and tw_effective > maximum_rule_arity and all_comparison_variables_safe_by_predicate is True:
-            bdg_rules.append(rule_position)
+            #bdg_rules.append(rule_position)
+            bdg_rules[rule_position] = True
 
         elif is_tight is True and tw_effective > maximum_rule_arity * 1 and all_comparison_variables_safe_by_predicate is True:
-            bdg_rules.append(rule_position)
+            #bdg_rules.append(rule_position)
+            bdg_rules[rule_position] = True
         
         elif is_tight is False and tw_effective > maximum_rule_arity * 1 and all_comparison_variables_safe_by_predicate is True:
-            bdg_rules.append(rule_position)
+            #bdg_rules.append(rule_position)
+            bdg_rules[rule_position] = True
+
         else:
-            sota_rules.append(rule_position)
+            #sota_rules.append(rule_position)
+            sota_rules[rule_position] = True
 
         self.rule_dictionary[rule_position].add_variable_graph(full_variable_graph)
         self.rule_dictionary[rule_position].add_is_tight(is_tight)

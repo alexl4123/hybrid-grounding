@@ -92,7 +92,7 @@ def main():
 
 
 
-    parser.add_argument("files", type=argparse.FileType("r"), nargs="+")
+    #parser.add_argument("files", type=argparse.FileType("r"), nargs="+")
     args = parser.parse_args()
 
     heuristic_method = None
@@ -113,8 +113,10 @@ def main():
     debug_mode = args.debug
 
 
+    #files = args.files
+    files = [open("TEST/190_heur.lp", "r")]
     contents = ""
-    for f in args.files:
+    for f in files:
         contents += f.read()
 
     start_time = time.time()

@@ -76,6 +76,7 @@ class GroundingStrategyHandler:
                     parse_string(str_rule, lambda stm: approximate_sota_rules_transformer(stm))
 
                     approximated_sota_rule_instantiations = approximate_sota_rules_transformer.rule_tuples
+ 
 
                     variable_domains_transformer = VariableDomainInferenceTransformer(domain_transformer, rule)
                     parse_string(str_rule, lambda stm: variable_domains_transformer(stm))
@@ -88,7 +89,7 @@ class GroundingStrategyHandler:
 
                     approximated_bdg_old_rule_instantiations = approximate_bdg_rules_transformer.bdg_rules_old
                     approximated_bdg_new_rule_instantiations = approximate_bdg_rules_transformer.bdg_rules_new
-
+ 
 
                     used_method = None
                     if approximated_sota_rule_instantiations < approximated_bdg_new_rule_instantiations and approximated_sota_rule_instantiations < approximated_bdg_old_rule_instantiations:
@@ -103,7 +104,7 @@ class GroundingStrategyHandler:
                         used_method = "BDG_OLD"
 
                     # TODO - RMV STATEMENT!
-                    #used_method = "BDG_NEW"
+                    # used_method = "BDG_NEW"
 
                     if self.debug_mode is True:
                         print("-------------------------")
@@ -127,7 +128,7 @@ class GroundingStrategyHandler:
                     # Custom printer keeps result of prototype (NaGG)
                     aggregate_mode = AggregateMode.RA
                     cyclic_strategy = CyclicStrategy.LEVEL_MAPPING
-                    grounding_mode = GroundingModes.REWRITE_AGGREGATES_GROUND_PARTLY
+                    grounding_mode = GroundingModes.REWRITE_AGGREGATES_GROUND_FULLY
 
                     if len(tmp_bdg_new_found_rules) > 0:
 
@@ -136,7 +137,6 @@ class GroundingStrategyHandler:
                         nagg_domain_connector_transformer = NaGGDomainConnectorTransformer()
                         parse_string(tmp_rules_string, lambda stm: nagg_domain_connector_transformer(stm))
 
-                        # TODO -> cpy. this to method below, and double check
                         nagg_domain_connector = NaGGDomainConnector(
                             domain_transformer.domain_dictionary, domain_transformer.total_domain,
                             nagg_domain_connector_transformer.nagg_safe_variables,
@@ -144,7 +144,8 @@ class GroundingStrategyHandler:
                         nagg_domain_connector.convert_data_structures()
                     
                         custom_printer = CustomOutputPrinter()
-                        program_input = grounded_program + "\n#program rules.\n" + tmp_rules_string
+                        #program_input = grounded_program + "\n#program rules.\n" + tmp_rules_string
+                        program_input = "\n#program rules.\n" + tmp_rules_string
 
                         foundedness_strategy = FoundednessStrategy.SATURATION
 
@@ -153,36 +154,40 @@ class GroundingStrategyHandler:
                             grounding_mode=grounding_mode, foundedness_strategy=foundedness_strategy)
                         nagg.start(program_input, nagg_domain_connector)
 
-                        grounded_program = custom_printer.get_string()
+                        #grounded_program = custom_printer.get_string()
+                        grounded_program = grounded_program + custom_printer.get_string()
                         
                     if len(tmp_bdg_old_found_rules) > 0:
 
+                        tmp_rules_string = self.rule_list_to_rule_string(tmp_bdg_old_found_rules)
+
+                        nagg_domain_connector_transformer = NaGGDomainConnectorTransformer()
+                        parse_string(tmp_rules_string, lambda stm: nagg_domain_connector_transformer(stm))
+
+                        nagg_domain_connector = NaGGDomainConnector(
+                            domain_transformer.domain_dictionary, domain_transformer.total_domain,
+                            nagg_domain_connector_transformer.nagg_safe_variables,
+                            nagg_domain_connector_transformer.shown_predicates)
+                        nagg_domain_connector.convert_data_structures()
+                    
                         custom_printer = CustomOutputPrinter()
-                        program_input = grounded_program + "\n#program rules.\n" + self.rule_list_to_rule_string(tmp_bdg_old_found_rules)
-                        
+                        program_input = "\n#program rules.\n" + tmp_rules_string
+
                         foundedness_strategy = FoundednessStrategy.DEFAULT
 
                         nagg = NaGG(no_show = no_show, ground_guess = ground_guess, output_printer = custom_printer,
                             aggregate_mode = aggregate_mode, cyclic_strategy=cyclic_strategy,
                             grounding_mode=grounding_mode, foundedness_strategy=foundedness_strategy)
-                        nagg.start(program_input)
+                        nagg.start(program_input, nagg_domain_connector)
 
-                        grounded_program = custom_printer.get_string()
-
-                    if len(tmp_bdg_new_found_rules) > 0 or len(tmp_bdg_old_found_rules) > 0:
-                        # Ground SOTA rules with SOTA (gringo/IDLV):
-                        decoded_string = self.start_gringo(grounded_program, sota_rules)
-
-                        parse_string(decoded_string, lambda stm: domain_transformer(stm))
-
-                        grounded_program = decoded_string
-                        
+                        grounded_program = grounded_program + custom_printer.get_string()
 
             if len(sota_rules) > 0:
                 # Ground SOTA rules with SOTA (gringo/IDLV):
                 decoded_string = self.start_gringo(grounded_program, sota_rules)
 
                 parse_string(decoded_string, lambda stm: domain_transformer(stm))
+
 
                 grounded_program = decoded_string
 
@@ -191,6 +196,7 @@ class GroundingStrategyHandler:
                     print(sota_rules)
                     print(decoded_string)
                     print(domain_transformer.domain_dictionary)
+
 
         if self.debug_mode is True:
             print("--- FINAL ---") 
