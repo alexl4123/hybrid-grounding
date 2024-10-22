@@ -21,7 +21,7 @@ from nagg.aggregate_strategies.aggregate_mode import AggregateMode
 from nagg.cyclic_strategy import CyclicStrategy
 from nagg.grounding_modes import GroundingModes
 from nagg.foundedness_strategy import FoundednessStrategy
-
+from heuristic_splitter.domain_inferer import DomainInferer
 
 class CustomOutputPrinter(DefaultOutputPrinter):
 
@@ -38,17 +38,19 @@ class CustomOutputPrinter(DefaultOutputPrinter):
 
 class GroundingStrategyHandler:
 
-    def __init__(self, grounding_strategy: GroundingStrategyGenerator, rule_dictionary, graph_ds: GraphDataStructure, debug_mode):
+    def __init__(self, grounding_strategy: GroundingStrategyGenerator, rule_dictionary, graph_ds: GraphDataStructure, debug_mode, facts):
 
         self.grounding_strategy = grounding_strategy
         self.rule_dictionary = rule_dictionary
         self.graph_ds = graph_ds
         self.debug_mode = debug_mode
+        self.facts = facts
 
     def ground(self):
 
-        grounded_program = ""
-        domain_transformer = DomainTransformer()
+        grounded_program = "\n".join(list(self.facts.keys()))
+        #domain_transformer = DomainTransformer()
+        domain_transformer = DomainInferer()
 
         for level_index in range(len(self.grounding_strategy)):
 
@@ -186,8 +188,8 @@ class GroundingStrategyHandler:
                 # Ground SOTA rules with SOTA (gringo/IDLV):
                 decoded_string = self.start_gringo(grounded_program, sota_rules)
 
-                parse_string(decoded_string, lambda stm: domain_transformer(stm))
-
+                #parse_string(decoded_string, lambda stm: domain_transformer(stm))
+                domain_transformer.infer_domain(decoded_string)
 
                 grounded_program = decoded_string
 

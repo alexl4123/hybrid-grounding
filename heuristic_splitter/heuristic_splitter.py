@@ -16,6 +16,8 @@ from heuristic_splitter.heuristic_0 import Heuristic0
 from heuristic_splitter.grounding_strategy_generator import GroundingStrategyGenerator
 from heuristic_splitter.grounding_strategy_handler import GroundingStrategyHandler
 
+from heuristic_splitter.get_facts import GetFacts
+
 class HeuristicSplitter:
 
     def __init__(self, heuristic_strategy: HeuristicStrategy, treewidth_strategy: TreewidthComputationStrategy, grounding_strategy:GroundingStrategy, debug_mode):
@@ -28,11 +30,24 @@ class HeuristicSplitter:
 
     def start(self, contents):
 
+        bdg_rules = {}
+        sota_rules = {}
+        lpopt_rules = {}
+        constraint_rules = {}
+        grounding_strategy = []
         graph_ds = GraphDataStructure()
         rule_dictionary = {}
 
+        # Separate facts from other rules:
+        facts, facts_heads, other_rules = GetFacts().get_facts_from_contents(contents)
+
+        for fact_head in facts_heads.keys():
+            graph_ds.add_vertex(fact_head)
+
+        other_rules_string = "\n".join(other_rules)
+
         graph_transformer = GraphCreatorTransformer(graph_ds, rule_dictionary)
-        parse_string(contents, lambda stm: graph_transformer(stm))
+        parse_string(other_rules_string, lambda stm: graph_transformer(stm))
 
         graph_analyzer = GraphAnalyzer(graph_ds)
         graph_analyzer.start()
@@ -42,19 +57,15 @@ class HeuristicSplitter:
         else:
             raise NotImplementedError()
 
-        bdg_rules = {}
-        sota_rules = {}
-        lpopt_rules = {}
-        constraint_rules = {}
 
         heuristic_transformer = HeuristicTransformer(graph_ds, heuristic, bdg_rules, sota_rules, lpopt_rules, constraint_rules)
-        parse_string(contents, lambda stm: heuristic_transformer(stm))
+        parse_string(other_rules_string, lambda stm: heuristic_transformer(stm))
 
         if len(lpopt_rules) > 0:
             raise NotImplementedError()
 
         generator_grounding_strategy = GroundingStrategyGenerator(graph_ds, bdg_rules, sota_rules, lpopt_rules, constraint_rules, rule_dictionary)
-        grounding_strategy = generator_grounding_strategy.generate_grounding_strategy()
+        generator_grounding_strategy.generate_grounding_strategy(grounding_strategy)
 
 
         if self.debug_mode is True:
@@ -64,10 +75,13 @@ class HeuristicSplitter:
 
         if self.grounding_strategy == GroundingStrategy.FULL:
 
-            grounding_handler = GroundingStrategyHandler(grounding_strategy, rule_dictionary, graph_ds, self.debug_mode)
+            grounding_handler = GroundingStrategyHandler(grounding_strategy, rule_dictionary, graph_ds, self.debug_mode, facts)
             grounding_handler.ground()
 
         else:
+
+            facts_string = "\n".join(list(facts.keys()))
+            print(facts_string)
 
             for sota_rule in sota_rules.keys():
                 print(str(rule_dictionary[sota_rule]))

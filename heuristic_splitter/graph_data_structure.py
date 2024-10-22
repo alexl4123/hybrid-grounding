@@ -28,6 +28,9 @@ class GraphDataStructure:
             self.full_graph.add_node(self.current_node_index)
             self.positive_graph.add_node(self.current_node_index)
 
+            if self.current_node_index not in self.node_to_rule_lookup:
+                self.node_to_rule_lookup[self.current_node_index] = []
+
             self.current_node_index += 1
 
     def add_edge(self, head_literal, body_literal, signum, is_choice_rule_head = False):

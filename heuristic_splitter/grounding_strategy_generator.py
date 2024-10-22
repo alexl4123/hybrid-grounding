@@ -30,10 +30,7 @@ class GroundingStrategyGenerator:
             current_lpopt_grounded_rules.clear()
             current_bdg_grounded_rules.clear()
 
-    def generate_grounding_strategy(self):
-
-        grounding_strategy = []
-
+    def generate_grounding_strategy(self, grounding_strategy):
  
         G = self.graph_ds.get_positive_nx_object()
         

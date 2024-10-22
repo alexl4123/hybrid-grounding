@@ -4,6 +4,7 @@ Main Entry Point into the prototype.
 Parses arguments and calls nagg class.
 """
 
+import time
 import argparse
 import sys
 

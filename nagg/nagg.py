@@ -5,8 +5,6 @@ Contains the nagg class,
 which is used for the tranformations.
 """
 
-import time
-
 import networkx as nx
 from clingo.ast import ProgramBuilder, parse_string
 from clingo.control import Control
@@ -59,8 +57,6 @@ class NaGG:
         Start method of the nagg.
         Call this method to start the rewriting procedure.
         """
-
-        start_time = time.time()
         if domain_inference is None:
             (
                 domain,
@@ -82,8 +78,6 @@ class NaGG:
             rule_strongly_connected_comps_heads = {}
             scc_rule_functions_scc_lookup = {}
 
-        end_time = time.time()
-        print(f"> ELAPSED DOMAIN INFERENCE TIME: {end_time - start_time}")
 
 
 
@@ -99,7 +93,6 @@ class NaGG:
         aggregate_transformer_output_program = "\n".join(shown_predicates + rewritten_program)
 
 
-        start_time = time.time()
         if self.grounding_mode == GroundingModes.REWRITE_AGGREGATES_NO_GROUND:
             # Only rewrite
             self.output_printer.custom_print(aggregate_transformer_output_program)
@@ -116,8 +109,6 @@ class NaGG:
                 scc_rule_functions_scc_lookup,
                 shown_predicates
             )
-        end_time = time.time()
-        print(f"> ELAPSED MAIN TRANSFORMER TIME: {end_time - start_time}")
 
     def start_aggregate_transformer(self, contents, domain):
         """
