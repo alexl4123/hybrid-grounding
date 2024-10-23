@@ -57,6 +57,8 @@ class HeuristicSplitter:
         else:
             raise NotImplementedError()
 
+        print(other_rules)
+        print(other_rules_string)
 
         heuristic_transformer = HeuristicTransformer(graph_ds, heuristic, bdg_rules, sota_rules, lpopt_rules, constraint_rules)
         parse_string(other_rules_string, lambda stm: heuristic_transformer(stm))

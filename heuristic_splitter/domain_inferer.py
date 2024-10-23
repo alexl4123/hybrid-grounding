@@ -85,6 +85,7 @@ class DomainInferer:
                 constant_part = atom_match.group(1)  # The constant (e.g., '_test1')
                 arguments = atom_match.group(2)      # The comma-separated part inside the parentheses (e.g., 'a,b')
 
+                #self.add_node_to_domain(arguments, constant_part)
                 self.add_node_to_domain(arguments, constant_part)
 
             elif pattern_head_aggregate.match(content):
