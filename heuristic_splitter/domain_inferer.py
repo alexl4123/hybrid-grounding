@@ -5,7 +5,8 @@ class DomainInferer:
 
     def __init__(self):
 
-        self.current_rule_position = 0
+        self.unsat_prg_found = False
+
 
         # A dict. of all domain values
         self.total_domain = {}
@@ -78,8 +79,8 @@ class DomainInferer:
 
         for content in contents.split("\n"):
 
-            content = content.split(":-")[0]
-            atom_match = pattern_atom.match(content)
+            head = content.split(":-")[0]
+            atom_match = pattern_atom.match(head)
             if atom_match:
                 # Head is atom
                 constant_part = atom_match.group(1)  # The constant (e.g., '_test1')
@@ -88,10 +89,10 @@ class DomainInferer:
                 #self.add_node_to_domain(arguments, constant_part)
                 self.add_node_to_domain(arguments, constant_part)
 
-            elif pattern_head_aggregate.match(content):
+            elif pattern_head_aggregate.match(head):
                 # Head is head-aggregate
 
-                head_aggregate_elements = content.split("{")[1]
+                head_aggregate_elements = head.split("{")[1]
                 head_aggregate_elements = head_aggregate_elements.split("}")[0]
                 head_aggregate_elements = head_aggregate_elements.split(";")
 
@@ -106,11 +107,21 @@ class DomainInferer:
                         arguments = atom_match.group(2)      # The comma-separated part inside the parentheses (e.g., 'a,b')
 
                         self.add_node_to_domain(arguments, constant_part)
+                    elif "<=>" in head:
+                        continue
                     else:
-                        print(f"[ERROR] - Failed to parse head-aggregate: {content}")
+                        print(f"[ERROR] - Failed to parse head-aggregate: {head}")
                         raise NotImplementedError()
 
-            elif len(content.strip()) == 0 or content.strip() == "#false":
+            elif len(head.strip()) == 0 or head.strip() == "#false":
+                if content.strip() == ":-.":
+                    self.unsat_prg_found = True
+
+                continue
+            elif "(" not in head:
+                # Atom
+                continue
+            elif "#delayed" in head or "#show" in head:
                 continue
             else:
                 print(content)
@@ -126,6 +137,9 @@ class DomainInferer:
         count = 0
 
         for _tuple in self.domain_dictionary.keys():
+            if _tuple == "_average_domain_tuples":
+                continue
+
             self.domain_dictionary[_tuple]["tuples_size"] = {}
 
             number_sure_tuples = len(self.domain_dictionary[_tuple]["tuples"]["sure_true"].keys())

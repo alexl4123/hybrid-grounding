@@ -19,7 +19,7 @@ class HeuristicTransformer(Transformer):
     """
 
     def __init__(self, graph_ds: GraphDataStructure, used_heuristic,
-            bdg_rules, sota_rules, lpopt_rules,
+            bdg_rules, sota_rules, stratified_rules,
             constraint_rules):
 
         self.graph_ds = graph_ds
@@ -34,6 +34,8 @@ class HeuristicTransformer(Transformer):
 
         self.head_is_choice_rule = False
         self.has_aggregate = False
+        
+        self.body_is_stratified = True
 
         self.current_rule_position = 0
 
@@ -45,12 +47,13 @@ class HeuristicTransformer(Transformer):
         # Output -> How to ground the rule according to the heuristic used.
         self.bdg_rules = bdg_rules
         self.sota_rules = sota_rules
-        self.lpopt_rules = lpopt_rules
+        self.stratified_rules = stratified_rules
         self.constraint_rules = constraint_rules
 
         # Used to determine if a rule is tight, or non-tight.
         self.head_atoms_scc_membership = {}
         self.body_atoms_scc_membership = {}
+
 
         self.heuristic = used_heuristic
 
@@ -103,7 +106,7 @@ class HeuristicTransformer(Transformer):
             self._dispatch(old)
             self.in_body = False
 
-        self.heuristic.handle_rule(self.bdg_rules, self.sota_rules, self.lpopt_rules,
+        self.heuristic.handle_rule(self.bdg_rules, self.sota_rules, self.stratified_rules,
             self.variable_graph, self.stratified_variables, self.graph_ds,
             self.head_atoms_scc_membership, self.body_atoms_scc_membership,
             self.maximum_rule_arity, self.is_constraint,
@@ -111,7 +114,8 @@ class HeuristicTransformer(Transformer):
             node,
             self.current_rule_position,
             self.all_positive_function_variables,
-            self.all_comparison_variables,)
+            self.all_comparison_variables,
+            self.body_is_stratified)
 
         self.current_rule_position += 1
         self._reset_temporary_rule_variables()
@@ -136,6 +140,9 @@ class HeuristicTransformer(Transformer):
 
         if self.graph_ds.predicate_is_stratified(node) is True:
             self.stratified_variables += self.current_function_variables
+
+        if self.in_body is True and self.graph_ds.predicate_is_stratified(node) is False:
+            self.body_is_stratified = False
 
         if self.in_head and self.head_is_choice_rule and self.head_aggregate_element_head:
             # For the "a" and "c" in {a:b;c:d} :- e.
@@ -313,6 +320,8 @@ class HeuristicTransformer(Transformer):
     def _reset_temporary_rule_variables(self):
         self.current_head = None
         self.current_head_function = None
+        
+        self.body_is_stratified = True
         
         self.variable_graph = None
 

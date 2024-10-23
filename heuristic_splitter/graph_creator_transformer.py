@@ -33,6 +33,9 @@ class GraphCreatorTransformer(Transformer):
 
         self.rule_dictionary = rule_dictionary
 
+        self.in_head = False
+        self.in_body = False
+
 
     def visit_Rule(self, node):
         """
@@ -43,11 +46,17 @@ class GraphCreatorTransformer(Transformer):
         self.rule_dictionary[self.current_rule_position] = Rule(node)
 
         if "head" in node.child_keys:
-            self.in_head = True
-            old = getattr(node, "head")
-            self._dispatch(old)
-            # self.visit_children(node.head)
-            self.in_head = False
+
+            if str(node.head) == "#false":
+                self.is_constraint = True
+                self.graph_ds.add_vertex(f"_constraint{self.current_rule_position}")
+                self.graph_ds.add_node_to_rule_lookup(self.current_rule_position, f"_constraint{self.current_rule_position}")
+            else:
+                self.in_head = True
+                old = getattr(node, "head")
+                self._dispatch(old)
+                # self.visit_children(node.head)
+                self.in_head = False
 
         if "body" in node.child_keys:
             self.in_body = True
@@ -93,12 +102,13 @@ class GraphCreatorTransformer(Transformer):
             print(self.current_head)
             print(self.current_head_function)
             raise NotImplementedError
-        elif self.in_body:
+        elif self.in_body and len(self.head_functions) > 0:
             # For the "b" and "c" in a :- b, not c.
             # For the "e" in {a:b;c:d} :- e.
-            if len(self.head_functions) > 0:
-                for head_function in self.head_functions:
-                    self.graph_ds.add_edge(head_function.name, node.name, self.node_signum)
+            for head_function in self.head_functions:
+                self.graph_ds.add_edge(head_function.name, node.name, self.node_signum)
+        elif self.in_body and self.is_constraint:
+            self.graph_ds.add_edge(f"_constraint{self.current_rule_position}", node.name, self.node_signum)
         else:
             print("HEAD TYPE NOT IMPLEMENTED:_")
             print(self.current_head)
@@ -177,6 +187,7 @@ class GraphCreatorTransformer(Transformer):
         self.current_head_function = None
         self.head_is_choice_rule = False
         self.head_functions = []
+        self.is_constraint = False
 
     def _reset_temporary_function_variables(self):
         self.current_function = None

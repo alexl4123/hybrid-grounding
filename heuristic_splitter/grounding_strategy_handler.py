@@ -30,7 +30,7 @@ class CustomOutputPrinter(DefaultOutputPrinter):
 
     def custom_print(self, string):
         print(string)
-        #self.string = self.string + str(string) + '\n'
+        self.string = self.string + str(string) + '\n'
         pass
 
     def get_string(self):
@@ -54,10 +54,12 @@ class GroundingStrategyHandler:
 
         for level_index in range(len(self.grounding_strategy)):
 
+            if domain_transformer.unsat_prg_found is True:
+                break
+
             level = self.grounding_strategy[level_index]
             sota_rules = level["sota"]
             bdg_rules = level["bdg"]
-            lpopt_rules = level["lpopt"]
 
             if self.debug_mode is True:
                 print(f"-- {level_index}: SOTA-RULES: {sota_rules}, BDG-RULES: {bdg_rules}")
@@ -106,7 +108,7 @@ class GroundingStrategyHandler:
                         used_method = "BDG_OLD"
 
                     # TODO - RMV STATEMENT!
-                    # used_method = "BDG_NEW"
+                    #used_method = "BDG_NEW"
 
                     if self.debug_mode is True:
                         print("-------------------------")
@@ -185,7 +187,9 @@ class GroundingStrategyHandler:
 
             if len(sota_rules) > 0:
                 # Ground SOTA rules with SOTA (gringo/IDLV):
-                decoded_string = self.start_gringo(grounded_program, sota_rules)
+                sota_rules_string = self.rule_list_to_rule_string(sota_rules) 
+                program_input = grounded_program + "\n" + sota_rules_string
+                decoded_string = self.start_gringo(program_input)
 
                 #parse_string(decoded_string, lambda stm: domain_transformer(stm))
                 domain_transformer.infer_domain(decoded_string)
@@ -195,6 +199,8 @@ class GroundingStrategyHandler:
                 if self.debug_mode is True:
                     print("+++++")
                     print(sota_rules)
+                    print(sota_rules_string)
+                    print("++")
                     print(decoded_string)
                     print(domain_transformer.domain_dictionary)
 
@@ -215,9 +221,7 @@ class GroundingStrategyHandler:
         return program_input
 
 
-    def start_gringo(self, grounded_program, rules, timeout=1800):
-
-        program_input = grounded_program + "\n" + self.rule_list_to_rule_string(rules) 
+    def start_gringo(self, program_input, timeout=1800):
 
         arguments = ["gringo", "-t"]
 

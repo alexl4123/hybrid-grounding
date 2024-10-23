@@ -10,12 +10,16 @@ class HeuristicInterface:
         self.treewidth_strategy = treewidth_strategy
         self.rule_dictionary = rule_dictionary
 
-    def handle_rule(self, bdg_rules, sota_rules, lpopt_rules,
+    def handle_rule(self, bdg_rules, sota_rules, stratified_rules,
             variable_graph : VariableGraphDataStructure, stratified_variables,
             graph_ds : GraphDataStructure,
             head_atoms_scc_membership, body_atoms_scc_membership,
             maximum_rule_arity, is_constraint,
+            has_aggregate,
             ast_rule_node,
-            rule_position):
+            rule_position,
+            all_positive_function_variables,
+            all_comparison_variables,
+            body_is_stratified):
 
         pass

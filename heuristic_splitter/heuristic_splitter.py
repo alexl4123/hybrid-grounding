@@ -32,7 +32,7 @@ class HeuristicSplitter:
 
         bdg_rules = {}
         sota_rules = {}
-        lpopt_rules = {}
+        stratified_rules = {}
         constraint_rules = {}
         grounding_strategy = []
         graph_ds = GraphDataStructure()
@@ -57,16 +57,10 @@ class HeuristicSplitter:
         else:
             raise NotImplementedError()
 
-        print(other_rules)
-        print(other_rules_string)
-
-        heuristic_transformer = HeuristicTransformer(graph_ds, heuristic, bdg_rules, sota_rules, lpopt_rules, constraint_rules)
+        heuristic_transformer = HeuristicTransformer(graph_ds, heuristic, bdg_rules, sota_rules, stratified_rules, constraint_rules)
         parse_string(other_rules_string, lambda stm: heuristic_transformer(stm))
 
-        if len(lpopt_rules) > 0:
-            raise NotImplementedError()
-
-        generator_grounding_strategy = GroundingStrategyGenerator(graph_ds, bdg_rules, sota_rules, lpopt_rules, constraint_rules, rule_dictionary)
+        generator_grounding_strategy = GroundingStrategyGenerator(graph_ds, bdg_rules, sota_rules, stratified_rules, constraint_rules, rule_dictionary)
         generator_grounding_strategy.generate_grounding_strategy(grounding_strategy)
 
 
@@ -88,15 +82,11 @@ class HeuristicSplitter:
             for sota_rule in sota_rules.keys():
                 print(str(rule_dictionary[sota_rule]))
 
+            for strat_rule in stratified_rules.keys():
+                print(str(rule_dictionary[strat_rule]))
+
             if len(list(bdg_rules.keys())) > 0:
                 print("#program rules.")
 
                 for bdg_rule in bdg_rules.keys():
                     print(str(rule_dictionary[bdg_rule]))
-
-            if len(list(lpopt_rules.keys())) > 0:
-                print("#program lpopt.")
-
-                for lpopt_rule in lpopt_rules.keys():
-                    print(str(rule_dictionary[lpopt_rule]))
-
