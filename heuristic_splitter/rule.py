@@ -2,9 +2,16 @@
 
 class Rule:
 
-    def __init__(self, ast_rule):
+    def __init__(self, ast_rule, str_rule):
+        """
+        Representation of a rule as an AST object, and a str object.
+        -> Note that str(ast_rule) is not necessarily the same as str_rule,
+        as the transformer introduces a ';' between body lits in the string-representation,
+        which is not accepted by e.g., lpopt.
+        """
 
         self.ast_rule = ast_rule
+        self.str_rule = str_rule
 
         self.full_treewidth = None
         self.effective_treewidth = None
@@ -34,7 +41,4 @@ class Rule:
         self.scc = scc
 
     def __str__(self):
-        return str(self.ast_rule)
-
-
-
+        return self.str_rule

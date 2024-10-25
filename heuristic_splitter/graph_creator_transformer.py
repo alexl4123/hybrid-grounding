@@ -16,7 +16,7 @@ class GraphCreatorTransformer(Transformer):
     Creates dependency graph.
     """
 
-    def __init__(self, graph_ds: GraphDataStructure, rule_dictionary):
+    def __init__(self, graph_ds: GraphDataStructure, rule_dictionary, rules_as_strings):
 
         self.graph_ds = graph_ds
 
@@ -32,6 +32,7 @@ class GraphCreatorTransformer(Transformer):
         self.current_rule_position = 0
 
         self.rule_dictionary = rule_dictionary
+        self.rules_as_strings = rules_as_strings
 
         self.in_head = False
         self.in_body = False
@@ -43,7 +44,7 @@ class GraphCreatorTransformer(Transformer):
         """
         self.current_head = node.head
 
-        self.rule_dictionary[self.current_rule_position] = Rule(node)
+        self.rule_dictionary[self.current_rule_position] = Rule(node, self.rules_as_strings[self.current_rule_position])
 
         if "head" in node.child_keys:
 

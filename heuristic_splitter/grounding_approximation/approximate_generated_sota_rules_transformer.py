@@ -62,7 +62,7 @@ class ApproximateGeneratedSotaRulesTransformer(Transformer):
         """
         self.current_function = node
 
-        if self.in_body:
+        if self.in_body and self.node_signum > 0:
             # Only consider body stuff
             # For the "b" and "c" in a :- b, not c.
             # For the "e" in {a:b;c:d} :- e.

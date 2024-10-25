@@ -20,12 +20,13 @@ from heuristic_splitter.get_facts import GetFacts
 
 class HeuristicSplitter:
 
-    def __init__(self, heuristic_strategy: HeuristicStrategy, treewidth_strategy: TreewidthComputationStrategy, grounding_strategy:GroundingStrategy, debug_mode):
+    def __init__(self, heuristic_strategy: HeuristicStrategy, treewidth_strategy: TreewidthComputationStrategy, grounding_strategy:GroundingStrategy, debug_mode, enable_lpopt):
 
         self.heuristic_strategy = heuristic_strategy
         self.treewidth_strategy = treewidth_strategy
         self.grounding_strategy = grounding_strategy
         self.debug_mode = debug_mode
+        self.enable_lpopt = enable_lpopt
 
 
     def start(self, contents):
@@ -46,7 +47,7 @@ class HeuristicSplitter:
 
         other_rules_string = "\n".join(other_rules)
 
-        graph_transformer = GraphCreatorTransformer(graph_ds, rule_dictionary)
+        graph_transformer = GraphCreatorTransformer(graph_ds, rule_dictionary, other_rules)
         parse_string(other_rules_string, lambda stm: graph_transformer(stm))
 
         graph_analyzer = GraphAnalyzer(graph_ds)
@@ -71,7 +72,9 @@ class HeuristicSplitter:
 
         if self.grounding_strategy == GroundingStrategy.FULL:
 
-            grounding_handler = GroundingStrategyHandler(grounding_strategy, rule_dictionary, graph_ds, self.debug_mode, facts)
+            grounding_handler = GroundingStrategyHandler(grounding_strategy, rule_dictionary, graph_ds,
+                facts,
+                self.debug_mode, self.enable_lpopt)
             grounding_handler.ground()
 
         else:

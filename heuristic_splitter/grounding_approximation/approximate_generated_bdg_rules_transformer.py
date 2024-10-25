@@ -27,6 +27,9 @@ class ApproximateGeneratedBDGRulesTransformer(Transformer):
         self.found_old_rules = 0
         self.found_new_rules = 0
 
+        self.bdg_rules_old = 0 
+        self.bdg_rules_new = 0 
+
         self.variable_domains = variable_domains
         self.rule = rule
         self.head_variables = head_variables
@@ -69,8 +72,8 @@ class ApproximateGeneratedBDGRulesTransformer(Transformer):
                     self.found_old_rules += head_combiations
 
             if self.rule.is_tight is False:
+                # The following is an approximation of the needed additional rules for level-mapping overhead.
 
-                print(self.rule.scc)
                 scc_domain_sizes = 0
                 for scc_element in list(self.rule.scc):
                     scc_element_predicate = self.graph_ds.index_to_predicate_lookup[scc_element]
@@ -289,7 +292,7 @@ class ApproximateGeneratedBDGRulesTransformer(Transformer):
                     break
             
             if reachable is False:
-                # No Variable Justifying independence:
+                # Variable Justifying independence:
                 o_found_rules = 1
                 for function_variable in function_variables.keys():
                     o_found_rules *= self.variable_domains[function_variable]

@@ -17,7 +17,7 @@ class VariableDomainInferenceTransformer(Transformer):
     May only be called with 1 rule!
     """
 
-    def __init__(self, domain_transformer, rule):
+    def __init__(self, domain_transformer):
 
         self.domain_transformer = domain_transformer
         self.variable_domains_helper = {}

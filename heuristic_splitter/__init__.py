@@ -73,6 +73,12 @@ def main():
     )
 
     parser.add_argument(
+        "--tw-aware",
+        action="store_true",
+        help="Use treewidth aware rewritings for rule decomposition (lpopt tool).",
+    )
+
+    parser.add_argument(
         "--treewidth-strategy",
         default=treewidth_strategies["NETWORKX"]["cmd_line"],
         choices=[
@@ -111,6 +117,7 @@ def main():
             grounding_strategy = grounding_strategies[key]["enum_mode"]
 
     debug_mode = args.debug
+    enable_lpopt = args.tw_aware
 
 
     files = args.files
@@ -125,6 +132,7 @@ def main():
         treewidth_strategy,
         grounding_strategy,
         debug_mode,
+        enable_lpopt,
     )
     heuristic.start(contents)
 
