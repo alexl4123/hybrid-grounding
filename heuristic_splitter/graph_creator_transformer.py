@@ -50,8 +50,9 @@ class GraphCreatorTransformer(Transformer):
 
             if str(node.head) == "#false":
                 self.is_constraint = True
-                self.graph_ds.add_vertex(f"_constraint{self.current_rule_position}")
-                self.graph_ds.add_node_to_rule_lookup(self.current_rule_position, f"_constraint{self.current_rule_position}")
+                constraint_vertex_name = f"_constraint{self.current_rule_position}"
+                self.graph_ds.add_vertex(constraint_vertex_name)
+                self.graph_ds.add_node_to_rule_lookup([self.current_rule_position], constraint_vertex_name)
             else:
                 self.in_head = True
                 old = getattr(node, "head")
@@ -75,6 +76,7 @@ class GraphCreatorTransformer(Transformer):
         """
         self.current_function = node
 
+
         if self.in_head and self.head_is_choice_rule and self.head_aggregate_element_head:
             # For the "a" and "c" in {a:b;c:d} :- e.
             self.head_functions.append(node)
@@ -85,18 +87,20 @@ class GraphCreatorTransformer(Transformer):
             self.graph_ds.add_edge(node.name, tmp_head_choice_name, -1, is_choice_rule_head = True)
             self.graph_ds.add_edge(tmp_head_choice_name, node.name, -1, is_choice_rule_head = True)
 
-            self.graph_ds.add_node_to_rule_lookup(self.current_rule_position, node.name)
+            self.graph_ds.add_node_to_rule_lookup([self.current_rule_position], node.name)
+            self.graph_ds.add_node_to_rule_lookup([], tmp_head_choice_name)
 
         elif self.in_head and self.head_is_choice_rule and self.head_aggregate_element_head:
             # For the "b" and "d" in {a:b;c:d} :- e.
             self.graph_ds.add_edge(self.current_head_function.name, node.name, self.node_signum)
+            self.graph_ds.add_node_to_rule_lookup([], node.name)
         elif self.in_head and str(self.current_function) == str(self.current_head):
             # For the "a" in a :- b, not c.
             self.head_functions.append(node)
 
             self.graph_ds.add_vertex(node.name)
 
-            self.graph_ds.add_node_to_rule_lookup(self.current_rule_position, node.name)
+            self.graph_ds.add_node_to_rule_lookup([self.current_rule_position], node.name)
 
         elif self.in_head:
             print("HEAD TYPE NOT IMPLEMENTED:_")
@@ -108,8 +112,10 @@ class GraphCreatorTransformer(Transformer):
             # For the "e" in {a:b;c:d} :- e.
             for head_function in self.head_functions:
                 self.graph_ds.add_edge(head_function.name, node.name, self.node_signum)
+                self.graph_ds.add_node_to_rule_lookup([], node.name)
         elif self.in_body and self.is_constraint:
             self.graph_ds.add_edge(f"_constraint{self.current_rule_position}", node.name, self.node_signum)
+            self.graph_ds.add_node_to_rule_lookup([], node.name)
         else:
             print("HEAD TYPE NOT IMPLEMENTED:_")
             print(self.current_head)

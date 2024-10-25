@@ -15,35 +15,46 @@ class GetFacts:
         all_heads = {}
         other_rules = []
 
-        pattern_atom = re.compile(r'^(_?[a-z][A-Za-z0-9_´]*)\((.+?)\).*$')
-        pattern_head_aggregate = re.compile(r'^.*{.*}.*$')
-        pattern_rule = re.compile(r'^.*:-.*$')
-        pattern_fact = re.compile(r'^(_?[a-z][A-Za-z0-9_´]*)\((.+?)\)\..*$')
+        pattern_fact = re.compile(r'^(_?[a-z][A-Za-z0-9_´]*)\((.+?)\).*$')
 
         for content in contents:
 
             content = content.strip()
 
-            # Find a match using re.match
-            match = pattern_fact.match(content)
+            if ":-" not in content:
+                content = content.split("%")[0] # Remove comments that start at the beginning
+                content = content.split("#")[0] # Remove program statements for now
 
-            if match:
-                match2 = pattern_rule.match(content)
-                if not match2: # Is surely a fact:
-                    constant_part = match.group(1)  # The constant (e.g., '_test1')
-                    arguments = match.group(2)      # The comma-separated part inside the parentheses (e.g., 'a,b')
+                if "(" in content and "{" not in content:
+                    # Find a match using re.match
+                    match = pattern_fact.match(content)
+                    if match:
+                        constant_part = match.group(1)  # The constant (e.g., '_test1')
+                        arguments = match.group(2)      # The comma-separated part inside the parentheses (e.g., 'a,b')
 
-                    # Split the arguments by commas
-                    terms = arguments.split(",")
-                    facts[constant_part + "(" + arguments + ")."] = True
-                    facts_heads[constant_part] = True
-                    all_heads[constant_part] = len(terms)
-                    #print(f"Terms: {terms}")
+                        # Split the arguments by commas
+                        terms = arguments.split(",")
+                        facts[constant_part + "(" + arguments + ")."] = True
+                        facts_heads[constant_part] = True
+                        all_heads[constant_part] = len(terms)
+                        #print(f"Terms: {terms}")
+                    else:
+                        if len(content) > 0:
+                            other_rules.append(content)
+                
+                elif len(content) == 0:
+                    continue # Is empty line
+                elif "{" not in content:
+                    facts[content] = True
+                    facts_heads[content.split(".")[0]] = True
+                    all_heads[content.split(".")[0]] = 0
                 else:
                     if len(content) > 0:
                         other_rules.append(content)
             else:
+                content = content.split("%")[0] # Remove comments that start at the beginning
+                #content = content.split("#")[0] # Remove program statements for now
                 if len(content) > 0:
                     other_rules.append(content)
-    
-        return facts, facts_heads, other_rules
+                        
+        return facts, facts_heads, other_rules, all_heads

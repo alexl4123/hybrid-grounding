@@ -17,6 +17,11 @@ from nagg.grounding_modes import GroundingModes
 
 from .regression_test_mode import RegressionTestStrategy
 
+from heuristic_splitter.heuristic_splitter import HeuristicSplitter
+from heuristic_splitter.heuristic_strategy import HeuristicStrategy
+from heuristic_splitter.treewidth_computation_strategy import TreewidthComputationStrategy
+from heuristic_splitter.grounding_strategy import GroundingStrategy
+
 def limit_virtual_memory():
     max_virtual_memory = 1024 * 1024 * 1024 * 64 # 64GB
 
@@ -52,8 +57,11 @@ class Context:
 
 class EquivChecker:
 
-    def __init__(self, chosenRegressionTestMode):
+    def __init__(self, chosenRegressionTestMode, foundedness_strategy, heuristic_splitter_test = False):
         self.chosenRegressiontestMode = chosenRegressionTestMode
+        self.foundedness_strategy = foundedness_strategy
+        self.heuristic_splitter_test = heuristic_splitter_test
+
         self.clingo_output = []
         self.nagg_output = []
 
@@ -194,10 +202,28 @@ class EquivChecker:
             total_content = instance_file_contents + "\n#program rules.\n" + encoding_file_contents
             self.start_clingo(combined_file_input, self.clingo_output, self.clingo_hashes)
 
+            # Custom printer keeps result of prototype (NaGG)
             custom_printer = CustomOutputPrinter()
 
-            nagg = NaGG(no_show = no_show, ground_guess = ground_guess, output_printer = custom_printer, aggregate_mode = aggregate_mode[1], cyclic_strategy=cyclic_strategy, grounding_mode=grounding_mode)
-            nagg.start(total_content)
+            if self.heuristic_splitter_test is False:
+                nagg = NaGG(no_show = no_show, ground_guess = ground_guess, output_printer = custom_printer, aggregate_mode = aggregate_mode[1], cyclic_strategy=cyclic_strategy,
+                    grounding_mode=grounding_mode, foundedness_strategy=self.foundedness_strategy)
+                nagg.start(total_content)
+            else:
+                heuristic_strategy = HeuristicStrategy.TREEWIDTH_PURE
+                treewidth_strategy = TreewidthComputationStrategy.NETWORKX_HEUR
+                grounding_strategy = GroundingStrategy.FULL
+                debug_mode = False
+                enable_lpopt = False
+
+                heuristic_splitter = HeuristicSplitter(
+                    heuristic_strategy, treewidth_strategy, grounding_strategy,
+                    debug_mode, enable_lpopt, output_printer = custom_printer
+                )
+                heur_split_content = instance_file_contents + "\n" + encoding_file_contents
+                content = heur_split_content.split("\n")
+                heuristic_splitter.start(content)
+
             
             self.start_clingo(custom_printer.get_string(), self.nagg_output, self.nagg_hashes)
 

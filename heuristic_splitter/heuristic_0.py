@@ -28,6 +28,10 @@ class Heuristic0(HeuristicInterface):
 
         is_tight = len([True for head_key in head_atoms_scc_membership.keys() if head_key in body_atoms_scc_membership]) == 0
 
+        if body_is_stratified is True:
+            stratified_rules[rule_position] = True
+        elif has_aggregate is True:
+            sota_rules[rule_position] = True
         if body_is_stratified is False:
             # Stratified variables are not considered in the rewriting, as they are not grounded in SOTA grounders.
             for stratified_variable in set(stratified_variables):
@@ -61,7 +65,7 @@ class Heuristic0(HeuristicInterface):
                 sota_rules[rule_position] = True
         
         else:
-            stratified_rules[rule_position] = True
+            sota_rules[rule_position] = True
 
         self.rule_dictionary[rule_position].add_variable_graph(full_variable_graph)
         self.rule_dictionary[rule_position].add_is_tight(is_tight)

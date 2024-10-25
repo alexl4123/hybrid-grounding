@@ -32,7 +32,7 @@ edge(10,6).
 rch(X) :- X = #min { A: f(A,_); B: f(_,B) }.
 rch(Y) :- rch(X),f(X,Y).
 rch(X) :- rch(Y),f(X,Y).
-#false :- M > #count { X: rch(X) },min_reached_vertices(M).
-#false :- f(X,Y),not rch(X).
+:- M > #count { X: rch(X) },min_reached_vertices(M).
+:- f(X,Y),not rch(X).
 
 

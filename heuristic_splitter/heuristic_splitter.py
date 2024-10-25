@@ -20,14 +20,15 @@ from heuristic_splitter.get_facts import GetFacts
 
 class HeuristicSplitter:
 
-    def __init__(self, heuristic_strategy: HeuristicStrategy, treewidth_strategy: TreewidthComputationStrategy, grounding_strategy:GroundingStrategy, debug_mode, enable_lpopt):
+    def __init__(self, heuristic_strategy: HeuristicStrategy, treewidth_strategy: TreewidthComputationStrategy, grounding_strategy:GroundingStrategy, 
+        debug_mode, enable_lpopt, output_printer = None):
 
         self.heuristic_strategy = heuristic_strategy
         self.treewidth_strategy = treewidth_strategy
         self.grounding_strategy = grounding_strategy
         self.debug_mode = debug_mode
         self.enable_lpopt = enable_lpopt
-
+        self.output_printer = output_printer
 
     def start(self, contents):
 
@@ -40,7 +41,7 @@ class HeuristicSplitter:
         rule_dictionary = {}
 
         # Separate facts from other rules:
-        facts, facts_heads, other_rules = GetFacts().get_facts_from_contents(contents)
+        facts, facts_heads, other_rules, all_heads = GetFacts().get_facts_from_contents(contents)
 
         for fact_head in facts_heads.keys():
             graph_ds.add_vertex(fact_head)
@@ -58,10 +59,11 @@ class HeuristicSplitter:
         else:
             raise NotImplementedError()
 
-        heuristic_transformer = HeuristicTransformer(graph_ds, heuristic, bdg_rules, sota_rules, stratified_rules, constraint_rules)
+        heuristic_transformer = HeuristicTransformer(graph_ds, heuristic, bdg_rules, sota_rules, stratified_rules, constraint_rules, all_heads)
         parse_string(other_rules_string, lambda stm: heuristic_transformer(stm))
 
-        generator_grounding_strategy = GroundingStrategyGenerator(graph_ds, bdg_rules, sota_rules, stratified_rules, constraint_rules, rule_dictionary)
+        generator_grounding_strategy = GroundingStrategyGenerator(graph_ds, bdg_rules, sota_rules,
+            stratified_rules, constraint_rules, rule_dictionary)
         generator_grounding_strategy.generate_grounding_strategy(grounding_strategy)
 
 
@@ -74,8 +76,10 @@ class HeuristicSplitter:
 
             grounding_handler = GroundingStrategyHandler(grounding_strategy, rule_dictionary, graph_ds,
                 facts,
-                self.debug_mode, self.enable_lpopt)
+                self.debug_mode, self.enable_lpopt,
+                output_printer = self.output_printer)
             grounding_handler.ground()
+            grounding_handler.output_grounded_program(all_heads)
 
         else:
 

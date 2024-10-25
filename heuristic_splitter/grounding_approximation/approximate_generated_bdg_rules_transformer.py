@@ -42,6 +42,7 @@ class ApproximateGeneratedBDGRulesTransformer(Transformer):
         self.comparison_variables = {}
 
         self.node_signum = None
+        self.current_function = None
 
 
     def visit_Rule(self, node):

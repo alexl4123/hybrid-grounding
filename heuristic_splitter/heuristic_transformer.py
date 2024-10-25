@@ -20,9 +20,11 @@ class HeuristicTransformer(Transformer):
 
     def __init__(self, graph_ds: GraphDataStructure, used_heuristic,
             bdg_rules, sota_rules, stratified_rules,
-            constraint_rules):
+            constraint_rules, all_heads):
 
         self.graph_ds = graph_ds
+        self.all_heads = all_heads
+
         self.variable_graph = None
 
         self.current_head = None
@@ -72,6 +74,7 @@ class HeuristicTransformer(Transformer):
 
         # Used in comparison (for variable graph)
         self.is_comparison = False
+
         self.current_comparison_variables = []
 
         # Dictionary storing all variables from functions, and comparisons.
@@ -119,6 +122,12 @@ class HeuristicTransformer(Transformer):
 
         self.current_rule_position += 1
         self._reset_temporary_rule_variables()
+        return node
+
+    def visit_BodyAggregate(self, node):
+
+        self.has_aggregate = True
+
         return node
 
     def visit_Function(self, node):
@@ -191,6 +200,9 @@ class HeuristicTransformer(Transformer):
 
         if self.current_function_position > self.maximum_rule_arity:
             self.maximum_rule_arity = self.current_function_position
+
+        if node.name not in self.all_heads:
+            self.all_heads[node.name] = self.current_function_position
 
         self._reset_temporary_function_variables()
         return node

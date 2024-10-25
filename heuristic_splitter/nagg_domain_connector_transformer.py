@@ -145,38 +145,37 @@ class NaGGDomainConnectorTransformer(Transformer):
 
         self.visit_children(node)
 
-        if self.in_body is True and self.node_signum > 0 and self.current_function is not None:
+        if self.current_function is not None:
+            if self.in_body is True and self.node_signum > 0:
 
-            if self.current_rule_position not in self.nagg_safe_variables:
-                self.nagg_safe_variables[self.current_rule_position] = {}
+                if self.current_rule_position not in self.nagg_safe_variables:
+                    self.nagg_safe_variables[self.current_rule_position] = {}
 
-            if str(node) not in self.nagg_safe_variables[self.current_rule_position]:
-                self.nagg_safe_variables[self.current_rule_position][str(node)] = []
+                if str(node) not in self.nagg_safe_variables[self.current_rule_position]:
+                    self.nagg_safe_variables[self.current_rule_position][str(node)] = []
 
-            to_add_dict = {}
-            to_add_dict["type"] = "function"
-            to_add_dict["name"] = str(self.current_function.name)
-            to_add_dict["position"] = str(self.current_function_position)
-            to_add_dict["signum"] = str(0) # NaGG uses 0 as positive, but the heuristics +1
+                to_add_dict = {}
+                to_add_dict["type"] = "function"
+                to_add_dict["name"] = str(self.current_function.name)
+                to_add_dict["position"] = str(self.current_function_position)
+                to_add_dict["signum"] = str(0) # NaGG uses 0 as positive, but the heuristics +1
 
-            self.nagg_safe_variables[self.current_rule_position][str(node)].append(to_add_dict)
-
-
-        if self.in_body is True:
-            if self.current_function is not None and self.current_function.name in self.domain_transformer.domain_dictionary:
-                if node.name not in self.variable_domains_in_function:
-                    self.variable_domains_in_function[node.name] = self.domain_transformer.domain_dictionary[self.current_function.name]["terms"][self.current_function_position]
-                elif len(self.variable_domains_in_function[node.name].keys()) > len(self.domain_transformer.domain_dictionary[self.current_function.name]["terms"][self.current_function_position].keys()):
-                    self.variable_domains_in_function[node.name] = self.domain_transformer.domain_dictionary[self.current_function.name]["terms"][self.current_function_position]
-            else:
-                self.variable_domains_in_function[node.name] = self.domain_transformer.total_domain           
-
-        elif self.in_head is True:
-            self.head_variables[node.name] = self.current_function_position
+                self.nagg_safe_variables[self.current_rule_position][str(node)].append(to_add_dict)
 
 
+            if self.in_body is True:
+                if self.current_function.name in self.domain_transformer.domain_dictionary:
+                    if node.name not in self.variable_domains_in_function:
+                        self.variable_domains_in_function[node.name] = self.domain_transformer.domain_dictionary[self.current_function.name]["terms"][self.current_function_position]
+                    elif len(self.variable_domains_in_function[node.name].keys()) > len(self.domain_transformer.domain_dictionary[self.current_function.name]["terms"][self.current_function_position].keys()):
+                        self.variable_domains_in_function[node.name] = self.domain_transformer.domain_dictionary[self.current_function.name]["terms"][self.current_function_position]
+                else:
+                    self.variable_domains_in_function[node.name] = self.domain_transformer.total_domain           
 
-        self.current_function_position += 1
+            elif self.in_head is True:
+                self.head_variables[node.name] = self.current_function_position
+
+            self.current_function_position += 1
 
         return node
 

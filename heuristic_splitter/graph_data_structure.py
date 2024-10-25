@@ -42,8 +42,7 @@ class GraphDataStructure:
         if body_literal not in self.predicate_to_index_lookup:
             self.full_graph.add_node(self.current_node_index)
 
-            if signum > 0 and is_choice_rule_head is False:
-                self.positive_graph.add_node(self.current_node_index)
+            self.positive_graph.add_node(self.current_node_index)
 
             self.predicate_to_index_lookup[body_literal] = self.current_node_index
             self.index_to_predicate_lookup[self.current_node_index] = body_literal
@@ -53,8 +52,7 @@ class GraphDataStructure:
         if head_literal not in self.predicate_to_index_lookup:
             self.full_graph.add_node(self.current_node_index)
 
-            if signum > 0 and is_choice_rule_head is False:
-                self.positive_graph.add_node(self.current_node_index)
+            self.positive_graph.add_node(self.current_node_index)
 
             self.predicate_to_index_lookup[head_literal] = self.current_node_index
             self.index_to_predicate_lookup[self.current_node_index] = head_literal
@@ -127,13 +125,13 @@ class GraphDataStructure:
 
 
 
-    def add_node_to_rule_lookup(self, current_rule_position, predicate_name):
+    def add_node_to_rule_lookup(self, rule_positions, predicate_name):
         vertex_index = self.predicate_to_index_lookup[predicate_name]
 
         if vertex_index not in self.node_to_rule_lookup:
             self.node_to_rule_lookup[vertex_index] = []
 
-        self.node_to_rule_lookup[vertex_index].append(current_rule_position)
+        self.node_to_rule_lookup[vertex_index] += rule_positions
 
 
 

@@ -38,7 +38,8 @@ class CustomOutputPrinter(DefaultOutputPrinter):
 
 class GroundingStrategyHandler:
 
-    def __init__(self, grounding_strategy: GroundingStrategyGenerator, rule_dictionary, graph_ds: GraphDataStructure, facts, debug_mode, enable_lpopt):
+    def __init__(self, grounding_strategy: GroundingStrategyGenerator, rule_dictionary, graph_ds: GraphDataStructure, facts,
+        debug_mode, enable_lpopt, output_printer = None):
 
         self.grounding_strategy = grounding_strategy
         self.rule_dictionary = rule_dictionary
@@ -48,6 +49,7 @@ class GroundingStrategyHandler:
 
         self.debug_mode = debug_mode
         self.enable_lpopt = enable_lpopt
+        self.output_printer = output_printer
 
     def ground(self):
 
@@ -167,10 +169,20 @@ class GroundingStrategyHandler:
                     print(decoded_string)
                     print(domain_transformer.domain_dictionary)
 
+        self.grounded_program = grounded_program
+
+
+    def output_grounded_program(self, all_heads):
 
         if self.debug_mode is True:
             print("--- FINAL ---") 
-        print(grounded_program)
+
+        show_statements = "\n".join([f"#show {key}/{all_heads[key]}." for key in all_heads.keys()])
+
+        if self.output_printer:
+            self.output_printer.custom_print(self.grounded_program + show_statements)
+        else:
+            print(self.grounded_program + show_statements)
 
     def add_approximate_generated_ground_rules_for_non_ground_rule(self, domain_transformer, rule, str_rule, methods_approximations):
         """
@@ -297,7 +309,8 @@ class GroundingStrategyHandler:
 
     def start_gringo(self, program_input, timeout=1800):
 
-        arguments = ["gringo", "-t"]
+        #arguments = ["gringo", "-t"]
+        arguments = ["./idlv.bin", "--output=1", "--stdin"]
 
         decoded_string = ""
         try:
@@ -310,6 +323,7 @@ class GroundingStrategyHandler:
             if p.returncode != 0 and p.returncode != 10 and p.returncode != 20 and p.returncode != 30:
                 print(f">>>>> Other return code than 0 in helper: {p.returncode}")
                 print(error_vals_decoded)
+                raise Exception(error_vals_decoded)
 
         except Exception as ex:
             try:
@@ -317,9 +331,7 @@ class GroundingStrategyHandler:
             except Exception as e:
                 pass
 
-            print(ex)
-
-            raise NotImplementedError() # TBD: Continue if possible
+            raise Exception(ex) # TBD: Continue if possible
 
         return decoded_string
 
