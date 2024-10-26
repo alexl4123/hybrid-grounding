@@ -532,6 +532,20 @@ class GenerateNewFoundednessPart:
             f"{sat_atom} :- {body_interpretation}{sat_predicate}."
         )
 
+
+        if self.rule_literals_signums[
+                self.rule_literals.index(current_function_symbol)
+            ] is False and current_function_symbol is not head:
+            # Positive body!
+            literal_index = self.rule_literals.index(current_function_symbol)
+
+            self.printer.custom_print(
+                f"cyc{self.current_rule_position}{literal_index} :- {body_interpretation}{sat_predicate}."
+            )
+
+
+
+
     def _generate_body_list(
         self,
         arguments,

@@ -24,6 +24,9 @@ from nagg.grounding_modes import GroundingModes
 from nagg.foundedness_strategy import FoundednessStrategy
 from heuristic_splitter.domain_inferer import DomainInferer
 
+from heuristic_splitter.program.string_asp_program import StringASPProgram
+from heuristic_splitter.program.smodels_asp_program import SmodelsASPProgram
+
 class CustomOutputPrinter(DefaultOutputPrinter):
 
     def __init__(self):
@@ -51,9 +54,15 @@ class GroundingStrategyHandler:
         self.enable_lpopt = enable_lpopt
         self.output_printer = output_printer
 
+        self.grounded_program = None
+
+        self.grd_call = 0
+
     def ground(self):
 
-        grounded_program = "\n".join(list(self.facts.keys()))
+        if self.grounded_program is None: 
+            self.grounded_program = StringASPProgram("\n".join(list(self.facts.keys())))
+
         #domain_transformer = DomainTransformer()
         domain_transformer = DomainInferer()
 
@@ -123,7 +132,8 @@ class GroundingStrategyHandler:
                     nagg.start(program_input, nagg_domain_connector)
 
                     #grounded_program = custom_printer.get_string()
-                    grounded_program = grounded_program + custom_printer.get_string()
+                    #grounded_program = grounded_program + custom_printer.get_string()
+                    self.grounded_program.add_string(custom_printer.get_string())
                     
                 if len(tmp_bdg_old_found_rules) > 0:
 
@@ -131,6 +141,7 @@ class GroundingStrategyHandler:
 
                     nagg_domain_connector_transformer = NaGGDomainConnectorTransformer(domain_transformer)
                     parse_string(tmp_rules_string, lambda stm: nagg_domain_connector_transformer(stm))
+
 
                     nagg_domain_connector = NaGGDomainConnector(
                         domain_transformer.domain_dictionary, domain_transformer.total_domain,
@@ -148,18 +159,22 @@ class GroundingStrategyHandler:
                         grounding_mode=grounding_mode, foundedness_strategy=foundedness_strategy)
                     nagg.start(program_input, nagg_domain_connector)
 
-                    grounded_program = grounded_program + custom_printer.get_string()
+                    #grounded_program = grounded_program + custom_printer.get_string()
+                    self.grounded_program.add_string(custom_printer.get_string())
 
             if len(sota_rules) > 0:
                 # Ground SOTA rules with SOTA (gringo/IDLV):
                 sota_rules_string = self.rule_list_to_rule_string(sota_rules) 
-                program_input = grounded_program + "\n" + sota_rules_string
+
+                program_input = self.grounded_program.get_string() + "\n" + sota_rules_string
+
                 decoded_string = self.start_gringo(program_input)
 
                 #parse_string(decoded_string, lambda stm: domain_transformer(stm))
-                domain_transformer.infer_domain(decoded_string)
-
-                grounded_program = decoded_string
+                self.grounded_program = SmodelsASPProgram(self.grd_call)
+                self.grounded_program.preprocess_smodels_program(decoded_string, domain_transformer)
+                self.grd_call += 1
+                #domain_transformer.infer_domain(decoded_string)
 
                 if self.debug_mode is True:
                     print("+++++")
@@ -169,9 +184,6 @@ class GroundingStrategyHandler:
                     print(decoded_string)
                     print(domain_transformer.domain_dictionary)
 
-        self.grounded_program = grounded_program
-
-
     def output_grounded_program(self, all_heads):
 
         if self.debug_mode is True:
@@ -179,10 +191,13 @@ class GroundingStrategyHandler:
 
         show_statements = "\n".join([f"#show {key}/{all_heads[key]}." for key in all_heads.keys()])
 
+        input_program = self.grounded_program.get_string() + "\n" + show_statements
+
+        #final_program = self.start_gringo(input_program, output_mode="--output=smodels")
         if self.output_printer:
-            self.output_printer.custom_print(self.grounded_program + show_statements)
+            self.output_printer.custom_print(input_program)
         else:
-            print(self.grounded_program + show_statements)
+            print(input_program)
 
     def add_approximate_generated_ground_rules_for_non_ground_rule(self, domain_transformer, rule, str_rule, methods_approximations):
         """
@@ -307,10 +322,13 @@ class GroundingStrategyHandler:
         return program_input
 
 
-    def start_gringo(self, program_input, timeout=1800):
+    def start_gringo(self, program_input, timeout=1800, output_mode = "--output=smodels"):
 
         #arguments = ["gringo", "-t"]
-        arguments = ["./idlv.bin", "--output=1", "--stdin"]
+
+        # IDLV SMODELS NUMERIC FORMAT:
+        #arguments = ["./idlv.bin", "--output=0", "--stdin"]
+        arguments = ["gringo", output_mode]
 
         decoded_string = ""
         try:
@@ -326,6 +344,7 @@ class GroundingStrategyHandler:
                 raise Exception(error_vals_decoded)
 
         except Exception as ex:
+            print(program_input)
             try:
                 p.kill()
             except Exception as e:
@@ -345,7 +364,6 @@ class GroundingStrategyHandler:
             raise Exception("lpopt.bin not found")
 
         arguments = [program_string]
-        print(program_input)
 
         decoded_string = ""
         try:

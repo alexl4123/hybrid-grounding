@@ -65,6 +65,7 @@ class GroundingStrategyGenerator:
 
         scc_node_to_grounding_order_lookup = {}
 
+        # ---- STRATIFIED PROGRAM HANDLING ----
         stratified_topological_order = []
         non_stratified_topological_order = [] 
         
@@ -108,6 +109,7 @@ class GroundingStrategyGenerator:
         self.add_grounding_strategy_level(grounding_strategy, current_sota_grounded_rules,
             current_bdg_grounded_rules, grounding_strategy_dependencies)
 
+        # ---- NON-STRATIFIED PROGRAM HANDLING ----
         for scc_index in non_stratified_topological_order:
 
             scc = sccs[scc_index]

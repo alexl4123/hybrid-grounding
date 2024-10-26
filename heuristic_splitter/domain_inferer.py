@@ -167,3 +167,20 @@ class DomainInferer:
 
 
 
+    def parse_smodels_literal(self, literal):
+
+        pattern_id = re.compile(r'(_?[a-z][A-Za-z0-9_´]*)')
+
+        literal = literal.strip()
+        match = pattern_id.search(literal)
+        if match:
+            _id = match.group()
+
+            arguments = literal[len(_id):]
+            if len(arguments) > 0 and arguments[0] == "(":
+                arguments = arguments[1:]
+                arguments = arguments[:-1]
+
+            self.add_node_to_domain(arguments, _id)
+
+        

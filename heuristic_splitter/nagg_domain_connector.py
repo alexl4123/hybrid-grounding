@@ -31,8 +31,6 @@ class NaGGDomainConnector:
             if elem in ["_average_domain_tuples"]:
                 continue
             nagg_domain[elem] = {}
-            print(elem)
-            print(self.heuristic_domain[elem]["terms"])
             for position in range(len(self.heuristic_domain[elem]["terms"])):
                 nagg_domain[elem][str(position)] = list(self.heuristic_domain[elem]["terms"][position].keys())
 

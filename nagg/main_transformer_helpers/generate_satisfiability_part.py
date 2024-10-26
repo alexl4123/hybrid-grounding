@@ -48,10 +48,7 @@ class GenerateSatisfiabilityPart:
 
         covered_subsets = self._generate_sat_comparisons()
 
-        start_time = time.time()
         self._generate_sat_functions(self.rule_head, covered_subsets)
-        end_time = time.time()
-        print(f"> ELAPSED FUNCTION TIME: {end_time - start_time}")
 
     def _generate_sat_variable_possibilities(self):
         # MOD
@@ -216,12 +213,8 @@ class GenerateSatisfiabilityPart:
                 variable_associations[variable] = index
                 index += 1
 
-            start_time = time.time()
             combinations = [p for p in itertools.product(*dom_list)]
-            end_time = time.time()
-            print(f"--> ELAPSED COMBINATION GENERATION TIME: {end_time - start_time}")
 
-            start_time = time.time()
             for current_combination in combinations:
                 current_function_arguments_string = ""
 
@@ -231,12 +224,7 @@ class GenerateSatisfiabilityPart:
                     sat_body_list,
                     sat_body_dict,
                     current_function_arguments_string,
-                ) = self._generate_body_list(
-                    arguments,
-                    variable_associations,
-                    current_combination,
-                    current_function_arguments_string,
-                )
+                ) = self._generate_body_list(arguments, variable_associations, current_combination, current_function_arguments_string)
 
                 if (
                     self._check_covered_subsets(
@@ -246,17 +234,7 @@ class GenerateSatisfiabilityPart:
                 ):
                     continue
 
-                self._print_sat_function_guess(
-                    head,
-                    current_function_symbol,
-                    current_function_arguments_string,
-                    sat_atom,
-                    sat_body_list,
-                )
-
-            end_time = time.time()
-            print(f"--> ELAPSED COMBINATION LOOP TIME: {end_time - start_time}")
-
+                self._print_sat_function_guess(head, current_function_symbol, current_function_arguments_string, sat_atom, sat_body_list)
 
 
     def _check_covered_subsets(self, sat_atom, covered_subsets, sat_body_dict):

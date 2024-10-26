@@ -28,7 +28,7 @@ class Heuristic0(HeuristicInterface):
 
         is_tight = len([True for head_key in head_atoms_scc_membership.keys() if head_key in body_atoms_scc_membership]) == 0
 
-        if body_is_stratified is True:
+        if body_is_stratified is True and has_aggregate is False:
             stratified_rules[rule_position] = True
         elif has_aggregate is True:
             sota_rules[rule_position] = True

@@ -267,6 +267,24 @@ class GuessHeadPart:
         else:
             cyclic_behavior_arguments = "."
 
+        if self.cyclic_strategy == CyclicStrategy.SHARED_CYCLE_BODY_PREDICATES:
+
+            cyclic_lits = []
+            for lit_index in range(len(self.rule_literals)):
+                lit = self.rule_literals[lit_index]
+
+                if str(lit) == str(self.rule_head):
+                    continue
+            
+                if self.rule_literals_signums[lit_index] is False:
+
+                    cyclic_lits.append(f"cyc{self.current_rule_position}{lit_index}")
+            
+            if len(cyclic_lits) == 0:
+                cyclic_behavior_arguments = "."
+            else:
+                cyclic_behavior_arguments = f" :- {','.join(cyclic_lits)}."
+
         domains = []
         for variable in h_vars:
             domains.append(
