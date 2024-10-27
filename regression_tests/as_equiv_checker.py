@@ -237,8 +237,8 @@ class EquivChecker:
                             print(f"[ERROR] Used Aggregate Mode: {aggregate_mode[0]} - Could not find corresponding stable model in nagg for hash {clingo_key}")
                             print(f"[ERROR] This corresponds to the answer set: ")
                             print(self.clingo_output[self.clingo_hashes[clingo_key]])
-                            print("Output of nagg:")
-                            print(self.nagg_output)
+                            #print("Output of nagg:")
+                            #print(self.nagg_output)
 
                 for nagg_key in self.nagg_hashes.keys():
                     if nagg_key not in self.clingo_hashes:
@@ -247,8 +247,8 @@ class EquivChecker:
                             print(f"[ERROR] Used Aggregate Mode: {aggregate_mode[0]} - Could not find corresponding stable model in clingo for hash {nagg_key}")
                             print(f"[ERROR] This corresponds to the answer set: ")
                             print(self.nagg_output[self.nagg_hashes[nagg_key]])
-                            print("Output of nagg:")
-                            print(self.nagg_output)
+                            #print("Output of nagg:")
+                            #print(self.nagg_output)
 
 
         if not works:

@@ -1,6 +1,7 @@
 seed(30770).
 num_vertices(10).
-min_reached_vertices(6).
+%min_reached_vertices(6).
+min_reached_vertices(4).
 edge_probability(20).
 repetition(1).
 vertex(1).
@@ -14,27 +15,27 @@ vertex(8).
 vertex(9).
 vertex(10).
 edge(1,2).
-edge(1,8).
-edge(2,9).
+%edge(1,8).
+%edge(2,9).
 edge(3,1).
-edge(3,7).
+%edge(3,7).
 edge(5,2).
 edge(5,3).
-edge(5,9).
+%edge(5,9).
 edge(5,10).
 edge(6,2).
 edge(6,3).
 edge(6,4).
-edge(7,1).
-edge(8,5).
-edge(9,2).
-edge(10,6).
+%edge(7,1).
+%edge(8,5).
+%edge(9,2).
+%edge(10,6).
 { f(X,Y) } :- edge(X,Y).
-%rch(X) :- X = #min { A: f(A,_); B: f(_,B) }.
-%rch(Y) :- rch(X),f(X,Y).
-%rch(X) :- rch(Y),f(X,Y).
-%:- M > #count { X: rch(X) },min_reached_vertices(M).
-%:- f(X,Y),not rch(X).
+rch(X) :- X = #min { A: f(A,_); B: f(_,B) }.
+rch(Y) :- rch(X),f(X,Y).
+rch(X) :- rch(Y),f(X,Y).
+:- M > #count { X: rch(X) },min_reached_vertices(M).
+:- f(X,Y),not rch(X).
 
 
  :- C_1 != D_1,f(A_1,D_1),B_0 != C_0,D_1 != E_1,B_1 != C_1,A_1 != C_1,f(A_1,B_1),A_0 != E_0,A_1 != E_1,A_0 != B_0,A_0 != D_0,B_1 != D_1,f(A_1,E_1),f(A_0,E_0),C_0 != E_0,A_0 != C_0,f(A_0,D_0),B_0 != D_0,B_1 != E_1,A_1 != D_1,f(A_1,C_1),f(A_0,B_0),A_1 != B_1,C_0 != D_0,A_0!=A_1,C_1 != E_1,B_0 != E_0,D_0 != E_0,f(A_0,C_0).

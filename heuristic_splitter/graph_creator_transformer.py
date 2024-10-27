@@ -133,8 +133,6 @@ class GraphCreatorTransformer(Transformer):
         Visits an clingo-AST aggregate.
         """
 
-
-
         if self.in_head:
             self.head_is_choice_rule = True
 

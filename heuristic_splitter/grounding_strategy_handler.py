@@ -58,6 +58,35 @@ class GroundingStrategyHandler:
 
         self.grd_call = 0
 
+    def single_ground_call(self, all_heads):
+
+        if self.grounded_program is None: 
+            self.grounded_program = StringASPProgram("\n".join(list(self.facts.keys())))
+
+        domain_transformer = DomainInferer()
+        if len(self.grounding_strategy) > 0:
+            # Ground SOTA rules with SOTA (gringo/IDLV):
+            sota_rules_string = self.rule_list_to_rule_string(self.grounding_strategy[0]["sota"]) 
+            program_input = self.grounded_program.get_string() + "\n" + sota_rules_string
+            decoded_string = self.start_gringo(program_input, output_mode="--output=smodels")
+
+            self.grounded_program = SmodelsASPProgram(self.grd_call)
+            self.grounded_program.preprocess_smodels_program(decoded_string, domain_transformer)
+            gringo_string = self.grounded_program.get_string()
+        else:
+            gringo_string = self.grounded_program.get_string()
+
+        if self.debug_mode is True:
+            print("--- FINAL ---") 
+
+        show_statements = "\n".join([f"#show {key}/{all_heads[key]}." for key in all_heads.keys()])
+        final_string = gringo_string + "\n" + show_statements
+
+        if self.output_printer:
+            self.output_printer.custom_print(final_string)
+        else:
+            print(final_string)
+
     def ground(self):
 
         if self.grounded_program is None: 
@@ -74,6 +103,7 @@ class GroundingStrategyHandler:
             level = self.grounding_strategy[level_index]
             sota_rules = level["sota"]
             bdg_rules = level["bdg"]
+
 
             if self.debug_mode is True:
                 print(f"-- {level_index}: SOTA-RULES: {sota_rules}, BDG-RULES: {bdg_rules}")
@@ -100,7 +130,7 @@ class GroundingStrategyHandler:
                         else:
                             tmp_bdg_new_found_rules.append(bdg_rule) 
 
-                no_show = False
+                no_show = True
                 ground_guess = True
                 # Custom printer keeps result of prototype (NaGG)
                 aggregate_mode = AggregateMode.RA
@@ -183,6 +213,8 @@ class GroundingStrategyHandler:
                     print("++")
                     print(decoded_string)
                     print(domain_transformer.domain_dictionary)
+
+        
 
     def output_grounded_program(self, all_heads):
 

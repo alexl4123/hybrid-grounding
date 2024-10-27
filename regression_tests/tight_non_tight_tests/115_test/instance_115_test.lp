@@ -1,6 +1,7 @@
 seed(30770).
 num_vertices(10).
-min_reached_vertices(6).
+%min_reached_vertices(6).
+min_reached_vertices(4).
 edge_probability(20).
 repetition(1).
 vertex(1).
@@ -20,7 +21,7 @@ edge(3,1).
 edge(3,7).
 edge(5,2).
 edge(5,3).
-edge(5,9).
+%edge(5,9).
 edge(5,10).
 edge(6,2).
 edge(6,3).
@@ -30,10 +31,10 @@ edge(8,5).
 edge(9,2).
 edge(10,6).
 { f(X,Y) } :- edge(X,Y).
-%rch(X) :- X = #min { A: f(A,_); B: f(_,B) }.
-%rch(Y) :- rch(X),f(X,Y).
-%rch(X) :- rch(Y),f(X,Y).
-%:- M > #count { X: rch(X) },min_reached_vertices(M).
-%:- f(X,Y),not rch(X).
+rch(X) :- X = #min { A: f(A,_); B: f(_,B) }.
+rch(Y) :- rch(X),f(X,Y).
+rch(X) :- rch(Y),f(X,Y).
+:- M > #count { X: rch(X) },min_reached_vertices(M).
+:- f(X,Y),not rch(X).
 
 

@@ -57,6 +57,10 @@ class NaGG:
         Start method of the nagg.
         Call this method to start the rewriting procedure.
         """
+
+        
+
+
         if domain_inference is None:
             (
                 domain,

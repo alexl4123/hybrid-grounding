@@ -78,8 +78,11 @@ class HeuristicSplitter:
                 facts,
                 self.debug_mode, self.enable_lpopt,
                 output_printer = self.output_printer)
-            grounding_handler.ground()
-            grounding_handler.output_grounded_program(all_heads)
+            if len(grounding_strategy) > 1:
+                grounding_handler.ground()
+                grounding_handler.output_grounded_program(all_heads)
+            else:
+                grounding_handler.single_ground_call(all_heads)
 
         else:
 
