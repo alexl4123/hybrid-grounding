@@ -90,7 +90,7 @@ class GraphCreatorTransformer(Transformer):
             self.graph_ds.add_node_to_rule_lookup([self.current_rule_position], node.name)
             self.graph_ds.add_node_to_rule_lookup([], tmp_head_choice_name)
 
-        elif self.in_head and self.head_is_choice_rule and self.head_aggregate_element_head:
+        elif self.in_head and self.head_is_choice_rule and self.head_aggregate_element_body:
             # For the "b" and "d" in {a:b;c:d} :- e.
             self.graph_ds.add_edge(self.current_head_function.name, node.name, self.node_signum)
             self.graph_ds.add_node_to_rule_lookup([], node.name)
@@ -106,6 +106,9 @@ class GraphCreatorTransformer(Transformer):
             print("HEAD TYPE NOT IMPLEMENTED:_")
             print(self.current_head)
             print(self.current_head_function)
+            print(self.in_head)
+            print(self.head_is_choice_rule)
+            print(self.head_aggregate_element_head)
             raise NotImplementedError
         elif self.in_body and len(self.head_functions) > 0:
             # For the "b" and "c" in a :- b, not c.

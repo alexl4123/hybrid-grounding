@@ -79,6 +79,21 @@ def main():
     )
 
     parser.add_argument(
+        "--enable-logging",
+        action="store_true",
+        help="Write to a file which rules where grounded with BDG, and which with SOTA techniques.",
+    )
+
+    parser.add_argument(
+        "--logging-file",
+        type=str, 
+        help="Path to the logging file (--enable-logging must be supported as well). Default a file in logs/<CURRENT-DATE-TIME>.log is generated."
+    )
+
+
+
+
+    parser.add_argument(
         "--treewidth-strategy",
         default=treewidth_strategies["NETWORKX"]["cmd_line"],
         choices=[
@@ -98,7 +113,7 @@ def main():
 
 
 
-    parser.add_argument("files", type=argparse.FileType("r"), nargs="+")
+    parser.add_argument("files", type=argparse.FileType("rb"), nargs="+")
     args = parser.parse_args()
 
     heuristic_method = None
@@ -122,9 +137,9 @@ def main():
 
     files = args.files
     #files = [open("TEST/190_heur.lp", "r")]
-    contents = []
-    for f in files:
-        contents += f.readlines()
+    #contents = []
+    #for f in files:
+    #    contents += f.readlines()
 
     start_time = time.time()
     heuristic = HeuristicSplitter(
@@ -133,8 +148,11 @@ def main():
         grounding_strategy,
         debug_mode,
         enable_lpopt,
+        args.enable_logging,
+        args.logging_file,
     )
-    heuristic.start(contents)
+
+    heuristic.start(files[0])
 
     end_time = time.time()
     if debug_mode is True:

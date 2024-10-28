@@ -1,3 +1,7 @@
 __pycache__
 *.class
 *.java
+*.c
+*.o
+heuristic_splitter/*.o
+heuristic_splitter/build

@@ -42,7 +42,7 @@ class CustomOutputPrinter(DefaultOutputPrinter):
 class GroundingStrategyHandler:
 
     def __init__(self, grounding_strategy: GroundingStrategyGenerator, rule_dictionary, graph_ds: GraphDataStructure, facts,
-        debug_mode, enable_lpopt, output_printer = None):
+        debug_mode, enable_lpopt, output_printer = None, enable_logging = False, logging_file = None):
 
         self.grounding_strategy = grounding_strategy
         self.rule_dictionary = rule_dictionary
@@ -53,6 +53,9 @@ class GroundingStrategyHandler:
         self.debug_mode = debug_mode
         self.enable_lpopt = enable_lpopt
         self.output_printer = output_printer
+
+        self.enable_logging = enable_logging
+        self.logging_file = logging_file
 
         self.grounded_program = None
 
@@ -67,12 +70,17 @@ class GroundingStrategyHandler:
         if len(self.grounding_strategy) > 0:
             # Ground SOTA rules with SOTA (gringo/IDLV):
             sota_rules_string = self.rule_list_to_rule_string(self.grounding_strategy[0]["sota"]) 
+
+            if self.enable_logging is True:
+                self.logging_file.write("All rules were grounded via SOTA approaches:")
+                self.logging_file.write(sota_rules_string)
+
             program_input = self.grounded_program.get_string() + "\n" + sota_rules_string
-            decoded_string = self.start_gringo(program_input, output_mode="--output=smodels")
+            decoded_string = self.start_sota_grounder(program_input, output_mode="--output=smodels")
 
             self.grounded_program = SmodelsASPProgram(self.grd_call)
             self.grounded_program.preprocess_smodels_program(decoded_string, domain_transformer)
-            gringo_string = self.grounded_program.get_string()
+            gringo_string = self.grounded_program.get_string(insert_flags=True)
         else:
             gringo_string = self.grounded_program.get_string()
 
@@ -88,6 +96,14 @@ class GroundingStrategyHandler:
             print(final_string)
 
     def ground(self):
+
+        if self.enable_logging is True:
+            self.logging_file.write("-------------------------------------------------------\n")
+            self.logging_file.write("The following is the final grounding strategy:\n")
+            self.logging_file.write(str(self.grounding_strategy))
+            self.logging_file.write("-------------------------------------------------------\n")
+
+
 
         if self.grounded_program is None: 
             self.grounded_program = StringASPProgram("\n".join(list(self.facts.keys())))
@@ -141,6 +157,13 @@ class GroundingStrategyHandler:
 
                     tmp_rules_string = self.rule_list_to_rule_string(tmp_bdg_new_found_rules)
 
+                    if self.enable_logging is True:
+                        self.logging_file.write("-------------------------------------------------------\n")
+                        self.logging_file.write("The following rules were grounded via BDG NEW approache:\n")
+                        self.logging_file.write(tmp_rules_string)
+
+
+
                     nagg_domain_connector_transformer = NaGGDomainConnectorTransformer(domain_transformer)
                     parse_string(tmp_rules_string, lambda stm: nagg_domain_connector_transformer(stm))
 
@@ -169,6 +192,13 @@ class GroundingStrategyHandler:
 
                     tmp_rules_string = self.rule_list_to_rule_string(tmp_bdg_old_found_rules)
 
+                    if self.enable_logging is True:
+                        self.logging_file.write("-------------------------------------------------------\n")
+                        self.logging_file.write("The following rules were grounded via BDG OLD approache:\n")
+                        self.logging_file.write(tmp_rules_string)
+
+
+
                     nagg_domain_connector_transformer = NaGGDomainConnectorTransformer(domain_transformer)
                     parse_string(tmp_rules_string, lambda stm: nagg_domain_connector_transformer(stm))
 
@@ -196,9 +226,14 @@ class GroundingStrategyHandler:
                 # Ground SOTA rules with SOTA (gringo/IDLV):
                 sota_rules_string = self.rule_list_to_rule_string(sota_rules) 
 
+                if self.enable_logging is True:
+                    self.logging_file.write("-------------------------------------------------------\n")
+                    self.logging_file.write("The following rules were grounded via SOTA approaches:\n")
+                    self.logging_file.write(sota_rules_string)
+
                 program_input = self.grounded_program.get_string() + "\n" + sota_rules_string
 
-                decoded_string = self.start_gringo(program_input)
+                decoded_string = self.start_sota_grounder(program_input)
 
                 #parse_string(decoded_string, lambda stm: domain_transformer(stm))
                 self.grounded_program = SmodelsASPProgram(self.grd_call)
@@ -223,7 +258,7 @@ class GroundingStrategyHandler:
 
         show_statements = "\n".join([f"#show {key}/{all_heads[key]}." for key in all_heads.keys()])
 
-        input_program = self.grounded_program.get_string() + "\n" + show_statements
+        input_program = self.grounded_program.get_string(insert_flags=True) + "\n" + show_statements
 
         #final_program = self.start_gringo(input_program, output_mode="--output=smodels")
         if self.output_printer:
@@ -354,13 +389,14 @@ class GroundingStrategyHandler:
         return program_input
 
 
-    def start_gringo(self, program_input, timeout=1800, output_mode = "--output=smodels"):
+    def start_sota_grounder(self, program_input, timeout=1800, output_mode = "--output=smodels", grounder="idlv"):
 
-        #arguments = ["gringo", "-t"]
-
-        # IDLV SMODELS NUMERIC FORMAT:
-        #arguments = ["./idlv.bin", "--output=0", "--stdin"]
-        arguments = ["gringo", output_mode]
+        if grounder == "idlv":
+            arguments = ["./idlv.bin", "--output=0", "--stdin"]
+        elif grounder == "gringo":
+            arguments = ["gringo", "--output=smodels"]
+        else:
+            raise NotImplementedError(f"Grounder {grounder} not implemented!")
 
         decoded_string = ""
         try:

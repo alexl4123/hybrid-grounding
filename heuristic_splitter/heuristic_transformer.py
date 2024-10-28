@@ -161,7 +161,7 @@ class HeuristicTransformer(Transformer):
             else:
                 self.head_atoms_scc_membership[self.graph_ds.get_scc_index_of_atom(node.name)] += 1
 
-        elif self.in_head and self.head_is_choice_rule and self.head_aggregate_element_head:
+        elif self.in_head and self.head_is_choice_rule and self.head_aggregate_element_body:
             # For the "b" and "d" in {a:b;c:d} :- e.
             if self.graph_ds.get_scc_index_of_atom(node.name) not in self.body_atoms_scc_membership:
                 self.body_atoms_scc_membership[self.graph_ds.get_scc_index_of_atom(node.name)] = 1

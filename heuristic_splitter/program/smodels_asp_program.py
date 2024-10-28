@@ -14,6 +14,10 @@ class SmodelsASPProgram(ASPProgram):
 
         self.auxiliary_name = f"auxiliary_{grd_call}_"
 
+        # As IDLV is not able to handle #inf and #sup as input:
+        self.sup_flag = "sup_flag"
+        self.inf_flag = "inf_flag"
+
 
     def preprocess_smodels_program(self, smodels_program_string, domain_inferer: DomainInferer):
 
@@ -38,9 +42,17 @@ class SmodelsASPProgram(ASPProgram):
                 symbol = splits[0]
                 literal = " ".join(splits[1:])
 
+                if "#sup" in literal:
+                    literal = literal.replace("#sup", self.sup_flag)
+
+                if "#inf" in literal:
+                    literal = literal.replace("#inf", self.inf_flag)
+
                 self.literals_dict[symbol] = literal
 
                 domain_inferer.parse_smodels_literal(literal)
+
+
             else:
                 continue
 
@@ -51,7 +63,7 @@ class SmodelsASPProgram(ASPProgram):
 
         self.other_prg_string = self.other_prg_string + to_add_prg
 
-    def get_string(self):
+    def get_string(self, insert_flags = False):
 
         if self.debug_mode is True:
             print("+++++ START REWRITING SMODELS OUTPUT +++++")
@@ -60,30 +72,31 @@ class SmodelsASPProgram(ASPProgram):
         for rule in self.program:
             if self.debug_mode is True:
                 print(rule)
+
             if rule[0] == '1':
-                parsed_rule = self.handle_normal_rule(rule)
+                parsed_rule = self.handle_normal_rule(rule, insert_flags)
                 if self.debug_mode is True:
                     print(parsed_rule)
                 parsed_rules.append(parsed_rule)
             elif rule[0] == '2':
-                parsed_rule = self.handle_smodels_constraint_rule(rule)
+                parsed_rule = self.handle_smodels_constraint_rule(rule, insert_flags)
                 if self.debug_mode is True:
                     print(parsed_rule)
                 parsed_rules.append(parsed_rule)
             elif rule[0] == '3':
-                parsed_rule = self.handle_smodels_choice_rule(rule)
+                parsed_rule = self.handle_smodels_choice_rule(rule, insert_flags)
                 if self.debug_mode is True:
                     print(parsed_rule)
                 parsed_rules.append(parsed_rule)
             elif rule[0] == '4': 
                 raise Exception("Was never defined!")
             elif rule[0] == '5':
-                parsed_rule = self.handle_smodels_weight_rule(rule)
+                parsed_rule = self.handle_smodels_weight_rule(rule, insert_flags)
                 if self.debug_mode is True:
                     print(parsed_rule)
                 parsed_rules.append(parsed_rule)
             elif rule[0] == '8':
-                parsed_rule = self.handle_smodels_disjunctive_head_rule(rule)
+                parsed_rule = self.handle_smodels_disjunctive_head_rule(rule, insert_flags)
                 if self.debug_mode is True:
                     print(parsed_rule)
                 parsed_rules.append(parsed_rule)
@@ -100,7 +113,7 @@ class SmodelsASPProgram(ASPProgram):
 
         return "\n".join(parsed_rules) + self.other_prg_string
 
-    def handle_normal_rule(self, rule):
+    def handle_normal_rule(self, rule, insert_flags):
         """
         -- Handle smodels rule with type 1:
         SYNAPSIS: 1 head #literals #negative negative positive
@@ -114,16 +127,16 @@ class SmodelsASPProgram(ASPProgram):
         number_negative_body_literals = int(symbols[3])
 
         if number_body_literals == 0:
-            return self.infer_symbol_name(head_symbol) + "."
+            return self.infer_symbol_name(head_symbol, insert_flags) + "."
         else:
-            head = self.infer_symbol_name(head_symbol)
+            head = self.infer_symbol_name(head_symbol, insert_flags)
 
             body_string_list = []
             remaining_body_literals = symbols[4:]
 
             for body_symbol in remaining_body_literals:
 
-                body_literal = self.infer_symbol_name(body_symbol)
+                body_literal = self.infer_symbol_name(body_symbol, insert_flags)
 
                 if len(body_string_list) < number_negative_body_literals:
                     body_string_list.append("not " + body_literal)
@@ -135,7 +148,7 @@ class SmodelsASPProgram(ASPProgram):
 
             return head + " :- " + body + "."
 
-    def handle_smodels_constraint_rule(self, rule):
+    def handle_smodels_constraint_rule(self, rule, insert_flags):
         """
         -- Handle an SMODELS constraint rule (not an ASP constraint)
         SYNAPSIS: 2 head #literals #negative bound negative positive
@@ -151,16 +164,16 @@ class SmodelsASPProgram(ASPProgram):
         bound = int(symbols[4])
 
         if number_body_literals == 0:
-            return self.infer_symbol_name(head_symbol) + "."
+            return self.infer_symbol_name(head_symbol, insert_flags) + "."
         else:
-            head = self.infer_symbol_name(head_symbol)
+            head = self.infer_symbol_name(head_symbol, insert_flags)
 
             body_string_list = []
             remaining_body_literals = symbols[5:]
 
             for body_symbol in remaining_body_literals:
 
-                body_literal = self.infer_symbol_name(body_symbol)
+                body_literal = self.infer_symbol_name(body_symbol, insert_flags)
 
                 if len(body_string_list) < number_negative_body_literals:
                     body_string_list.append("not " + body_literal)
@@ -173,7 +186,7 @@ class SmodelsASPProgram(ASPProgram):
             return head + " :- " + str(bound) + " <= #count{" + body + "}."
 
     
-    def handle_smodels_choice_rule(self, rule):
+    def handle_smodels_choice_rule(self, rule, insert_flags):
         """
         -- Handle an SMODELS choice rule
         SYNAPSIS: 3 #heads heads #literals #negative negative positive
@@ -192,7 +205,7 @@ class SmodelsASPProgram(ASPProgram):
 
             head_symbol = symbols[head_string_index]
 
-            heads_list.append(self.infer_symbol_name(head_symbol))
+            heads_list.append(self.infer_symbol_name(head_symbol, insert_flags))
 
         
         head_string = "{" + ";".join(heads_list) + "}"
@@ -211,7 +224,7 @@ class SmodelsASPProgram(ASPProgram):
 
             for body_symbol in remaining_body_literals:
 
-                body_literal = self.infer_symbol_name(body_symbol)
+                body_literal = self.infer_symbol_name(body_symbol, insert_flags)
 
                 if len(body_string_list) < number_negative_body_literals:
                     body_string_list.append("not " + body_literal)
@@ -224,7 +237,7 @@ class SmodelsASPProgram(ASPProgram):
             return head_string + " :- " + body + "."
 
 
-    def handle_smodels_weight_rule(self, rule):
+    def handle_smodels_weight_rule(self, rule, insert_flags):
         """
         -- Handle SMODELS weight rule.
         SYNPOSIS: 5 head bound #lits #negative negative positive weights
@@ -237,9 +250,9 @@ class SmodelsASPProgram(ASPProgram):
         number_negative_body_literals = int(symbols[4])
 
         if number_body_literals == 0:
-            return self.infer_symbol_name(head_symbol) + "."
+            return self.infer_symbol_name(head_symbol, insert_flags) + "."
         else:
-            head = self.infer_symbol_name(head_symbol)
+            head = self.infer_symbol_name(head_symbol, insert_flags)
 
             body_string_list = []
             remaining_body_literals = symbols[5:]
@@ -247,7 +260,7 @@ class SmodelsASPProgram(ASPProgram):
             for body_symbol_index in range(number_body_literals):
 
                 body_symbol = remaining_body_literals[body_symbol_index]
-                body_literal = self.infer_symbol_name(body_symbol)
+                body_literal = self.infer_symbol_name(body_symbol, insert_flags)
 
                 if len(body_string_list) < number_negative_body_literals:
                     body_string_list.append("not " + body_literal)
@@ -263,7 +276,7 @@ class SmodelsASPProgram(ASPProgram):
 
             return head + " :- " + str(bound) + " <= #sum{" + body + "}."
 
-    def handle_smodels_disjunctive_head_rule(self, rule):
+    def handle_smodels_disjunctive_head_rule(self, rule, insert_flags):
         """
         -- Handle smodels disjunctive rule with type 8:
         SYNAPSIS: 8 #hlits heads #literals #negative negative positive
@@ -282,7 +295,7 @@ class SmodelsASPProgram(ASPProgram):
 
             head_symbol = symbols[head_string_index]
 
-            heads_list.append(self.infer_symbol_name(head_symbol))
+            heads_list.append(self.infer_symbol_name(head_symbol, insert_flags))
 
         head_string = "|".join(heads_list)
 
@@ -300,7 +313,7 @@ class SmodelsASPProgram(ASPProgram):
 
             for body_symbol in remaining_body_literals:
 
-                body_literal = self.infer_symbol_name(body_symbol)
+                body_literal = self.infer_symbol_name(body_symbol, insert_flags)
 
                 if len(body_string_list) < number_negative_body_literals:
                     body_string_list.append("not " + body_literal)
@@ -312,9 +325,22 @@ class SmodelsASPProgram(ASPProgram):
 
             return head_string + " :- " + body + "."
 
-    def infer_symbol_name(self, symbol):
+    def infer_symbol_name(self, symbol, insert_flags):
         if symbol in self.literals_dict:
-            return self.literals_dict[symbol]
+            
+            if insert_flags is False:
+                # Normal Case
+                return self.literals_dict[symbol]
+            else:
+                # Final Print Case (re-insert #sup and #inf)
+                literal = self.literals_dict[symbol]
+                if self.sup_flag in literal:
+                    literal = literal.replace(self.sup_flag, "#sup")
+                
+                if self.inf_flag in literal:
+                    literal = literal.replace(self.inf_flag, "#inf")
+
+                return literal
         else:
             return self.auxiliary_name + symbol
 

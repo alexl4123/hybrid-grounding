@@ -34,6 +34,17 @@ class DomainInferer:
         """
         self.domain_dictionary = {}
 
+        self.minimum_term = None
+        self.maximum_term = None
+
+    def try_parse_int(self, string):
+
+        try:
+            int_val = int(string)
+            return int_val
+        except ValueError:
+            return None
+
     def add_node_to_domain(self, arguments, constant_part):
         # Split the arguments by commas
         term_tuple = list(arguments.split(','))
@@ -53,6 +64,15 @@ class DomainInferer:
         
                 if term not in self.total_domain:
                     self.total_domain[term] = True
+
+                parsed_int = self.try_parse_int(term)
+                if parsed_int is not None:    
+                    if self.maximum_term is None or parsed_int > self.maximum_term:
+                        self.maximum_term = parsed_int
+
+                    if self.minimum_term is None or parsed_int < self.minimum_term:
+                        self.minimum_term = parsed_int
+
         else:
             if str(term_tuple) not in self.domain_dictionary[constant_part]["tuples"]["maybe_true"]:
                 self.domain_dictionary[constant_part]["tuples"]["maybe_true"][str(term_tuple)] = True
