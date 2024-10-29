@@ -1,5 +1,7 @@
 
 import io
+import os
+import subprocess
 
 from datetime import datetime
 from pathlib import Path
@@ -83,6 +85,9 @@ class HeuristicSplitter:
 
             other_rules_string = "\n".join(other_rules)
 
+            if self.enable_lpopt is True:
+                other_rules_string = self.start_lpopt(other_rules_string)
+
             graph_transformer = GraphCreatorTransformer(graph_ds, rule_dictionary, other_rules)
             parse_string(other_rules_string, lambda stm: graph_transformer(stm))
             
@@ -146,3 +151,38 @@ class HeuristicSplitter:
                 self.logging_file.close()
 
             raise ex
+
+    def start_lpopt(self, program_input, timeout=1800):
+
+        program_string = "./lpopt.bin"
+
+        if not os.path.isfile(program_string):
+            print("[ERROR] - For treewidth aware decomposition 'lpopt.bin' is required (current directory).")
+            raise Exception("lpopt.bin not found")
+
+        arguments = [program_string]
+
+        decoded_string = ""
+        try:
+            p = subprocess.Popen(arguments, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)       
+            (ret_vals_encoded, error_vals_encoded) = p.communicate(input=bytes(program_input, "ascii"), timeout = timeout)
+
+            decoded_string = ret_vals_encoded.decode()
+            error_vals_decoded = error_vals_encoded.decode()
+
+            if p.returncode != 0:
+                print(f">>>>> Other return code than 0 in helper: {p.returncode}")
+                raise Exception(error_vals_decoded)
+
+        except Exception as ex:
+            try:
+                p.kill()
+            except Exception as e:
+                pass
+
+            print(ex)
+
+            raise NotImplementedError() # TBD: Continue if possible
+
+        return decoded_string
+

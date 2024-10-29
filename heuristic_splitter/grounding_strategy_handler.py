@@ -138,15 +138,12 @@ class GroundingStrategyHandler:
 
                     approx_number_rules, used_method, rule_str = self.get_best_method_by_approximated_rule_count(domain_transformer, rule)
 
-                    if self.enable_lpopt is True:
-                        self.lpopt_case(rule, domain_transformer, approx_number_rules, sota_rules, tmp_bdg_old_found_rules, tmp_bdg_new_found_rules, used_method, bdg_rule)
+                    if used_method == "SOTA":
+                        sota_rules.append(bdg_rule)
+                    elif used_method == "BDG_OLD":
+                        tmp_bdg_old_found_rules.append(bdg_rule)
                     else:
-                        if used_method == "SOTA":
-                            sota_rules.append(bdg_rule)
-                        elif used_method == "BDG_OLD":
-                            tmp_bdg_old_found_rules.append(bdg_rule)
-                        else:
-                            tmp_bdg_new_found_rules.append(bdg_rule) 
+                        tmp_bdg_new_found_rules.append(bdg_rule) 
 
                 no_show = True
                 ground_guess = True
@@ -324,59 +321,6 @@ class GroundingStrategyHandler:
 
         return approx_number_rules, used_method, rule_str
 
-    def lpopt_case(self, rule, domain_transformer, approx_number_rules, sota_rules, tmp_bdg_old_found_rules, tmp_bdg_new_found_rules, used_method, bdg_rule):
-        """
-        If grounding should be done with a treewidth-aware case, then lpopt will be called to decompose the rules.
-        If it is expected that lpopt will perform better, then use the rewritten rules, otw. the methods without rewriting.
-        """
-
-        rewritten_rules = self.start_lpopt(str(rule))
-        
-        if self.debug_mode is True:
-            print("---> lpopt output:")
-            print(rewritten_rules)
-        
-        approx_number_rules_tw_total = 0
-        
-        lpopt_rules = []
-        
-        for rewritten_rule in rewritten_rules.split("\n"):
-        
-            if len(rewritten_rule.strip()) == 0:
-                continue
-        
-        
-            approx_number_rules_rw, used_method_rw, rule_str_rw = self.get_best_method_by_approximated_rule_count(domain_transformer, rule, rewritten_rule)
-        
-            approx_number_rules_tw_total += approx_number_rules_rw
-            lpopt_rules.append((used_method_rw, rule_str_rw))
-        
-            if self.debug_mode is True:
-                print(f"-----> Lpopt rule '{rewritten_rule}' would generate rules: {approx_number_rules_rw}")
-        
-        if self.debug_mode is True:
-            print(f"-----> Total lpopt generated rules: {approx_number_rules_tw_total}")
-        
-        if approx_number_rules_tw_total < approx_number_rules:
-            # Using lpopt is better
-        
-            for used_method_tmp, rule_str_tmp in lpopt_rules:
-        
-                if used_method_tmp == "SOTA":
-                    sota_rules.append(rule_str_tmp)
-                elif used_method_tmp == "BDG_OLD":
-                    tmp_bdg_old_found_rules.append(rule_str_tmp)
-                else:
-                    tmp_bdg_new_found_rules.append(rule_str_tmp) 
-        else:
-            if used_method == "SOTA":
-                sota_rules.append(bdg_rule)
-            elif used_method == "BDG_OLD":
-                tmp_bdg_old_found_rules.append(bdg_rule)
-            else:
-                tmp_bdg_new_found_rules.append(bdg_rule) 
-
-
 
     def rule_list_to_rule_string(self, rules):
         program_input = "\n"
@@ -392,7 +336,7 @@ class GroundingStrategyHandler:
         return program_input
 
 
-    def start_sota_grounder(self, program_input, timeout=1800, output_mode = "--output=smodels", grounder="gringo"):
+    def start_sota_grounder(self, program_input, timeout=1800, output_mode = "--output=smodels", grounder="idlv"):
 
         if grounder == "idlv":
             arguments = ["./idlv.bin", "--output=0", "--stdin"]
@@ -424,39 +368,3 @@ class GroundingStrategyHandler:
             raise Exception(ex) # TBD: Continue if possible
 
         return decoded_string
-
-
-    def start_lpopt(self, program_input, timeout=1800):
-
-        program_string = "./lpopt.bin"
-
-        if not os.path.isfile(program_string):
-            print("[ERROR] - For treewidth aware decomposition 'lpopt.bin' is required (current directory).")
-            raise Exception("lpopt.bin not found")
-
-        arguments = [program_string]
-
-        decoded_string = ""
-        try:
-            p = subprocess.Popen(arguments, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)       
-            (ret_vals_encoded, error_vals_encoded) = p.communicate(input=bytes(program_input, "ascii"), timeout = timeout)
-
-            decoded_string = ret_vals_encoded.decode()
-            error_vals_decoded = error_vals_encoded.decode()
-
-            if p.returncode != 0:
-                print(f">>>>> Other return code than 0 in helper: {p.returncode}")
-                raise Exception(error_vals_decoded)
-
-        except Exception as ex:
-            try:
-                p.kill()
-            except Exception as e:
-                pass
-
-            print(ex)
-
-            raise NotImplementedError() # TBD: Continue if possible
-
-        return decoded_string
-
