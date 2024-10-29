@@ -70,16 +70,18 @@ class HeuristicSplitter:
 
             # Separate facts from other rules:
             #facts, facts_heads, other_rules, all_heads = GetFacts().get_facts_from_contents(contents)
-            facts, facts_heads, other_rules, all_heads = get_facts_from_file_handle(contents)
+            facts, facts_heads, other_rules = get_facts_from_file_handle(contents)
+
+            all_heads = facts_heads.copy()
 
             for fact_head in facts_heads.keys():
                 graph_ds.add_vertex(fact_head)
 
             other_rules_string = "\n".join(other_rules)
 
-            graph_transformer = GraphCreatorTransformer(graph_ds, rule_dictionary, other_rules)
+            graph_transformer = GraphCreatorTransformer(graph_ds, rule_dictionary, other_rules, all_heads)
             parse_string(other_rules_string, lambda stm: graph_transformer(stm))
-
+            
             graph_analyzer = GraphAnalyzer(graph_ds)
             graph_analyzer.start()
 
