@@ -16,10 +16,9 @@ class GraphCreatorTransformer(Transformer):
     Creates dependency graph.
     """
 
-    def __init__(self, graph_ds: GraphDataStructure, rule_dictionary, rules_as_strings, all_heads):
+    def __init__(self, graph_ds: GraphDataStructure, rule_dictionary, rules_as_strings):
 
         self.graph_ds = graph_ds
-        self.all_heads = all_heads
 
         self.current_head = None
         self.current_function = None
@@ -80,7 +79,6 @@ class GraphCreatorTransformer(Transformer):
 
         if self.in_head and self.head_is_choice_rule and self.head_aggregate_element_head:
             # For the "a" and "c" in {a:b;c:d} :- e.
-            self.all_heads[node.name] = True
 
             self.head_functions.append(node)
             self.current_head_function = node
@@ -99,7 +97,6 @@ class GraphCreatorTransformer(Transformer):
             self.graph_ds.add_node_to_rule_lookup([], node.name)
         elif self.in_head and str(self.current_function) == str(self.current_head):
             # For the "a" in a :- b, not c.
-            self.all_heads[node.name] = True
 
             self.head_functions.append(node)
 

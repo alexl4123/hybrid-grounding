@@ -221,8 +221,7 @@ class EquivChecker:
                     debug_mode, enable_lpopt, output_printer = custom_printer
                 )
                 heur_split_content = instance_file_contents + "\n" + encoding_file_contents
-                content = heur_split_content.split("\n")
-                heuristic_splitter.start(content)
+                heuristic_splitter.start(heur_split_content)
 
             
             self.start_clingo(custom_printer.get_string(), self.nagg_output, self.nagg_hashes)

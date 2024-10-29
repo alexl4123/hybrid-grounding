@@ -1,4 +1,6 @@
 
+import io
+
 from datetime import datetime
 from pathlib import Path
 
@@ -59,6 +61,8 @@ class HeuristicSplitter:
 
     def start(self, contents):
 
+        virtual_file = io.BytesIO(contents.encode("utf-8"))
+
         try:
             bdg_rules = {}
             sota_rules = {}
@@ -70,7 +74,7 @@ class HeuristicSplitter:
 
             # Separate facts from other rules:
             #facts, facts_heads, other_rules, all_heads = GetFacts().get_facts_from_contents(contents)
-            facts, facts_heads, other_rules = get_facts_from_file_handle(contents)
+            facts, facts_heads, other_rules = get_facts_from_file_handle(virtual_file)
 
             all_heads = facts_heads.copy()
 
@@ -79,7 +83,7 @@ class HeuristicSplitter:
 
             other_rules_string = "\n".join(other_rules)
 
-            graph_transformer = GraphCreatorTransformer(graph_ds, rule_dictionary, other_rules, all_heads)
+            graph_transformer = GraphCreatorTransformer(graph_ds, rule_dictionary, other_rules)
             parse_string(other_rules_string, lambda stm: graph_transformer(stm))
             
             graph_analyzer = GraphAnalyzer(graph_ds)

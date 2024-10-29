@@ -7,35 +7,30 @@ class DomainInferer:
 
         self.unsat_prg_found = False
 
+        # These are not considered for domain inference:
+        self.processed_literals = {}
+
 
         # A dict. of all domain values
         self.total_domain = {}
 
         """
         Definition of domain-dictionary:
-        ------------
         self.domain_dictionary[node.name] = {
-            "tuples": {
-                "sure_true": {...},
-                "maybe_true": {
-                    str(TUPLE): True
-                },
-            },
-            "tuples_size": {
-                "sure_true": INT VALUE,
-                "maybe_true": INT VALUE
-            }
+            "tuples_size": Integer (Number of tuples)
             "terms": [POSITION IN LIST IS DOMAIN OF POSITION IN FUNCTION],
             "terms_size": [POSITION IN LIST IS DOMAIN-SIZE OF POSITION IN FUNCTION]
         }
-        for term in term_tuple:
-            -> Here the terms are added
-            self.domain_dictionary[node.name]["terms"].append({term:True})
         """
         self.domain_dictionary = {}
 
         self.minimum_term = None
         self.maximum_term = None
+
+    def infer_processed_literals(self):
+
+        for key in self.domain_dictionary.keys():
+            self.processed_literals[key] = True 
 
     def try_parse_int(self, string):
 
@@ -146,6 +141,38 @@ class DomainInferer:
             else:
                 print(content)
                 raise NotImplementedError("HEAD NOT IMPLEMENTED!")
+
+    def compute_domain_average(self):
+        """
+        Computes an update of the tuple_size and term_size keys of the domain object.
+        -> This is done for efficiencies sake (not to recompute this)
+        """
+
+        average = 0
+        count = 0
+
+        for _tuple in self.domain_dictionary.keys():
+            if _tuple == "_average_domain_tuples":
+                continue
+
+            number_tuples = self.domain_dictionary[_tuple]["tuples_size"]
+
+            domain_combinations = 1
+            for _term_index in range(len(self.domain_dictionary[_tuple]["terms_size"])):
+
+                terms_size = self.domain_dictionary[_tuple]["terms_size"][_term_index]
+
+                domain_combinations *= terms_size
+
+            percentage = number_tuples / domain_combinations
+
+            count += 1
+            average = average + (percentage - average) / (count)
+
+
+        self.domain_dictionary["_average_domain_tuples"] = average
+        
+
 
     def update_domain_sizes(self):
         """

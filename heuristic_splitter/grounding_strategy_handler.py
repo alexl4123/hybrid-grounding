@@ -16,6 +16,8 @@ from heuristic_splitter.grounding_approximation.variable_domain_inference_transf
 from heuristic_splitter.nagg_domain_connector_transformer import NaGGDomainConnectorTransformer
 from heuristic_splitter.nagg_domain_connector import NaGGDomainConnector
 
+from heuristic_splitter.program.preprocess_smodels_program import preprocess_smodels_program
+
 from nagg.nagg import NaGG
 from nagg.default_output_printer import DefaultOutputPrinter
 from nagg.aggregate_strategies.aggregate_mode import AggregateMode
@@ -126,7 +128,7 @@ class GroundingStrategyHandler:
 
             if len(bdg_rules) > 0:
 
-                domain_transformer.update_domain_sizes()
+                #domain_transformer.update_domain_sizes()
                 tmp_bdg_old_found_rules = []
                 tmp_bdg_new_found_rules = []
 
@@ -238,6 +240,7 @@ class GroundingStrategyHandler:
                 #parse_string(decoded_string, lambda stm: domain_transformer(stm))
                 self.grounded_program = SmodelsASPProgram(self.grd_call)
                 self.grounded_program.preprocess_smodels_program(decoded_string, domain_transformer)
+
                 self.grd_call += 1
                 #domain_transformer.infer_domain(decoded_string)
 
@@ -389,7 +392,7 @@ class GroundingStrategyHandler:
         return program_input
 
 
-    def start_sota_grounder(self, program_input, timeout=1800, output_mode = "--output=smodels", grounder="idlv"):
+    def start_sota_grounder(self, program_input, timeout=1800, output_mode = "--output=smodels", grounder="gringo"):
 
         if grounder == "idlv":
             arguments = ["./idlv.bin", "--output=0", "--stdin"]

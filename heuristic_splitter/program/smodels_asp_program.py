@@ -2,6 +2,8 @@
 from heuristic_splitter.domain_inferer import DomainInferer
 from heuristic_splitter.program.asp_program import ASPProgram
 
+from heuristic_splitter.program.preprocess_smodels_program import preprocess_smodels_program as cython_preprocess_smodels_program
+
 class SmodelsASPProgram(ASPProgram):
 
     def __init__(self, grd_call, debug_mode = False):
@@ -20,6 +22,19 @@ class SmodelsASPProgram(ASPProgram):
 
 
     def preprocess_smodels_program(self, smodels_program_string, domain_inferer: DomainInferer):
+    
+        rules, domain_dictionary, total_domain, literals_dict = cython_preprocess_smodels_program(smodels_program_string, domain_inferer.processed_literals)
+
+        self.program = rules
+        self.literals_dict = literals_dict
+
+        domain_inferer.domain_dictionary = domain_inferer.domain_dictionary | domain_dictionary
+        domain_inferer.total_domain = domain_inferer.total_domain | total_domain
+
+        domain_inferer.infer_processed_literals()
+        domain_inferer.compute_domain_average()
+
+    def preprocess_smodels_programs_approximate_python(self, smodels_program_string, domain_inferer: DomainInferer):
 
         part = "program"
 
@@ -73,29 +88,29 @@ class SmodelsASPProgram(ASPProgram):
             if self.debug_mode is True:
                 print(rule)
 
-            if rule[0] == '1':
+            if rule[0] == 1:
                 parsed_rule = self.handle_normal_rule(rule, insert_flags)
                 if self.debug_mode is True:
                     print(parsed_rule)
                 parsed_rules.append(parsed_rule)
-            elif rule[0] == '2':
+            elif rule[0] == 2:
                 parsed_rule = self.handle_smodels_constraint_rule(rule, insert_flags)
                 if self.debug_mode is True:
                     print(parsed_rule)
                 parsed_rules.append(parsed_rule)
-            elif rule[0] == '3':
+            elif rule[0] == 3:
                 parsed_rule = self.handle_smodels_choice_rule(rule, insert_flags)
                 if self.debug_mode is True:
                     print(parsed_rule)
                 parsed_rules.append(parsed_rule)
-            elif rule[0] == '4': 
+            elif rule[0] == 4: 
                 raise Exception("Was never defined!")
-            elif rule[0] == '5':
+            elif rule[0] == 5:
                 parsed_rule = self.handle_smodels_weight_rule(rule, insert_flags)
                 if self.debug_mode is True:
                     print(parsed_rule)
                 parsed_rules.append(parsed_rule)
-            elif rule[0] == '8':
+            elif rule[0] == 8:
                 parsed_rule = self.handle_smodels_disjunctive_head_rule(rule, insert_flags)
                 if self.debug_mode is True:
                     print(parsed_rule)
@@ -113,18 +128,16 @@ class SmodelsASPProgram(ASPProgram):
 
         return "\n".join(parsed_rules) + self.other_prg_string
 
-    def handle_normal_rule(self, rule, insert_flags):
+    def handle_normal_rule(self, symbols, insert_flags):
         """
         -- Handle smodels rule with type 1:
         SYNAPSIS: 1 head #literals #negative negative positive
         """
 
-        symbols = rule.split(" ")
-
         head_symbol = symbols[1]
 
-        number_body_literals = int(symbols[2])
-        number_negative_body_literals = int(symbols[3])
+        number_body_literals = symbols[2]
+        number_negative_body_literals = symbols[3]
 
         if number_body_literals == 0:
             return self.infer_symbol_name(head_symbol, insert_flags) + "."
@@ -148,7 +161,7 @@ class SmodelsASPProgram(ASPProgram):
 
             return head + " :- " + body + "."
 
-    def handle_smodels_constraint_rule(self, rule, insert_flags):
+    def handle_smodels_constraint_rule(self, symbols, insert_flags):
         """
         -- Handle an SMODELS constraint rule (not an ASP constraint)
         SYNAPSIS: 2 head #literals #negative bound negative positive
@@ -156,12 +169,11 @@ class SmodelsASPProgram(ASPProgram):
         OR SIMPLIFIED: head :- bound {literal0; literal1; ...}
         """
 
-        symbols = rule.split(" ")
         head_symbol = symbols[1]
 
-        number_body_literals = int(symbols[2])
-        number_negative_body_literals = int(symbols[3])
-        bound = int(symbols[4])
+        number_body_literals = symbols[2]
+        number_negative_body_literals = symbols[3]
+        bound = symbols[4]
 
         if number_body_literals == 0:
             return self.infer_symbol_name(head_symbol, insert_flags) + "."
@@ -186,15 +198,14 @@ class SmodelsASPProgram(ASPProgram):
             return head + " :- " + str(bound) + " <= #count{" + body + "}."
 
     
-    def handle_smodels_choice_rule(self, rule, insert_flags):
+    def handle_smodels_choice_rule(self, symbols, insert_flags):
         """
         -- Handle an SMODELS choice rule
         SYNAPSIS: 3 #heads heads #literals #negative negative positive
         CORRESPONDS TO: {heads} :- body 
         """
 
-        symbols = rule.split(" ")
-        heads = int(symbols[1])
+        heads = symbols[1]
 
         heads_list = []
         head_string_index = 2
@@ -212,8 +223,8 @@ class SmodelsASPProgram(ASPProgram):
 
         body_start_string_index = head_string_index + 1
 
-        number_body_literals = int(symbols[body_start_string_index])
-        number_negative_body_literals = int(symbols[body_start_string_index + 1])
+        number_body_literals = symbols[body_start_string_index]
+        number_negative_body_literals = symbols[body_start_string_index + 1]
 
         if number_body_literals == 0:
             return head_string + "."
@@ -237,17 +248,16 @@ class SmodelsASPProgram(ASPProgram):
             return head_string + " :- " + body + "."
 
 
-    def handle_smodels_weight_rule(self, rule, insert_flags):
+    def handle_smodels_weight_rule(self, symbols, insert_flags):
         """
         -- Handle SMODELS weight rule.
         SYNPOSIS: 5 head bound #lits #negative negative positive weights
         """
 
-        symbols = rule.split(" ")
         head_symbol = symbols[1]
-        bound = int(symbols[2])
-        number_body_literals = int(symbols[3])
-        number_negative_body_literals = int(symbols[4])
+        bound = symbols[2]
+        number_body_literals = symbols[3]
+        number_negative_body_literals = symbols[4]
 
         if number_body_literals == 0:
             return self.infer_symbol_name(head_symbol, insert_flags) + "."
@@ -276,7 +286,7 @@ class SmodelsASPProgram(ASPProgram):
 
             return head + " :- " + str(bound) + " <= #sum{" + body + "}."
 
-    def handle_smodels_disjunctive_head_rule(self, rule, insert_flags):
+    def handle_smodels_disjunctive_head_rule(self, symbols, insert_flags):
         """
         -- Handle smodels disjunctive rule with type 8:
         SYNAPSIS: 8 #hlits heads #literals #negative negative positive
@@ -284,7 +294,7 @@ class SmodelsASPProgram(ASPProgram):
 
         symbols = rule.split(" ")
 
-        heads = int(symbols[1])
+        heads = symbols[1]
 
         heads_list = []
         head_string_index = 2
@@ -301,8 +311,8 @@ class SmodelsASPProgram(ASPProgram):
 
         body_start_string_index = head_string_index + 1
 
-        number_body_literals = int(symbols[body_start_string_index])
-        number_negative_body_literals = int(symbols[body_start_string_index + 1])
+        number_body_literals = symbols[body_start_string_index]
+        number_negative_body_literals = symbols[body_start_string_index + 1]
 
         if number_body_literals == 0:
             return head_string + "."
@@ -342,7 +352,7 @@ class SmodelsASPProgram(ASPProgram):
 
                 return literal
         else:
-            return self.auxiliary_name + symbol
+            return self.auxiliary_name + str(symbol)
 
 
 

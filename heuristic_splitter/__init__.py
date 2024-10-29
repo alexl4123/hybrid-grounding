@@ -109,11 +109,8 @@ def main():
             for key in grounding_strategies.keys()
         ],
     )
- 
 
-
-
-    parser.add_argument("files", type=argparse.FileType("rb"), nargs="+")
+    parser.add_argument("files", type=argparse.FileType("r"), nargs="+")
     args = parser.parse_args()
 
     heuristic_method = None
@@ -137,9 +134,10 @@ def main():
 
     files = args.files
     #files = [open("TEST/190_heur.lp", "r")]
-    #contents = []
-    #for f in files:
-    #    contents += f.readlines()
+    contents = []
+    for f in files:
+        contents += f.read()
+    contents = "\n".join(contents)
 
     start_time = time.time()
     heuristic = HeuristicSplitter(
@@ -152,7 +150,7 @@ def main():
         args.logging_file,
     )
 
-    heuristic.start(files[0])
+    heuristic.start(contents)
 
     end_time = time.time()
     if debug_mode is True:

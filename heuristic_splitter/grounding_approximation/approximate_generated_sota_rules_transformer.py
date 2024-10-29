@@ -70,8 +70,7 @@ class ApproximateGeneratedSotaRulesTransformer(Transformer):
             self.visit_children(node)
 
             if node.name in self.domain_transformer.domain_dictionary:
-                tuples_maybe_function = self.domain_transformer.domain_dictionary[node.name]["tuples_size"]["maybe_true"]
-                tuples_true_function = self.domain_transformer.domain_dictionary[node.name]["tuples_size"]["sure_true"]
+                number_tuples = self.domain_transformer.domain_dictionary[node.name]["tuples_size"]
             else:
 
                 average_tuples = self.domain_transformer.domain_dictionary["_average_domain_tuples"]
@@ -83,11 +82,11 @@ class ApproximateGeneratedSotaRulesTransformer(Transformer):
                 for _ in range(arity):
                     combinations *= total_domain
                 
-                tuples_maybe_function = int(math.ceil(average_tuples * combinations))
+                number_tuples = int(math.ceil(average_tuples * combinations))
                 tuples_true_function = 0
 
 
-            tuples_function = tuples_maybe_function + tuples_true_function
+            tuples_function = number_tuples
 
 
             variable_intersection_reduction_factor = 1

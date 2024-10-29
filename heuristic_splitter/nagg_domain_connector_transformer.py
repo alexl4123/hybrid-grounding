@@ -70,33 +70,30 @@ class NaGGDomainConnectorTransformer(Transformer):
             # Domain Inference for BDG:
 
             self.domain_transformer.domain_dictionary[self.head_function] = {
-                "tuples": {
-                    "sure_true": {},
-                    "maybe_true": {
-                    },
-                },
-                "terms": []
+                "tuples_size": 0,
+                "terms": [],
+                "terms_size": []
             }
 
-            dom_list = []
             for variable in self.head_variables.keys():
                 self.domain_transformer.domain_dictionary[self.head_function]["terms"].append({})
-                dom_list.append([])
-            
+                self.domain_transformer.domain_dictionary[self.head_function]["terms_size"].append(0)
+
+            number_tuples = 1
+
             for variable in self.head_variables.keys():
                 variable_index = self.head_variables[variable]
 
                 for term in self.variable_domains_helper[variable]:
                     self.domain_transformer.domain_dictionary[self.head_function]["terms"][variable_index][term] = True
+                    self.domain_transformer.domain_dictionary[self.head_function]["terms_size"][variable_index] += 1
         
                     if term not in self.domain_transformer.total_domain:
                         self.total_domain[term] = True
 
-                    dom_list[variable_index].append(term)
+                number_tuples *= len(self.variable_domains_helper)
 
-            for term_tuple in itertools.product(*dom_list):
-                self.domain_transformer.domain_dictionary[self.head_function]["tuples"]["maybe_true"][str(list(term_tuple))] = True
-
+            self.domain_transformer.domain_dictionary[self.head_function]["tuples_size"] = number_tuples
 
         self.current_rule_position += 1
         self._reset_temporary_rule_variables()

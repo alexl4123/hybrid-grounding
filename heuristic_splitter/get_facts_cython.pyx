@@ -25,7 +25,6 @@ cdef bint char_is_valid_ID_char(int cur_char):
         char_is_underscore(cur_char) is True
 
 def get_facts_from_file_handle(f):
-
     cdef dict facts = {}
     cdef dict facts_heads = {}
     cdef list other_rules = []
@@ -35,6 +34,7 @@ def get_facts_from_file_handle(f):
     cdef int index
     cdef bytes piece
     cdef int cur_char
+
     cdef int prev_char = -1
     cdef int prev_char_helper = -1
 
@@ -48,6 +48,7 @@ def get_facts_from_file_handle(f):
     cdef int dot_char = b"."[0]
     cdef int comma_char = b","[0]
     cdef int backslash_char = b"\\"[0] # Backslash
+    cdef int t_char = b"t"[0]
 
     # Decision Bools
     cdef bint in_head = False
@@ -60,13 +61,13 @@ def get_facts_from_file_handle(f):
     cdef bint current_fact_head_in_dict = False
 
     # Rule String (for other rules and complete fact)
-    cdef int current_rule_size = 100
+    cdef int current_rule_size = 150
     cdef int current_rule_list_head = 0
     cdef bytearray current_rule_bytearray = bytearray(current_rule_size)
     cdef bytearray tmp_current_rule_bytearray 
 
     # Rule String (for fact-atom)
-    cdef int current_fact_id_function_size = 20
+    cdef int current_fact_id_function_size = 30
     cdef int current_fact_id_list_head = 0
     cdef bytearray current_fact_id_bytearray = bytearray(current_fact_id_function_size)
     cdef bytearray tmp_current_fact_id_bytearray 
@@ -88,21 +89,9 @@ def get_facts_from_file_handle(f):
         for cur_char in piece:
             # Go through all characters in current buffer:
 
-            # Ignore white space, newline, and commented-out code:
             if in_string is False:
-                if cur_char == space_char:
-                    continue
-                elif cur_char == newline_char:
-                    if comment_line is False:
-                        continue
-                    else:
-                        comment_line = False
-                        continue
-                elif cur_char == comment_char:
-                    comment_line = True
-                    continue
-                elif comment_line is True:
-                    # Ignore all characters after a % until a new line
+                if cur_char == newline_char:
+                    comment_line = False
                     continue
 
             # Prev chars needed for escape characters
@@ -128,6 +117,24 @@ def get_facts_from_file_handle(f):
 
                 current_fact_id_bytearray = tmp_current_fact_id_bytearray
             # ---
+            # Ignore white space, newline, and commented-out code:
+            if in_string is False:
+                if cur_char == space_char:
+                    if prev_char == t_char:
+                        # E.g., in body: 'not a', then the space must not be removed!
+                        current_rule_bytearray[current_rule_list_head] = cur_char
+                        current_rule_list_head += 1
+                        continue
+                    else:
+                        continue
+                elif cur_char == comment_char:
+                    comment_line = True
+                    continue
+                elif comment_line is True:
+                    # Ignore all characters after a % until a new line
+                    continue
+
+
 
             # Handle fact
             if is_fact is True:
@@ -161,13 +168,15 @@ def get_facts_from_file_handle(f):
                             # Fact "abc." finished:
                             if current_fact_head_in_dict is False:
 
+                                PyDict_SetItem(facts_heads, PyUnicode_FromString(current_fact_id_bytearray), current_fact_number_terms)
+
                                 current_fact_id_bytearray[current_fact_id_list_head] = cur_char
                                 current_fact_id_list_head += 1
 
                                 PyDict_SetItem(facts, PyUnicode_FromString(current_fact_id_bytearray), True)
-                                PyDict_SetItem(facts_heads, PyUnicode_FromString(current_fact_id_bytearray), True)
 
-                                current_fact_id_bytearray = bytearray(current_fact_id_function_size)
+                            current_fact_id_bytearray = bytearray(current_fact_id_function_size)
+                            current_rule_bytearray = bytearray(current_rule_size)
 
                             current_fact_number_terms = 0
                             current_fact_id_list_head = 0
@@ -257,7 +266,7 @@ def get_facts_from_file_handle(f):
 
                         if current_fact_head_in_dict is False:
 
-                            PyDict_SetItem(facts_heads, PyUnicode_FromString(current_fact_id_bytearray), True)
+                            PyDict_SetItem(facts_heads, PyUnicode_FromString(current_fact_id_bytearray), current_fact_number_terms)
 
                             current_fact_id_bytearray = bytearray(current_fact_id_function_size)
 
