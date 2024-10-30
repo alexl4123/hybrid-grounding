@@ -28,6 +28,7 @@ def get_facts_from_file_handle(f):
     cdef dict facts = {}
     cdef dict facts_heads = {}
     cdef list other_rules = []
+    cdef dict query = {}
 
     # These definitions are very important for efficiencies sake!
     # Otherwise it defaults back to python (performance loss of factor ~10)    
@@ -186,9 +187,8 @@ def get_facts_from_file_handle(f):
 
                             continue
 
-                        elif in_fact_id is True and (cur_char == dot_char or cur_char == question_mark_char):
+                        elif in_fact_id is True and cur_char == dot_char:
                             # Fact "abc." finished:
-                            # Or query: "abc?" finished (added to facts):
                             if current_fact_head_in_dict is False:
 
                                 PyDict_SetItem(facts_heads, PyUnicode_FromString(current_fact_id_bytearray), current_fact_number_terms)
@@ -197,6 +197,28 @@ def get_facts_from_file_handle(f):
                                 current_fact_id_list_head += 1
 
                                 PyDict_SetItem(facts, PyUnicode_FromString(current_fact_id_bytearray), True)
+
+                            current_fact_id_bytearray = bytearray(current_fact_id_function_size)
+                            current_rule_bytearray = bytearray(current_rule_size)
+
+                            current_fact_number_terms = 0
+                            current_fact_id_list_head = 0
+                            current_rule_list_head = 0
+                            current_head_nesting_depth = 0
+
+
+                            in_fact_id = False
+                            current_fact_head_in_dict = False
+                            in_weak_constraint = False
+
+                            continue
+                        elif in_fact_id is True and cur_char == question_mark_char:
+                            # query: "abc?" finished (added to facts):
+
+                            current_fact_id_bytearray[current_fact_id_list_head] = cur_char
+                            current_fact_id_list_head += 1
+
+                            PyDict_SetItem(query, PyUnicode_FromString(current_fact_id_bytearray), True)
 
                             current_fact_id_bytearray = bytearray(current_fact_id_function_size)
                             current_rule_bytearray = bytearray(current_rule_size)
@@ -285,8 +307,7 @@ def get_facts_from_file_handle(f):
 
                                 continue
 
-                    elif in_fact_terms is False and in_string is False and\
-                        current_head_nesting_depth == 0 and (cur_char == dot_char or cur_char == question_mark_char):
+                    elif in_fact_terms is False and in_string is False and current_head_nesting_depth == 0 and cur_char == dot_char:
                         # Fact "abc(.,..,..)." finished:
 
                         if current_fact_head_in_dict is False:
@@ -300,6 +321,26 @@ def get_facts_from_file_handle(f):
                         current_rule_list_head += 1
 
                         PyDict_SetItem(facts, PyUnicode_FromString(current_rule_bytearray), True)
+                        current_rule_bytearray = bytearray(current_rule_size)
+
+                        current_fact_number_terms = 0
+                        current_fact_id_list_head = 0
+                        current_rule_list_head = 0
+
+                        in_fact_id = False
+                        current_fact_head_in_dict = False
+                        in_weak_constraint = False
+
+                        continue
+                    elif in_fact_terms is False and in_string is False and current_head_nesting_depth == 0 and cur_char == question_mark_char:
+                        # Fact "abc(.,..,..)?" finished (query):
+
+                        current_fact_id_bytearray = bytearray(current_fact_id_function_size)
+
+                        current_rule_bytearray[current_rule_list_head] = cur_char
+                        current_rule_list_head += 1
+
+                        PyDict_SetItem(query, PyUnicode_FromString(current_rule_bytearray), True)
                         current_rule_bytearray = bytearray(current_rule_size)
 
                         current_fact_number_terms = 0
@@ -438,4 +479,4 @@ def get_facts_from_file_handle(f):
                         continue
 
 
-    return facts, facts_heads, other_rules
+    return facts, facts_heads, other_rules, query

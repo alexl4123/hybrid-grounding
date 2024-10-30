@@ -76,7 +76,7 @@ class HeuristicSplitter:
 
             # Separate facts from other rules:
             #facts, facts_heads, other_rules, all_heads = GetFacts().get_facts_from_contents(contents)
-            facts, facts_heads, other_rules = get_facts_from_file_handle(virtual_file)
+            facts, facts_heads, other_rules, query = get_facts_from_file_handle(virtual_file)
 
             all_heads = facts_heads.copy()
 
@@ -117,6 +117,7 @@ class HeuristicSplitter:
 
                 grounding_handler = GroundingStrategyHandler(grounding_strategy, rule_dictionary, graph_ds,
                     facts,
+                    query,
                     self.debug_mode, self.enable_lpopt,
                     output_printer = self.output_printer,
                     enable_logging = self.enable_logging, logging_file = self.logging_file,)
@@ -142,6 +143,9 @@ class HeuristicSplitter:
 
                     for bdg_rule in bdg_rules.keys():
                         print(str(rule_dictionary[bdg_rule]))
+
+                if len(query.keys()) > 0:
+                    print(list(query.keys())[0])
 
             if self.logging_file is not None:
                 self.logging_file.close()

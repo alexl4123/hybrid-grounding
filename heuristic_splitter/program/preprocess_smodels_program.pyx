@@ -17,8 +17,6 @@ cdef int char_to_int(int cur_char):
     return cur_char - value_0 # And values 0-9 are 48 to 57, e.g., 57-48 = 9 (check)
 
 def preprocess_smodels_program(smodels_program_string, processed_heads_dict):
-    print("THIS IS THE END")
-    quit(0)
     # Keys for domain dict:
     cdef str tuples_size_string = "tuples_size"
     cdef str terms_string = "terms"

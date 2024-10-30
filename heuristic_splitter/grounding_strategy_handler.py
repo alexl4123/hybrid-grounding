@@ -43,12 +43,13 @@ class CustomOutputPrinter(DefaultOutputPrinter):
 
 class GroundingStrategyHandler:
 
-    def __init__(self, grounding_strategy: GroundingStrategyGenerator, rule_dictionary, graph_ds: GraphDataStructure, facts,
+    def __init__(self, grounding_strategy: GroundingStrategyGenerator, rule_dictionary, graph_ds: GraphDataStructure, facts, query,
         debug_mode, enable_lpopt, output_printer = None, enable_logging = False, logging_file = None):
 
         self.grounding_strategy = grounding_strategy
         self.rule_dictionary = rule_dictionary
         self.facts = facts
+        self.query = query
         
         self.graph_ds = graph_ds
 
@@ -91,7 +92,10 @@ class GroundingStrategyHandler:
             print("--- FINAL ---") 
 
         show_statements = "\n".join([f"#show {key}/{all_heads[key]}." for key in all_heads.keys()])
-        final_string = gringo_string + "\n" + show_statements
+        query_statement = ""
+        if len(self.query.keys()) > 0:
+            query_statement = list(self.query.keys())[0]
+        final_string = gringo_string + "\n" + show_statements + "\n" + query_statement
 
         if self.output_printer:
             self.output_printer.custom_print(final_string)
@@ -259,7 +263,12 @@ class GroundingStrategyHandler:
 
         show_statements = "\n".join([f"#show {key}/{all_heads[key]}." for key in all_heads.keys()])
 
-        input_program = self.grounded_program.get_string(insert_flags=True) + "\n" + show_statements
+        query_statement = ""
+        if len(self.query.keys()) > 0:
+            query_statement = list(self.query.keys())[0]
+
+        input_program = self.grounded_program.get_string(insert_flags=True) + "\n" + show_statements + "\n" + query_statement
+
 
         #final_program = self.start_gringo(input_program, output_mode="--output=smodels")
         if self.output_printer:
@@ -337,7 +346,7 @@ class GroundingStrategyHandler:
         return program_input
 
 
-    def start_sota_grounder(self, program_input, timeout=1800, output_mode = "--output=smodels", grounder="idlv"):
+    def start_sota_grounder(self, program_input, timeout=1800, output_mode = "--output=smodels", grounder="gringo"):
 
         if grounder == "idlv":
             arguments = ["./idlv.bin", "--output=0", "--stdin"]
