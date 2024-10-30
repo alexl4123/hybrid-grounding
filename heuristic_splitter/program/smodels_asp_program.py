@@ -89,16 +89,19 @@ class SmodelsASPProgram(ASPProgram):
                 print(rule)
 
             if rule[0] == 1:
+                # Normal Rule
                 parsed_rule = self.handle_normal_rule(rule, insert_flags)
                 if self.debug_mode is True:
                     print(parsed_rule)
                 parsed_rules.append(parsed_rule)
             elif rule[0] == 2:
+                # Constraint Rule
                 parsed_rule = self.handle_smodels_constraint_rule(rule, insert_flags)
                 if self.debug_mode is True:
                     print(parsed_rule)
                 parsed_rules.append(parsed_rule)
             elif rule[0] == 3:
+                # Choice Rule
                 parsed_rule = self.handle_smodels_choice_rule(rule, insert_flags)
                 if self.debug_mode is True:
                     print(parsed_rule)
@@ -106,11 +109,16 @@ class SmodelsASPProgram(ASPProgram):
             elif rule[0] == 4: 
                 raise Exception("Was never defined!")
             elif rule[0] == 5:
+                # Weight Rule
                 parsed_rule = self.handle_smodels_weight_rule(rule, insert_flags)
                 if self.debug_mode is True:
                     print(parsed_rule)
                 parsed_rules.append(parsed_rule)
+            elif rule[0] == 6:
+                # Weak Constraint
+                self.handle_smodels_weak_constraint(rule, insert_flags, parsed_rules)
             elif rule[0] == 8:
+                # Disjunctive Rule
                 parsed_rule = self.handle_smodels_disjunctive_head_rule(rule, insert_flags)
                 if self.debug_mode is True:
                     print(parsed_rule)
@@ -160,6 +168,7 @@ class SmodelsASPProgram(ASPProgram):
             body = ",".join(body_string_list)
 
             return head + " :- " + body + "."
+
 
     def handle_smodels_constraint_rule(self, symbols, insert_flags):
         """
@@ -286,13 +295,38 @@ class SmodelsASPProgram(ASPProgram):
 
             return head + " :- " + str(bound) + " <= #sum{" + body + "}."
 
+    def handle_smodels_weak_constraint(self, symbols, insert_flags, parsed_rules):
+        """
+        -- Handle smodels rule with type 6:
+        SYNAPSIS: 6 0 #lits #negative negative positive weights
+        --> Different than most rules, as this rule has changed syntax in modern ASP
+        --> We must infer many rules of the form: :~ L1. [WEIGHT]
+        """
+
+        number_literals = symbols[2]
+        number_negative_literals = symbols[3]
+        literals_offset = 4
+        weights_offset = literals_offset + number_literals
+
+        for literal_index in range(number_literals):
+
+            symbol = symbols[literal_index + literals_offset]
+            weight = symbols[literal_index + weights_offset]
+            
+            literal = self.infer_symbol_name(symbol, insert_flags)
+
+            if literal_index < number_negative_literals:
+                signum_string = "not "
+            else:
+                signum_string = ""
+
+            parsed_rules.append(f":~ {signum_string}{literal}. [{weight}]")
+
     def handle_smodels_disjunctive_head_rule(self, symbols, insert_flags):
         """
         -- Handle smodels disjunctive rule with type 8:
         SYNAPSIS: 8 #hlits heads #literals #negative negative positive
         """
-
-        symbols = rule.split(" ")
 
         heads = symbols[1]
 

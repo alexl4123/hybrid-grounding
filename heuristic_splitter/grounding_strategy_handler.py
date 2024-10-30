@@ -78,6 +78,7 @@ class GroundingStrategyHandler:
                 self.logging_file.write(sota_rules_string)
 
             program_input = self.grounded_program.get_string() + "\n" + sota_rules_string
+
             decoded_string = self.start_sota_grounder(program_input, output_mode="--output=smodels")
 
             self.grounded_program = SmodelsASPProgram(self.grd_call)

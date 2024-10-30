@@ -17,11 +17,13 @@ cdef int char_to_int(int cur_char):
     return cur_char - value_0 # And values 0-9 are 48 to 57, e.g., 57-48 = 9 (check)
 
 def preprocess_smodels_program(smodels_program_string, processed_heads_dict):
-
+    print("THIS IS THE END")
+    quit(0)
     # Keys for domain dict:
     cdef str tuples_size_string = "tuples_size"
     cdef str terms_string = "terms"
     cdef str terms_size_string = "terms_size"
+    cdef unicode predicate_string
 
     # As IDLV is not able to handle #inf and #sup as input:
     cdef str sup_string = "#sup"
@@ -69,6 +71,7 @@ def preprocess_smodels_program(smodels_program_string, processed_heads_dict):
     cdef bint in_fact_id = True
     cdef bint in_fact_terms = False
     cdef bint current_fact_head_in_dict = False
+    cdef bint last_char_is_space = False
 
     # Predicate String (for entire predicate)
     cdef int predicate_start_index = -1
@@ -146,11 +149,15 @@ def preprocess_smodels_program(smodels_program_string, processed_heads_dict):
                 if cur_char == space_char:
                     PyList_Append(splits, cur_number)
                     cur_number = 0
+                    last_char_is_space = True
                 else:
                     cur_number = char_to_int(cur_char) + 10 * cur_number
+                    last_char_is_space = False
 
             # Append last number
-            PyList_Append(splits, cur_number)
+            if last_char_is_space is False:
+                PyList_Append(splits, cur_number)
+
             PyList_Append(rules, splits)
 
             cur_number = 0
@@ -291,7 +298,10 @@ def preprocess_smodels_program(smodels_program_string, processed_heads_dict):
             for predicate_index in range(predicate_length):
                 predicate_bytearray[predicate_index] = line_start[predicate_start_index + predicate_index]
 
-            literals_dict[cur_number] = PyUnicode_FromString(predicate_bytearray)
+            predicate_string = PyUnicode_FromString(predicate_bytearray)
+            predicate_string = predicate_string.replace(sup_string, sup_flag)
+            predicate_string = predicate_string.replace(inf_string, inf_flag)
+            literals_dict[cur_number] = predicate_string
 
             if head_atom_string_compiled is False:
                 head_atom_length = head_atom_end_index - head_atom_start_index

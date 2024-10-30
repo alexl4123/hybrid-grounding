@@ -18,7 +18,9 @@ class Rule:
         
         self.variable_graph = None
         self.is_tight = None
+        self.is_disjunctive = False
         self.is_constraint = None
+
 
         self.scc = None
 

@@ -42,13 +42,21 @@ def get_facts_from_file_handle(f):
     cdef int space_char = b" "[0]
     cdef int newline_char = b"\n"
     cdef int comment_char = b"%"[0]
-    cdef int quotation_mark_char = b"\""[0]
-    cdef int opening_bracket_char = b"("[0]
-    cdef int closing_bracket_char = b")"[0]
-    cdef int dot_char = b"."[0]
-    cdef int comma_char = b","[0]
     cdef int backslash_char = b"\\"[0] # Backslash
     cdef int t_char = b"t"[0]
+
+    cdef int quotation_mark_char = b"\""[0]
+    cdef int question_mark_char = b"?"[0]
+
+    cdef int opening_bracket_char = b"("[0]
+    cdef int closing_bracket_char = b")"[0]
+    cdef int opening_square_bracket_char = b"["[0]
+    cdef int closing_square_bracket_char = b"]"[0]
+
+    cdef int dot_char = b"."[0]
+    cdef int comma_char = b","[0]
+    cdef int tilde_char = b"~"[0]
+    cdef int colon_char = b":"[0]
 
     # Decision Bools
     cdef bint in_head = False
@@ -59,6 +67,10 @@ def get_facts_from_file_handle(f):
     cdef bint in_fact_id = False
     cdef bint in_fact_terms = False
     cdef bint current_fact_head_in_dict = False
+
+    cdef bint in_weak_constraint = False
+    cdef bint in_weak_constraint_weights = False
+
 
     # Rule String (for other rules and complete fact)
     cdef int current_rule_size = 150
@@ -88,7 +100,6 @@ def get_facts_from_file_handle(f):
         
         for cur_char in piece:
             # Go through all characters in current buffer:
-
             if in_string is False:
                 if cur_char == newline_char:
                     comment_line = False
@@ -133,8 +144,19 @@ def get_facts_from_file_handle(f):
                 elif comment_line is True:
                     # Ignore all characters after a % until a new line
                     continue
+                elif cur_char == tilde_char and prev_char == colon_char:
+                    # :~ found!
+                    in_weak_constraint = True
 
+                    is_fact = False
+                    in_fact_terms = False
+                    in_fact_id = False
 
+                    current_rule_bytearray[current_rule_list_head] = cur_char
+                    current_rule_list_head += 1
+
+                    continue
+            
 
             # Handle fact
             if is_fact is True:
@@ -164,8 +186,9 @@ def get_facts_from_file_handle(f):
 
                             continue
 
-                        elif in_fact_id is True and cur_char == dot_char:
+                        elif in_fact_id is True and (cur_char == dot_char or cur_char == question_mark_char):
                             # Fact "abc." finished:
+                            # Or query: "abc?" finished (added to facts):
                             if current_fact_head_in_dict is False:
 
                                 PyDict_SetItem(facts_heads, PyUnicode_FromString(current_fact_id_bytearray), current_fact_number_terms)
@@ -186,6 +209,7 @@ def get_facts_from_file_handle(f):
 
                             in_fact_id = False
                             current_fact_head_in_dict = False
+                            in_weak_constraint = False
 
                             continue
                         else:
@@ -261,7 +285,8 @@ def get_facts_from_file_handle(f):
 
                                 continue
 
-                    elif in_fact_terms is False and in_string is False and current_head_nesting_depth == 0 and cur_char == dot_char:
+                    elif in_fact_terms is False and in_string is False and\
+                        current_head_nesting_depth == 0 and (cur_char == dot_char or cur_char == question_mark_char):
                         # Fact "abc(.,..,..)." finished:
 
                         if current_fact_head_in_dict is False:
@@ -283,6 +308,7 @@ def get_facts_from_file_handle(f):
 
                         in_fact_id = False
                         current_fact_head_in_dict = False
+                        in_weak_constraint = False
 
                         continue
                     else:
@@ -318,18 +344,14 @@ def get_facts_from_file_handle(f):
             # ----------------------------------------------------------------------------    
             else: # Not a fact:
                 if in_string is False:
-                    if cur_char != quotation_mark_char and cur_char != dot_char:
-
-                        current_rule_bytearray[current_rule_list_head] = cur_char
-                        current_rule_list_head += 1
-                    
-                    elif cur_char == quotation_mark_char:
+                    if cur_char == quotation_mark_char:
 
                         in_string = True
 
                         current_rule_bytearray[current_rule_list_head] = cur_char
                         current_rule_list_head += 1
-                    elif cur_char == dot_char:
+
+                    elif cur_char == dot_char and in_weak_constraint is False:
                         # H :- B_r^+, B_r^-. (finished rule)
                         # -> Append to other rules
                         current_rule_bytearray[current_rule_list_head] = cur_char
@@ -351,6 +373,54 @@ def get_facts_from_file_handle(f):
                         is_fact = True
                         in_fact_id = False
                         in_fact_terms = False
+
+                    elif cur_char == dot_char and in_weak_constraint is True:
+                        # :~ B_r^+, B_r^-. [TERMS] 
+                        # -> So the [TERMS] is still missing
+
+                        in_weak_constraint_weights = True
+
+                        current_head_nesting_depth = 0
+
+                        current_rule_bytearray[current_rule_list_head] = cur_char
+                        current_rule_list_head += 1
+
+                        continue
+
+                    elif in_weak_constraint_weights is True and cur_char == closing_square_bracket_char:
+                        # :~ B_r^+, B_r^-. [TERMS]
+                        # Assumption: Square bracket close might only occur here after rule end (with the exception of a string)
+
+                        current_rule_bytearray[current_rule_list_head] = cur_char
+                        current_rule_list_head += 1
+
+                        PyList_Append(other_rules, PyUnicode_FromString(current_rule_bytearray))
+
+                        current_rule_bytearray = bytearray(current_rule_size)
+                        current_fact_id_bytearray = bytearray(current_fact_id_function_size)
+
+                        current_fact_number_terms = 0
+                        current_fact_id_list_head = 0
+                        current_rule_list_head = 0
+
+                        in_head = False
+                        comment_line = False
+                        in_string = False
+
+                        is_fact = True
+                        in_fact_id = False
+                        in_fact_terms = False
+                        
+                        in_weak_constraint = False
+                        in_weak_constraint_weights = False
+
+                        continue
+
+                    else:
+
+                        current_rule_bytearray[current_rule_list_head] = cur_char
+                        current_rule_list_head += 1
+ 
 
 
                 else: # In String:

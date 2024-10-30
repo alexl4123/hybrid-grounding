@@ -136,7 +136,7 @@ def main():
     #files = [open("TEST/190_heur.lp", "r")]
     contents = []
     for f in files:
-        contents += f.read()
+        contents.append(f.read())
     contents = "\n".join(contents)
 
     start_time = time.time()

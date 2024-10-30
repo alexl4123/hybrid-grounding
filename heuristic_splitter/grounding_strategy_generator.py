@@ -74,7 +74,9 @@ class GroundingStrategyGenerator:
 
         # ---- STRATIFIED PROGRAM HANDLING ----
         non_stratified_topological_order = [] 
-        
+
+        potentially_non_stratified = []
+
         for scc_index in topological_order:
         
             scc = sccs[scc_index]
@@ -86,20 +88,25 @@ class GroundingStrategyGenerator:
             for node in subgraph.nodes:
                 # All those rules that have "node" as a head.
                 rules = self.graph_ds.node_to_rule_lookup[node]
-        
-                for rule in rules:
-                    cur_rule = self.rule_dictionary[rule]
-                    cur_rule.add_scc(scc)
-        
-                    if rule in self.stratified_rules:
-                        current_sota_grounded_rules.append(rule)
+
+                if len(rules) > 0:
+                    for rule in rules:
+                        cur_rule = self.rule_dictionary[rule]
+                        cur_rule.add_scc(scc)
+            
+                        if rule in self.stratified_rules:
+                            current_sota_grounded_rules.append(rule)
+                            has_stratified_rule = True
+                        else:
+                            has_non_stratified_rule = True
+                else:
+                    # For facts and special rules.
+                    if condensed_graph.in_degree(scc_index) == 0:
                         has_stratified_rule = True
                     else:
-                        has_non_stratified_rule = True
-        
-                if len(rules) == 0:
-                    # For facts.
-                    has_stratified_rule = True
+                        potentially_non_stratified.append(scc_index)
+                        non_stratified_topological_order.append(scc_index)
+
         
             if has_non_stratified_rule is True:
                 non_stratified_topological_order.append(scc_index)
@@ -108,6 +115,23 @@ class GroundingStrategyGenerator:
                 # Stratified rules are handled here:
                 scc_node_to_grounding_order_lookup[scc_index] = [0]
                 current_scc_nodes.append(scc_index)
+
+        for potentially_non_stratified_scc_index in potentially_non_stratified:
+            # This is only necessary for special rules that are introduced by e.g., choice or disjunctive rules.
+            depends_on = condensed_graph_inverted.neighbors(potentially_non_stratified_scc_index)
+            all_dependencies_stratified = True
+            for dependency in depends_on:
+                # If all dependencies are in the lookup-table, then it is surely stratified.
+                if dependency not in scc_node_to_grounding_order_lookup:
+                    all_dependencies_stratified = False
+                    break
+            if all_dependencies_stratified is True:
+                # If stratified adjust data structures
+                non_stratified_topological_order.remove(potentially_non_stratified_scc_index)
+                scc_node_to_grounding_order_lookup[potentially_non_stratified_scc_index] = [0]
+                current_scc_nodes.append(potentially_non_stratified_scc_index)
+            # If not stratified do nothing.
+
         
         # Create bag full of stratified rules:
         grounding_strategy_dependencies = self.get_grounding_strategy_dependency_indices(current_scc_nodes, 
@@ -137,6 +161,9 @@ class GroundingStrategyGenerator:
             current_scc_nodes.append(scc_index)
         
             exists_bdg_grounded_rule = False
+
+            exists_disjunctive_rule = False
+            exists_non_tight_rule = False
         
             for node in subgraph.nodes:
                 # All those rules that have "node" as a head.
@@ -148,8 +175,21 @@ class GroundingStrategyGenerator:
         
                     if rule in self.bdg_rules:
                         exists_bdg_grounded_rule = True
-        
-            if exists_bdg_grounded_rule is True:
+
+                    if cur_rule.is_disjunctive is True:
+                        exists_disjunctive_rule = True
+
+                    if cur_rule.is_tight is not None and cur_rule.is_tight is False:
+                        exists_non_tight_rule = True
+
+            bdg_supports_asp_program_class = True
+            if exists_disjunctive_rule is True and exists_non_tight_rule is True:
+                # BDG is a reduction from Sigma_p^2 (non-ground normal) to Sigma_p^2 (ground disjunctive),
+                # if there is a disjunctive head cycle, the complexity would be Sigma_p^3,
+                # therefore 'bdg_supports_asp_program_class' is false if the complexity is Sigma_p^3 (so the wrong program class).
+                bdg_supports_asp_program_class = False
+
+            if exists_bdg_grounded_rule is True and bdg_supports_asp_program_class is True:
         
                 grounding_strategy_dependencies = self.get_grounding_strategy_dependency_indices(current_scc_nodes, 
                     condensed_graph_inverted, scc_node_to_grounding_order_lookup)
@@ -160,8 +200,12 @@ class GroundingStrategyGenerator:
             for node in subgraph.nodes:
         
                 rules = self.graph_ds.node_to_rule_lookup[node]
-        
+
                 for rule in rules:
+                    if bdg_supports_asp_program_class is False:
+                        # Handle special case
+                        current_sota_grounded_rules.append(rule)
+                        continue
         
                     if exists_bdg_grounded_rule is False:
                         # These rules include the "external support rules" for a cycle
@@ -263,11 +307,7 @@ class GroundingStrategyGenerator:
 
                     if dependency_list_has_bdg_rules is False and highest_not_self_dependency_list_index >= 0:
                         final_list = grounding_strategy[highest_not_self_dependency_list_index]["sota"] + sota_list
-                        print(f"FINAL: {final_list}")
                         grounding_strategy[highest_not_self_dependency_list_index]["sota"] = final_list
                         grounding_strategy[highest_not_self_dependency_list_index]["dependencies"] = set(list(grounding_strategy[highest_not_self_dependency_list_index]["dependencies"]) + other_dependencies)
                         grounding_strategy[grounding_strategy_index]["sota"] = []
                         changed = True
-
-
-        #print(grounding_strategy)

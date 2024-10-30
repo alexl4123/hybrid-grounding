@@ -15,7 +15,6 @@ class Heuristic0(HeuristicInterface):
             head_atoms_scc_membership, body_atoms_scc_membership,
             maximum_rule_arity, is_constraint,
             has_aggregate,
-            ast_rule_node,
             rule_position,
             all_positive_function_variables,
             all_comparison_variables,

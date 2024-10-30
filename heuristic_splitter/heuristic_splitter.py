@@ -88,7 +88,7 @@ class HeuristicSplitter:
             if self.enable_lpopt is True:
                 other_rules_string = self.start_lpopt(other_rules_string)
 
-            graph_transformer = GraphCreatorTransformer(graph_ds, rule_dictionary, other_rules)
+            graph_transformer = GraphCreatorTransformer(graph_ds, rule_dictionary, other_rules, self.debug_mode)
             parse_string(other_rules_string, lambda stm: graph_transformer(stm))
             
             graph_analyzer = GraphAnalyzer(graph_ds)
@@ -99,7 +99,8 @@ class HeuristicSplitter:
             else:
                 raise NotImplementedError()
 
-            heuristic_transformer = HeuristicTransformer(graph_ds, heuristic, bdg_rules, sota_rules, stratified_rules, constraint_rules, all_heads)
+            heuristic_transformer = HeuristicTransformer(graph_ds, heuristic, bdg_rules,
+                sota_rules, stratified_rules, constraint_rules, all_heads, self.debug_mode)
             parse_string(other_rules_string, lambda stm: heuristic_transformer(stm))
 
             generator_grounding_strategy = GroundingStrategyGenerator(graph_ds, bdg_rules, sota_rules,

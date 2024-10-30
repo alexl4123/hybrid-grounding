@@ -20,7 +20,7 @@ class HeuristicTransformer(Transformer):
 
     def __init__(self, graph_ds: GraphDataStructure, used_heuristic,
             bdg_rules, sota_rules, stratified_rules,
-            constraint_rules, all_heads):
+            constraint_rules, all_heads, debug_mode):
 
         self.graph_ds = graph_ds
         self.all_heads = all_heads
@@ -44,6 +44,11 @@ class HeuristicTransformer(Transformer):
         self.in_body = False
         self.in_head = False
 
+        self.in_disjunction = False
+        
+        self.in_minimize_statement = False
+        self.current_function_stack = []
+
         self.stratified_variables = []
 
         # Output -> How to ground the rule according to the heuristic used.
@@ -65,6 +70,7 @@ class HeuristicTransformer(Transformer):
         self.head_aggregate_element_head = False
         self.head_aggregate_element_body = False
         self.in_head_aggregate = False
+        self.debug_mode = debug_mode
 
         # Used for heuristic decision.
         self.maximum_rule_arity = 0
@@ -114,7 +120,6 @@ class HeuristicTransformer(Transformer):
             self.head_atoms_scc_membership, self.body_atoms_scc_membership,
             self.maximum_rule_arity, self.is_constraint,
             self.has_aggregate,
-            node,
             self.current_rule_position,
             self.all_positive_function_variables,
             self.all_comparison_variables,
@@ -122,6 +127,48 @@ class HeuristicTransformer(Transformer):
 
         self.current_rule_position += 1
         self._reset_temporary_rule_variables()
+        return node
+
+    def visit_Minimize(self, node):
+        """
+        Visit weak constraint:
+        :~ p(X). [...]
+        """
+        if self.debug_mode is True:
+            print(f"Minimize: {str(node)}")
+
+        self.in_minimize_statement = True
+        self.variable_graph = VariableGraphDataStructure()
+
+        self.current_rule = node
+        self.is_constraint = True
+
+        self.in_body = True
+        self.visit_children(node)
+        self.in_body = False
+
+        self.heuristic.handle_rule(self.bdg_rules, self.sota_rules, self.stratified_rules,
+            self.variable_graph, self.stratified_variables, self.graph_ds,
+            self.head_atoms_scc_membership, self.body_atoms_scc_membership,
+            self.maximum_rule_arity, self.is_constraint,
+            self.has_aggregate,
+            self.current_rule_position,
+            self.all_positive_function_variables,
+            self.all_comparison_variables,
+            self.body_is_stratified)
+
+        self.current_rule_position += 1
+        self._reset_temporary_rule_variables()
+        self.in_minimize_statement = False
+        return node
+
+
+    def visit_Disjunction(self, node):
+
+        self.in_disjunction = True
+        self.visit_children(node)
+        self.in_disjunction = False
+
         return node
 
     def visit_BodyAggregate(self, node):
@@ -134,77 +181,88 @@ class HeuristicTransformer(Transformer):
         """
         Visits an clingo-AST function.
         """
-        self.current_function = node
-        self.current_function_variables = []
+        self.current_function_stack.append(node)
+
+        if len(self.current_function_stack) == 1:
+            # If it is the top-level function:
+            self.current_function = node
+            self.current_function_variables = []
 
         self.visit_children(node)
 
-        for variable_0_index in range(len(self.current_function_variables)):
-            for variable_1_index in range(variable_0_index + 1, len(self.current_function_variables)):
+        if len(self.current_function_stack) == 1:
+            for variable_0_index in range(len(self.current_function_variables)):
+                for variable_1_index in range(variable_0_index + 1, len(self.current_function_variables)):
 
-                variable_0 = self.current_function_variables[variable_0_index]
-                variable_1 = self.current_function_variables[variable_1_index]
+                    variable_0 = self.current_function_variables[variable_0_index]
+                    variable_1 = self.current_function_variables[variable_1_index]
 
-                self.variable_graph.add_edge(str(variable_0), str(variable_1))
+                    self.variable_graph.add_edge(str(variable_0), str(variable_1))
 
-        if self.graph_ds.predicate_is_stratified(node) is True:
-            self.stratified_variables += self.current_function_variables
+            if self.graph_ds.predicate_is_stratified(node) is True:
+                self.stratified_variables += self.current_function_variables
 
-        if self.in_body is True and self.graph_ds.predicate_is_stratified(node) is False:
-            self.body_is_stratified = False
+            if self.in_body is True and self.graph_ds.predicate_is_stratified(node) is False:
+                self.body_is_stratified = False
 
-        if self.in_head and self.head_is_choice_rule and self.head_aggregate_element_head:
-            # For the "a" and "c" in {a:b;c:d} :- e.
+            if self.in_head and self.head_is_choice_rule and self.head_aggregate_element_head:
+                # For the "a" and "c" in {a:b;c:d} :- e.
 
-            if self.graph_ds.get_scc_index_of_atom(node.name) not in self.head_atoms_scc_membership:
-                self.head_atoms_scc_membership[self.graph_ds.get_scc_index_of_atom(node.name)] = 1
+                if self.graph_ds.get_scc_index_of_atom(node.name) not in self.head_atoms_scc_membership:
+                    self.head_atoms_scc_membership[self.graph_ds.get_scc_index_of_atom(node.name)] = 1
+                else:
+                    self.head_atoms_scc_membership[self.graph_ds.get_scc_index_of_atom(node.name)] += 1
+
+            elif self.in_head and self.head_is_choice_rule and self.head_aggregate_element_body:
+                # For the "b" and "d" in {a:b;c:d} :- e.
+                if self.graph_ds.get_scc_index_of_atom(node.name) not in self.body_atoms_scc_membership:
+                    self.body_atoms_scc_membership[self.graph_ds.get_scc_index_of_atom(node.name)] = 1
+                else:
+                    self.body_atoms_scc_membership[self.graph_ds.get_scc_index_of_atom(node.name)] += 1
+
+            elif (self.in_head and str(self.current_function) == str(self.current_head)) or self.in_disjunction is True:
+                # For the "a" in a :- b, not c.
+                # Or a|d :- b, not c. (the a,d)
+                if self.graph_ds.get_scc_index_of_atom(node.name) not in self.head_atoms_scc_membership:
+                    self.head_atoms_scc_membership[self.graph_ds.get_scc_index_of_atom(node.name)] = 1
+                else:
+                    self.head_atoms_scc_membership[self.graph_ds.get_scc_index_of_atom(node.name)] += 1
+
+            elif self.in_head:
+                print("HEAD TYPE NOT IMPLEMENTED:_")
+                print(self.current_head)
+                print(self.current_head_function)
+                raise NotImplementedError
+
+            elif self.in_body:
+                # For the "b" and "c" in a :- b, not c.
+                # For the "e" in {a:b;c:d} :- e.
+                if self.graph_ds.get_scc_index_of_atom(node.name) not in self.body_atoms_scc_membership:
+                    self.body_atoms_scc_membership[self.graph_ds.get_scc_index_of_atom(node.name)] = 1
+                else:
+                    self.body_atoms_scc_membership[self.graph_ds.get_scc_index_of_atom(node.name)] += 1
+
             else:
-                self.head_atoms_scc_membership[self.graph_ds.get_scc_index_of_atom(node.name)] += 1
+                print("HEAD TYPE NOT IMPLEMENTED:_")
+                print(self.current_head)
+                print(self.current_head_function)
+                print(node)
+                raise NotImplementedError
 
-        elif self.in_head and self.head_is_choice_rule and self.head_aggregate_element_body:
-            # For the "b" and "d" in {a:b;c:d} :- e.
-            if self.graph_ds.get_scc_index_of_atom(node.name) not in self.body_atoms_scc_membership:
-                self.body_atoms_scc_membership[self.graph_ds.get_scc_index_of_atom(node.name)] = 1
-            else:
-                self.body_atoms_scc_membership[self.graph_ds.get_scc_index_of_atom(node.name)] += 1
+            if self.current_function_position > self.maximum_rule_arity:
+                self.maximum_rule_arity = self.current_function_position
 
-        elif self.in_head and str(self.current_function) == str(self.current_head):
-            # For the "a" in a :- b, not c.
-            if self.graph_ds.get_scc_index_of_atom(node.name) not in self.head_atoms_scc_membership:
-                self.head_atoms_scc_membership[self.graph_ds.get_scc_index_of_atom(node.name)] = 1
-            else:
-                self.head_atoms_scc_membership[self.graph_ds.get_scc_index_of_atom(node.name)] += 1
+            if node.name not in self.all_heads:
+                self.all_heads[node.name] = self.current_function_position
 
+            self._reset_temporary_function_variables()
 
+        self.current_function_stack.pop()
 
-        elif self.in_head:
-            print("HEAD TYPE NOT IMPLEMENTED:_")
-            print(self.current_head)
-            print(self.current_head_function)
-            raise NotImplementedError
+        if len(self.current_function_stack) == 1:
+            # If there is a function above the node-function:
+            self.current_function_position += 1
 
-        elif self.in_body:
-            # For the "b" and "c" in a :- b, not c.
-            # For the "e" in {a:b;c:d} :- e.
-            if self.graph_ds.get_scc_index_of_atom(node.name) not in self.body_atoms_scc_membership:
-                self.body_atoms_scc_membership[self.graph_ds.get_scc_index_of_atom(node.name)] = 1
-            else:
-                self.body_atoms_scc_membership[self.graph_ds.get_scc_index_of_atom(node.name)] += 1
-
-        else:
-            print("HEAD TYPE NOT IMPLEMENTED:_")
-            print(self.current_head)
-            print(self.current_head_function)
-            print(node)
-            raise NotImplementedError
-
-        if self.current_function_position > self.maximum_rule_arity:
-            self.maximum_rule_arity = self.current_function_position
-
-        if node.name not in self.all_heads:
-            self.all_heads[node.name] = self.current_function_position
-
-        self._reset_temporary_function_variables()
         return node
 
     def visit_Aggregate(self, node):
@@ -243,24 +301,33 @@ class HeuristicTransformer(Transformer):
         Visits an clingo-AST variable.
         """
 
-        if self.is_comparison is True:
-            self.current_comparison_variables.append(str(node))
+        if self.in_head_aggregate is False and self.head_is_choice_rule is False:
+            if self.is_comparison is True and len(self.current_function_stack) == 0:
+                self.current_comparison_variables.append(str(node))
 
-            if str(node) not in self.all_comparison_variables:
-                self.all_comparison_variables[str(node)] = True
+                if str(node) not in self.all_comparison_variables:
+                    self.all_comparison_variables[str(node)] = True
 
-        elif self.in_head_aggregate is False and self.head_is_choice_rule is False:
-            if self.current_function is not None:
-                # Derived from predicate:
-                self.current_function_variables.append(str(node))
+            else:
+                if self.current_function is not None:
+                    # Derived from predicate:
+                    self.current_function_variables.append(str(node))
 
-            if self.node_signum > 0 and self.current_function is not None:
-                if str(node) not in self.all_positive_function_variables:
-                    self.all_positive_function_variables[str(node)] = True
+                try:    
+                    if self.node_signum is not None and self.current_function is not None and self.node_signum > 0:
+                        if str(node) not in self.all_positive_function_variables:
+                            self.all_positive_function_variables[str(node)] = True
+                except Exception as ex:
+                    print("-----")
+                    for func in self.current_function_stack:
+                        print(func)
+                    print(self.current_function)
+                    print(f"Is Minimize: {self.in_minimize_statement}")
+                    print(f"Node: {node}")
+                    raise ex
 
-        if self.current_function:
+        if len(self.current_function_stack) == 1:
             self.current_function_position += 1
-    
 
 
         self.visit_children(node)
@@ -274,7 +341,7 @@ class HeuristicTransformer(Transformer):
 
         self.visit_children(node)
 
-        if self.current_function:
+        if len(self.current_function_stack) == 1:
             self.current_function_position += 1
 
         return node
@@ -306,24 +373,20 @@ class HeuristicTransformer(Transformer):
         self.is_comparison = True
         self.visit_children(node)
 
-        for variable_0_index in range(len(self.current_comparison_variables)):
-            for variable_1_index in range(variable_0_index + 1, len(self.current_comparison_variables)):
+        if len(self.current_function_stack) == 0: # No function above:   
+            for variable_0_index in range(len(self.current_comparison_variables)):
+                for variable_1_index in range(variable_0_index + 1, len(self.current_comparison_variables)):
 
-                variable_0 = self.current_comparison_variables[variable_0_index]
-                variable_1 = self.current_comparison_variables[variable_1_index]
+                    variable_0 = self.current_comparison_variables[variable_0_index]
+                    variable_1 = self.current_comparison_variables[variable_1_index]
 
-                self.variable_graph.add_edge(str(variable_0),str(variable_1))
+                    self.variable_graph.add_edge(str(variable_0),str(variable_1))
 
+            self.current_comparison_variables = []
 
-
-        self.current_comparison_variables = []
         self.is_comparison = False
 
         return node
-
-
-
-
 
     def _reset_temporary_literal_variables(self):
         self.node_signum = None

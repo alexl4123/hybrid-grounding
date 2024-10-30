@@ -33,7 +33,7 @@ class GraphDataStructure:
 
             self.current_node_index += 1
 
-    def add_edge(self, head_literal, body_literal, signum, is_choice_rule_head = False):
+    def add_edge(self, head_literal, body_literal, signum):
         """
         - Head and body literals as strings
         - Signum as 1 (positive, e.g., "a"), or -1 (negative - e.g., "not a")
@@ -64,7 +64,7 @@ class GraphDataStructure:
 
         self.full_graph.add_edge(body_index, head_index, label=signum)
 
-        if signum > 0 and is_choice_rule_head is False:
+        if signum > 0:
             self.positive_graph.add_edge(body_index, head_index)
 
 
