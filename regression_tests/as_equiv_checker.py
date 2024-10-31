@@ -200,7 +200,7 @@ class EquivChecker:
 
             combined_file_input = instance_file_contents + encoding_file_contents
             total_content = instance_file_contents + "\n#program rules.\n" + encoding_file_contents
-            self.start_clingo(combined_file_input, self.clingo_output, self.clingo_hashes)
+            optimization_problem_clingo = self.start_clingo(combined_file_input, self.clingo_output, self.clingo_hashes)
 
             # Custom printer keeps result of prototype (NaGG)
             custom_printer = CustomOutputPrinter()
@@ -224,30 +224,35 @@ class EquivChecker:
                 heuristic_splitter.start(heur_split_content)
 
             
-            self.start_clingo(custom_printer.get_string(), self.nagg_output, self.nagg_hashes)
+            optimization_problem_nagg = self.start_clingo(custom_printer.get_string(), self.nagg_output, self.nagg_hashes)
 
-            if not one_directional_equivalence and len(self.clingo_output) != len(self.nagg_output):
-                works = False
-            else:
-                for clingo_key in self.clingo_hashes.keys():
-                    if clingo_key not in self.nagg_hashes:
-                        works = False
-                        if verbose:
-                            print(f"[ERROR] Used Aggregate Mode: {aggregate_mode[0]} - Could not find corresponding stable model in nagg for hash {clingo_key}")
-                            print(f"[ERROR] This corresponds to the answer set: ")
-                            print(self.clingo_output[self.clingo_hashes[clingo_key]])
-                            #print("Output of nagg:")
-                            #print(self.nagg_output)
+            if optimization_problem_clingo is not None and optimization_problem_nagg is not None:
+                if optimization_problem_clingo != optimization_problem_nagg:
+                    works = False
+                    print(f"[ERROR] Final optimzed value clingo: {optimization_problem_clingo} vs. NaGG: {optimization_problem_nagg}")
+            else:                    
+                if not one_directional_equivalence and len(self.clingo_output) != len(self.nagg_output):
+                    works = False
+                else:
+                    for clingo_key in self.clingo_hashes.keys():
+                        if clingo_key not in self.nagg_hashes:
+                            works = False
+                            if verbose:
+                                print(f"[ERROR] Used Aggregate Mode: {aggregate_mode[0]} - Could not find corresponding stable model in nagg for hash {clingo_key}")
+                                print(f"[ERROR] This corresponds to the answer set: ")
+                                print(self.clingo_output[self.clingo_hashes[clingo_key]])
+                                #print("Output of nagg:")
+                                #print(self.nagg_output)
 
-                for nagg_key in self.nagg_hashes.keys():
-                    if nagg_key not in self.clingo_hashes:
-                        works = False
-                        if verbose:
-                            print(f"[ERROR] Used Aggregate Mode: {aggregate_mode[0]} - Could not find corresponding stable model in clingo for hash {nagg_key}")
-                            print(f"[ERROR] This corresponds to the answer set: ")
-                            print(self.nagg_output[self.nagg_hashes[nagg_key]])
-                            #print("Output of nagg:")
-                            #print(self.nagg_output)
+                    for nagg_key in self.nagg_hashes.keys():
+                        if nagg_key not in self.clingo_hashes:
+                            works = False
+                            if verbose:
+                                print(f"[ERROR] Used Aggregate Mode: {aggregate_mode[0]} - Could not find corresponding stable model in clingo for hash {nagg_key}")
+                                print(f"[ERROR] This corresponds to the answer set: ")
+                                print(self.nagg_output[self.nagg_hashes[nagg_key]])
+                                #print("Output of nagg:")
+                                #print(self.nagg_output)
 
 
         if not works:
@@ -278,7 +283,7 @@ class EquivChecker:
 
             decoded_string = ret_vals_encoded.decode()
 
-            self.parse_clingo_output(decoded_string, output, hashes)
+            optimization_problem = self.parse_clingo_output(decoded_string, output, hashes)
 
             if p.returncode != 0 and p.returncode != 10 and p.returncode != 20 and p.returncode != 30:
                 print(f">>>>> Other return code than 0 in helper: {p.returncode}")
@@ -291,28 +296,48 @@ class EquivChecker:
 
             print(ex)
 
+        return optimization_problem
+
     def parse_clingo_output(self, output_string, output, hashes):
 
         next_line_model = False
 
         splits = output_string.split("\n")
         index = 0
+        prev_line = None
+        tmp_prev_line = None
+        optimization_problem = None
+
+        is_a_optimization_problem = False
+
         for line in splits:
 
-            if next_line_model == True:
+            prev_line = tmp_prev_line
+            tmp_prev_line = line
 
-                splits_space = line.split(" ")
-                splits_space.sort()
+            if is_a_optimization_problem is False:
+                if next_line_model == True:
+                    splits_space = line.split(" ")
+                    splits_space.sort()
 
-                output.append([])
-                cur_pos = len(output) - 1
-                output[cur_pos] = splits_space
-                hashes[(hash(tuple(output[cur_pos])))] = cur_pos
+                    output.append([])
+                    cur_pos = len(output) - 1
+                    output[cur_pos] = splits_space
+                    hashes[(hash(tuple(output[cur_pos])))] = cur_pos
 
-                next_line_model = False
+                    next_line_model = False
 
-            if line.startswith("Answer"):
-                next_line_model = True
+                if line.startswith("Answer"):
+                    next_line_model = True
 
+            if "Optimization" in line:
+                is_a_optimization_problem = True
+                hashes.clear()
+
+            if "OPTIMUM FOUND" == line:
+                optimization_problem = prev_line
 
             index = index + 1
+
+        return optimization_problem
+

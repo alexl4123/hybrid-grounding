@@ -156,9 +156,14 @@ class RegressionTest:
     def regression_test_a_strategy_helper(cls, chosenRegressionTestMode, folder_path, foundedness_strategy, heuristic_splitter_test = False):
         sub_directories = []
 
-        sub_folder_pattern = re.compile(r"^[0-9]{2,3}_test$")
-        encoding_pattern = re.compile(r"^encoding_[0-9]{2,3}_test\.lp$")
-        instance_pattern = re.compile(r"^instance_[0-9]{2,3}_test\.lp$")
+        if heuristic_splitter_test is False:
+            sub_folder_pattern = re.compile(r"^[0-9]{2,3}_test$")
+            encoding_pattern = re.compile(r"^encoding_[0-9]{2,3}_test\.lp$")
+            instance_pattern = re.compile(r"^instance_[0-9]{2,3}_test\.lp$")
+        else:
+            sub_folder_pattern = re.compile(r"^.+$")
+            encoding_pattern = re.compile(r"^encoding.*\.lp$")
+            instance_pattern = re.compile(r"^instance.*\.lp$")
 
         for f in os.scandir(folder_path):
             if f.is_dir():
