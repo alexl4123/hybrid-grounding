@@ -18,7 +18,8 @@ class Heuristic0(HeuristicInterface):
             rule_position,
             all_positive_function_variables,
             all_comparison_variables,
-            body_is_stratified):
+            body_is_stratified,
+            in_minimize_statement):
 
         # If variables are induced by a comparison, they are not handled by BDG (inefficient domain inference) 
         all_comparison_variables_safe_by_predicate = set(all_comparison_variables.keys()).issubset(set(all_positive_function_variables.keys()))
@@ -31,7 +32,7 @@ class Heuristic0(HeuristicInterface):
             stratified_rules[rule_position] = True
         elif has_aggregate is True:
             sota_rules[rule_position] = True
-        if body_is_stratified is False:
+        if body_is_stratified is False and in_minimize_statement is False:
             # Stratified variables are not considered in the rewriting, as they are not grounded in SOTA grounders.
             for stratified_variable in set(stratified_variables):
                 variable_graph.remove_variable(str(stratified_variable))
@@ -51,11 +52,11 @@ class Heuristic0(HeuristicInterface):
                 #bdg_rules.append(rule_position)
                 bdg_rules[rule_position] = True
 
-            elif is_tight is True and tw_effective > maximum_rule_arity * 1 and all_comparison_variables_safe_by_predicate is True:
+            elif is_tight is True and tw_effective > maximum_rule_arity + 1 and all_comparison_variables_safe_by_predicate is True:
                 #bdg_rules.append(rule_position)
                 bdg_rules[rule_position] = True
             
-            elif is_tight is False and tw_effective > maximum_rule_arity * 1 and all_comparison_variables_safe_by_predicate is True:
+            elif is_tight is False and tw_effective > maximum_rule_arity * 3 and all_comparison_variables_safe_by_predicate is True:
                 #bdg_rules.append(rule_position)
                 bdg_rules[rule_position] = True
 

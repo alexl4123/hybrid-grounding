@@ -36,6 +36,9 @@ class HeuristicTransformer(Transformer):
 
         self.head_is_choice_rule = False
         self.has_aggregate = False
+
+        self.in_binary_op = False
+        self.in_binary_op_arity_added = False
         
         self.body_is_stratified = True
 
@@ -115,15 +118,20 @@ class HeuristicTransformer(Transformer):
             self._dispatch(old)
             self.in_body = False
 
-        self.heuristic.handle_rule(self.bdg_rules, self.sota_rules, self.stratified_rules,
-            self.variable_graph, self.stratified_variables, self.graph_ds,
-            self.head_atoms_scc_membership, self.body_atoms_scc_membership,
-            self.maximum_rule_arity, self.is_constraint,
-            self.has_aggregate,
-            self.current_rule_position,
-            self.all_positive_function_variables,
-            self.all_comparison_variables,
-            self.body_is_stratified)
+        try:
+            self.heuristic.handle_rule(self.bdg_rules, self.sota_rules, self.stratified_rules,
+                self.variable_graph, self.stratified_variables, self.graph_ds,
+                self.head_atoms_scc_membership, self.body_atoms_scc_membership,
+                self.maximum_rule_arity, self.is_constraint,
+                self.has_aggregate,
+                self.current_rule_position,
+                self.all_positive_function_variables,
+                self.all_comparison_variables,
+                self.body_is_stratified,
+                self.in_minimize_statement,)
+        except Exception as ex:
+            print(f"In this rule: {str(node)}")
+            raise ex
 
         self.current_rule_position += 1
         self._reset_temporary_rule_variables()
@@ -155,7 +163,8 @@ class HeuristicTransformer(Transformer):
             self.current_rule_position,
             self.all_positive_function_variables,
             self.all_comparison_variables,
-            self.body_is_stratified)
+            self.body_is_stratified,
+            self.in_minimize_statement,)
 
         self.current_rule_position += 1
         self._reset_temporary_rule_variables()
@@ -191,13 +200,19 @@ class HeuristicTransformer(Transformer):
         self.visit_children(node)
 
         if len(self.current_function_stack) == 1:
-            for variable_0_index in range(len(self.current_function_variables)):
-                for variable_1_index in range(variable_0_index + 1, len(self.current_function_variables)):
+            if len(self.current_function_variables) > 1:
+                for variable_0_index in range(len(self.current_function_variables)):
+                    for variable_1_index in range(variable_0_index + 1, len(self.current_function_variables)):
 
-                    variable_0 = self.current_function_variables[variable_0_index]
-                    variable_1 = self.current_function_variables[variable_1_index]
+                        variable_0 = self.current_function_variables[variable_0_index]
+                        variable_1 = self.current_function_variables[variable_1_index]
 
-                    self.variable_graph.add_edge(str(variable_0), str(variable_1))
+                        self.variable_graph.add_edge(str(variable_0), str(variable_1))
+            else:
+                for variable in self.current_function_variables:
+                    self.variable_graph.add_node(str(variable))
+
+
 
             if self.graph_ds.predicate_is_stratified(node) is True:
                 self.stratified_variables += self.current_function_variables
@@ -301,7 +316,7 @@ class HeuristicTransformer(Transformer):
         Visits an clingo-AST variable.
         """
 
-        if self.in_head_aggregate is False and self.head_is_choice_rule is False:
+        if str(node) != "_" and self.in_head_aggregate is False and self.head_is_choice_rule is False:
             if self.is_comparison is True and len(self.current_function_stack) == 0:
                 self.current_comparison_variables.append(str(node))
 
@@ -326,8 +341,11 @@ class HeuristicTransformer(Transformer):
                     print(f"Node: {node}")
                     raise ex
 
-        if len(self.current_function_stack) == 1:
+        if len(self.current_function_stack) == 1 and self.in_binary_op_arity_added is False:
             self.current_function_position += 1
+
+            if self.in_binary_op is True:
+                self.in_binary_op_arity_added = True
 
 
         self.visit_children(node)
@@ -341,8 +359,13 @@ class HeuristicTransformer(Transformer):
 
         self.visit_children(node)
 
-        if len(self.current_function_stack) == 1:
+        if len(self.current_function_stack) == 1 and self.in_binary_op_arity_added is False:
             self.current_function_position += 1
+
+            if self.in_binary_op is True:
+                self.in_binary_op_arity_added = True
+
+
 
         return node
 
@@ -374,13 +397,17 @@ class HeuristicTransformer(Transformer):
         self.visit_children(node)
 
         if len(self.current_function_stack) == 0: # No function above:   
-            for variable_0_index in range(len(self.current_comparison_variables)):
-                for variable_1_index in range(variable_0_index + 1, len(self.current_comparison_variables)):
+            if len(self.current_comparison_variables) > 1:
+                for variable_0_index in range(len(self.current_comparison_variables)):
+                    for variable_1_index in range(variable_0_index + 1, len(self.current_comparison_variables)):
 
-                    variable_0 = self.current_comparison_variables[variable_0_index]
-                    variable_1 = self.current_comparison_variables[variable_1_index]
+                        variable_0 = self.current_comparison_variables[variable_0_index]
+                        variable_1 = self.current_comparison_variables[variable_1_index]
 
-                    self.variable_graph.add_edge(str(variable_0),str(variable_1))
+                        self.variable_graph.add_edge(str(variable_0),str(variable_1))
+            else:
+                for variable in self.current_comparison_variables:
+                    self.variable_graph.add_node(str(variable))
 
             self.current_comparison_variables = []
 
@@ -421,4 +448,14 @@ class HeuristicTransformer(Transformer):
 
     def _reset_temporary_aggregate_variables(self):
         self.head_element_index = 0
+
+    def visit_BinaryOperation(self, node):
+
+        self.in_binary_op_arity_added = False
+        self.in_binary_op = True
+        self.visit_children(node)
+        self.in_binary_op = False
+        self.in_binary_op_arity_added = False
+
+        return node
 

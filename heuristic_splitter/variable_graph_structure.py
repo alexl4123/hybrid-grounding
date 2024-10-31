@@ -17,6 +17,17 @@ class VariableGraphDataStructure:
 
         self.graph = nx.Graph()
 
+    def add_node(self, variable):
+ 
+        if variable not in self.predicate_to_index_lookup:
+            self.graph.add_node(self.current_node_index)
+
+            self.predicate_to_index_lookup[variable] = self.current_node_index
+            self.index_to_variable_lookup[self.current_node_index] = variable
+
+            self.current_node_index += 1       
+
+
     def add_edge(self, variable_1, variable_2):
         """
         Adding an edge between two variables (if they occur in the same literal)
@@ -49,6 +60,7 @@ class VariableGraphDataStructure:
             self.graph.remove_node(variable_index)
         else:
             print(f"[ERROR] - Could not find variable: {variable}")
+            raise Exception(f"[ERROR] - Could not find variable: {variable}")
 
     def plot_graph(self):
 

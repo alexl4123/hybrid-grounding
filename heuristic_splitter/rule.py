@@ -13,9 +13,6 @@ class Rule:
         self.ast_rule = ast_rule
         self.str_rule = str_rule
 
-        self.full_treewidth = None
-        self.effective_treewidth = None
-        
         self.variable_graph = None
         self.is_tight = None
         self.is_disjunctive = False
@@ -23,12 +20,6 @@ class Rule:
 
 
         self.scc = None
-
-    def set_full_treewidth(self, full_treewidth):
-        self.full_treewidth = full_treewidth
-    
-    def set_effective_treewidth(self, effective_treewidth):
-        self.effective_treewidth = effective_treewidth
 
     def add_variable_graph(self, variable_graph):
         self.variable_graph = variable_graph

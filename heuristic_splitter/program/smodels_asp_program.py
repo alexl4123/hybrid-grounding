@@ -20,6 +20,8 @@ class SmodelsASPProgram(ASPProgram):
         self.sup_flag = "sup_flag"
         self.inf_flag = "inf_flag"
 
+        self.global_weight_index = 0
+
 
     def preprocess_smodels_program(self, smodels_program_string, domain_inferer: DomainInferer):
     
@@ -133,6 +135,8 @@ class SmodelsASPProgram(ASPProgram):
         if self.debug_mode is True:
             print(parsed_rule)
             print("+++++ END REWRITING SMODELS OUTPUT +++++")
+
+        self.global_weight_index = 0
 
         return "\n".join(parsed_rules) + self.other_prg_string
 
@@ -320,7 +324,8 @@ class SmodelsASPProgram(ASPProgram):
             else:
                 signum_string = ""
 
-            parsed_rules.append(f":~ {signum_string}{literal}. [{weight}]")
+            parsed_rules.append(f":~ {signum_string}{literal}. [{weight},{self.global_weight_index}]")
+            self.global_weight_index += 1
 
     def handle_smodels_disjunctive_head_rule(self, symbols, insert_flags):
         """

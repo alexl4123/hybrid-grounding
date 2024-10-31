@@ -47,16 +47,16 @@ class GroundingStrategyGenerator:
 
     def generate_grounding_strategy(self, grounding_strategy):
  
-        G = self.graph_ds.get_positive_nx_object()
+        positive_dependency_graph = self.graph_ds.get_positive_nx_object()
         
-        sccs = list(nx.strongly_connected_components(G)) 
-        condensed_graph = nx.condensation(G, sccs)
+        sccs = list(nx.strongly_connected_components(positive_dependency_graph)) 
+        condensed_graph = nx.condensation(positive_dependency_graph, sccs)
         condensed_graph_inverted = condensed_graph.reverse()
 
         scc_node_to_grounding_order_lookup = {}
-        non_stratified_topological_order = self.handle_stratified_part(sccs, G, scc_node_to_grounding_order_lookup, condensed_graph, condensed_graph_inverted, grounding_strategy)
+        non_stratified_topological_order = self.handle_stratified_part(sccs, positive_dependency_graph, scc_node_to_grounding_order_lookup, condensed_graph, condensed_graph_inverted, grounding_strategy)
 
-        self.handle_non_stratified_part(non_stratified_topological_order, sccs, G, scc_node_to_grounding_order_lookup, condensed_graph_inverted, grounding_strategy)
+        self.handle_non_stratified_part(non_stratified_topological_order, sccs, positive_dependency_graph, scc_node_to_grounding_order_lookup, condensed_graph_inverted, grounding_strategy)
 
         self.post_process_grounding_strategy(grounding_strategy)
 
@@ -64,7 +64,7 @@ class GroundingStrategyGenerator:
 
 
 
-    def handle_stratified_part(self, sccs, G, scc_node_to_grounding_order_lookup, condensed_graph, condensed_graph_inverted, grounding_strategy):
+    def handle_stratified_part(self, sccs, positive_dependency_graph, scc_node_to_grounding_order_lookup, condensed_graph, condensed_graph_inverted, grounding_strategy):
 
         topological_order = list(nx.topological_sort(condensed_graph))
         
@@ -80,7 +80,7 @@ class GroundingStrategyGenerator:
         for scc_index in topological_order:
         
             scc = sccs[scc_index]
-            subgraph = G.subgraph(scc)
+            subgraph = positive_dependency_graph.subgraph(scc)
         
             has_non_stratified_rule = False
             has_stratified_rule = False
@@ -133,15 +133,16 @@ class GroundingStrategyGenerator:
             # If not stratified do nothing.
 
         
-        # Create bag full of stratified rules:
-        grounding_strategy_dependencies = self.get_grounding_strategy_dependency_indices(current_scc_nodes, 
-            condensed_graph_inverted, scc_node_to_grounding_order_lookup)
+        # Stratified part can only depend on stratified part
+        grounding_strategy_dependencies = set()
+        grounding_strategy_dependencies.add(0)
+
         self.add_grounding_strategy_level(grounding_strategy, current_sota_grounded_rules,
             current_bdg_grounded_rules, grounding_strategy_dependencies)
         return non_stratified_topological_order
 
 
-    def handle_non_stratified_part(self, non_stratified_topological_order, sccs, G, scc_node_to_grounding_order_lookup, condensed_graph_inverted, grounding_strategy):
+    def handle_non_stratified_part(self, non_stratified_topological_order, sccs, positive_dependency_graph, scc_node_to_grounding_order_lookup, condensed_graph_inverted, grounding_strategy):
     
         current_sota_grounded_rules = []
         current_bdg_grounded_rules = []
@@ -155,7 +156,7 @@ class GroundingStrategyGenerator:
         for scc_index in non_stratified_topological_order:
         
             scc = sccs[scc_index]
-            subgraph = G.subgraph(scc)
+            subgraph = positive_dependency_graph.subgraph(scc)
         
             scc_node_to_grounding_order_lookup[scc_index] = [len(grounding_strategy)]
             current_scc_nodes.append(scc_index)
@@ -311,3 +312,13 @@ class GroundingStrategyGenerator:
                         grounding_strategy[highest_not_self_dependency_list_index]["dependencies"] = set(list(grounding_strategy[highest_not_self_dependency_list_index]["dependencies"]) + other_dependencies)
                         grounding_strategy[grounding_strategy_index]["sota"] = []
                         changed = True
+
+        for grounding_strategy_reverse_index in range(len(grounding_strategy)-1,-1,-1):
+
+            bdg_rules = grounding_strategy[grounding_strategy_reverse_index]["bdg"]
+            sota_rules = grounding_strategy[grounding_strategy_reverse_index]["sota"]
+
+            if len(bdg_rules) == 0 and len(sota_rules) == 0:
+                del grounding_strategy[grounding_strategy_reverse_index]
+            else:
+                break

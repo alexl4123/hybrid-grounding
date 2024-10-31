@@ -258,7 +258,7 @@ class NaGG:
 
         if self.foundedness_strategy == FoundednessStrategy.SATURATION:
             if len(list(transformer.unfounded_rules.keys())) > 0:
-                body_string = f":- {",".join(list(transformer.unfounded_rules.keys()))}"
+                body_string = f":- {','.join(list(transformer.unfounded_rules.keys()))}"
             else:
                 body_string = ""
 
