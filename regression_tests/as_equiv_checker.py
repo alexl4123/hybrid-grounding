@@ -199,13 +199,13 @@ class EquivChecker:
             print(f"[INFO] Checking current test with aggregate strategy: {aggregate_mode[0]}")
 
             combined_file_input = instance_file_contents + encoding_file_contents
-            total_content = instance_file_contents + "\n#program rules.\n" + encoding_file_contents
             optimization_problem_clingo = self.start_clingo(combined_file_input, self.clingo_output, self.clingo_hashes)
 
             # Custom printer keeps result of prototype (NaGG)
             custom_printer = CustomOutputPrinter()
 
             if self.heuristic_splitter_test is False:
+                total_content = instance_file_contents + "\n#program rules.\n" + encoding_file_contents
                 nagg = NaGG(no_show = no_show, ground_guess = ground_guess, output_printer = custom_printer, aggregate_mode = aggregate_mode[1], cyclic_strategy=cyclic_strategy,
                     grounding_mode=grounding_mode, foundedness_strategy=self.foundedness_strategy)
                 nagg.start(total_content)
