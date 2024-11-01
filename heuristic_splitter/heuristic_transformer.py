@@ -37,7 +37,6 @@ class HeuristicTransformer(Transformer):
         self.head_is_choice_rule = False
         self.has_aggregate = False
 
-        self.in_binary_op = False
         self.in_binary_op_arity_added = False
         
         self.body_is_stratified = True
@@ -48,9 +47,12 @@ class HeuristicTransformer(Transformer):
         self.in_head = False
 
         self.in_disjunction = False
+        self.in_unary_operation = False
         
         self.in_minimize_statement = False
         self.current_function_stack = []
+
+        self.binary_operation_stack = []
 
         self.stratified_variables = []
 
@@ -235,9 +237,16 @@ class HeuristicTransformer(Transformer):
                 else:
                     self.body_atoms_scc_membership[self.graph_ds.get_scc_index_of_atom(node.name)] += 1
 
-            elif (self.in_head and str(self.current_function) == str(self.current_head)) or self.in_disjunction is True:
+            elif self.in_head and (str(self.current_function) == str(self.current_head) or self.in_disjunction is True):
                 # For the "a" in a :- b, not c.
                 # Or a|d :- b, not c. (the a,d)
+                if self.graph_ds.get_scc_index_of_atom(node.name) not in self.head_atoms_scc_membership:
+                    self.head_atoms_scc_membership[self.graph_ds.get_scc_index_of_atom(node.name)] = 1
+                else:
+                    self.head_atoms_scc_membership[self.graph_ds.get_scc_index_of_atom(node.name)] += 1
+
+            elif self.in_head and self.in_unary_operation is True:
+
                 if self.graph_ds.get_scc_index_of_atom(node.name) not in self.head_atoms_scc_membership:
                     self.head_atoms_scc_membership[self.graph_ds.get_scc_index_of_atom(node.name)] = 1
                 else:
@@ -258,7 +267,7 @@ class HeuristicTransformer(Transformer):
                     self.body_atoms_scc_membership[self.graph_ds.get_scc_index_of_atom(node.name)] += 1
 
             else:
-                print("HEAD TYPE NOT IMPLEMENTED:_")
+                print("BODY TYPE NOT IMPLEMENTED:_")
                 print(self.current_head)
                 print(self.current_head_function)
                 print(node)
@@ -344,7 +353,7 @@ class HeuristicTransformer(Transformer):
         if len(self.current_function_stack) == 1 and self.in_binary_op_arity_added is False:
             self.current_function_position += 1
 
-            if self.in_binary_op is True:
+            if len(self.binary_operation_stack) > 0:
                 self.in_binary_op_arity_added = True
 
 
@@ -362,7 +371,7 @@ class HeuristicTransformer(Transformer):
         if len(self.current_function_stack) == 1 and self.in_binary_op_arity_added is False:
             self.current_function_position += 1
 
-            if self.in_binary_op is True:
+            if len(self.binary_operation_stack) > 0:
                 self.in_binary_op_arity_added = True
 
 
@@ -451,11 +460,27 @@ class HeuristicTransformer(Transformer):
 
     def visit_BinaryOperation(self, node):
 
-        self.in_binary_op_arity_added = False
-        self.in_binary_op = True
+
+        self.binary_operation_stack.append(node)
+
+        if len(self.binary_operation_stack) == 1:
+            self.in_binary_op_arity_added = False
+
         self.visit_children(node)
-        self.in_binary_op = False
-        self.in_binary_op_arity_added = False
+
+        if len(self.binary_operation_stack) == 1:
+            self.in_binary_op_arity_added = False
+
+        self.binary_operation_stack.pop()
+        return node
+        
+    def visit_UnaryOperation(self, node):
+
+        self.in_unary_operation = True
+        self.visit_children(node)
+        self.in_unary_operation = False
 
         return node
+
+
 

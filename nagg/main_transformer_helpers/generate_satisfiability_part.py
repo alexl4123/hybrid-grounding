@@ -28,6 +28,7 @@ class GenerateSatisfiabilityPart:
         rule_literals,
         rule_literals_signums,
         rule_variables_predicates,
+        rule_position_offset,
     ):
         self.rule_head = rule_head
         self.current_rule_position = current_rule_position
@@ -39,6 +40,8 @@ class GenerateSatisfiabilityPart:
         self.rule_literals = rule_literals
         self.rule_literals_signums = rule_literals_signums
         self.rule_variables_predicates = rule_variables_predicates
+
+        self.rule_position_offset = rule_position_offset
 
     def generate_sat_part(self):
         """
@@ -65,7 +68,7 @@ class GenerateSatisfiabilityPart:
             disjunction = ""
 
             for value in values:
-                disjunction += f"r{self.current_rule_position}_{variable}({value}) | "
+                disjunction += f"r_{self.rule_position_offset}_{self.current_rule_position}_{variable}({value}) | "
 
             if len(disjunction) > 0:
                 disjunction = disjunction[:-3] + "."
@@ -73,7 +76,7 @@ class GenerateSatisfiabilityPart:
 
             for value in values:
                 self.printer.custom_print(
-                    f"r{self.current_rule_position}_{variable}({value}) :- sat."
+                    f"r_{self.rule_position_offset}_{self.current_rule_position}_{variable}({value}) :- sat_{self.rule_position_offset}."
                 )
 
     def _generate_sat_comparisons(self):
@@ -132,7 +135,7 @@ class GenerateSatisfiabilityPart:
                 for variable in arguments_list:
                     if variable in variables_list:
                         interpretation_list.append(
-                            f"r{self.current_rule_position}_{variable}({variable_assignments[variable]})"
+                            f"r_{self.rule_position_offset}_{self.current_rule_position}_{variable}({variable_assignments[variable]})"
                         )
 
                 left_eval = ComparisonTools.evaluate_operation(
@@ -163,7 +166,7 @@ class GenerateSatisfiabilityPart:
                     )
                     interpretation = f"{','.join(interpretation_list)}"
 
-                    sat_atom = f"sat_r{self.current_rule_position}"
+                    sat_atom = f"sat_r_{self.rule_position_offset}_{self.current_rule_position}"
 
                     self.printer.custom_print(f"{sat_atom} :- {interpretation}.")
 
@@ -187,7 +190,7 @@ class GenerateSatisfiabilityPart:
                 ):
                     signum_string = ""
                 self.printer.custom_print(
-                    f"sat_r{self.current_rule_position} :- {signum_string} {current_function_symbol}."
+                    f"sat_r_{self.rule_position_offset}_{self.current_rule_position} :- {signum_string} {current_function_symbol}."
                 )
                 continue
 
@@ -218,7 +221,7 @@ class GenerateSatisfiabilityPart:
             for current_combination in combinations:
                 current_function_arguments_string = ""
 
-                sat_atom = f"sat_r{self.current_rule_position}"
+                sat_atom = f"sat_r_{self.rule_position_offset}_{self.current_rule_position}"
 
                 (
                     sat_body_list,
@@ -308,7 +311,7 @@ class GenerateSatisfiabilityPart:
             if argument in self.rule_variables:
                 variable_index_combination = variable_associations[argument]
                 body_sat_predicate = (
-                    f"r{self.current_rule_position}_{argument}"
+                    f"r_{self.rule_position_offset}_{self.current_rule_position}_{argument}"
                     + f"({current_combination[variable_index_combination]})"
                 )
                 sat_body_list.append(body_sat_predicate)

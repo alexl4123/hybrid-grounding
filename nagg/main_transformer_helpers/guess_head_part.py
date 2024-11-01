@@ -276,9 +276,9 @@ class GuessHeadPart:
                 if str(lit) == str(self.rule_head):
                     continue
             
-                if self.rule_literals_signums[lit_index] is False:
-
-                    cyclic_lits.append(f"cyc{self.current_rule_position}{lit_index}")
+                #if self.rule_literals_signums[lit_index] is False:
+                #
+                #    cyclic_lits.append(f"cyc{self.current_rule_position}{lit_index}")
             
             if len(cyclic_lits) == 0:
                 cyclic_behavior_arguments = "."

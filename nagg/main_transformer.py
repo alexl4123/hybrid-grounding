@@ -40,6 +40,7 @@ class MainTransformer(Transformer):
         predicates_strongly_connected_comps,
         scc_rule_functions_scc_lookup,
         foundedness_strategy,
+        rule_position_offset,
     ):
         self.terms = terms
 
@@ -82,7 +83,8 @@ class MainTransformer(Transformer):
         self.current_predicate_variable_position = 0
 
         self.unfounded_rules = {}
-        self.current_rule_position = 0
+        self.current_rule_position = 0 
+        self.rule_position_offset = rule_position_offset
 
 
         self._foundedness_strategy = foundedness_strategy
@@ -338,10 +340,10 @@ class MainTransformer(Transformer):
             head_string = f"{str(rule.head).replace(';', ',')}"
 
             if self.cyclic_strategy == CyclicStrategy.LEVEL_MAPPING:
-                new_head_name = f"{rule_head.name}{self.current_rule_position}"
+                new_head_name = f"{rule_head.name}_{self.rule_position_offset}_{self.current_rule_position}"
                 # new_head_name = f"{rule_head.name}'"
             elif self.cyclic_strategy == CyclicStrategy.LEVEL_MAPPING_AAAI:
-                new_head_name = f"{rule_head.name}"
+                new_head_name = f"{rule_head.name}_{self.rule_position_offset}"
 
             new_arguments = ",".join(
                 [str(argument) for argument in rule_head.arguments]
@@ -497,6 +499,7 @@ class MainTransformer(Transformer):
                 self.rule_predicate_functions,
                 self.rule_literals_signums,
                 self.rule_variables_predicates,
+                self.rule_position_offset,
             )
             satisfiability_generator.generate_sat_part()
 

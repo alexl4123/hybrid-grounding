@@ -63,6 +63,7 @@ class GroundingStrategyHandler:
         self.grounded_program = None
 
         self.grd_call = 0
+        self.total_nagg_calls = 0
 
     def single_ground_call(self, all_heads):
 
@@ -91,7 +92,7 @@ class GroundingStrategyHandler:
         if self.debug_mode is True:
             print("--- FINAL ---") 
 
-        show_statements = "\n".join([f"#show {key}/{all_heads[key]}." for key in all_heads.keys()])
+        show_statements = "\n".join([f"#show {key}/{all_heads[key]}." for key in all_heads.keys()] + [f"#show -{key}/{all_heads[key]}." for key in all_heads.keys()])
         query_statement = ""
         if len(self.query.keys()) > 0:
             query_statement = list(self.query.keys())[0]
@@ -186,11 +187,14 @@ class GroundingStrategyHandler:
                     nagg = NaGG(no_show = no_show, ground_guess = ground_guess, output_printer = custom_printer,
                         aggregate_mode = aggregate_mode, cyclic_strategy=cyclic_strategy,
                         grounding_mode=grounding_mode, foundedness_strategy=foundedness_strategy)
-                    nagg.start(program_input, nagg_domain_connector)
+                    nagg.start(program_input, domain_inference = nagg_domain_connector,
+                        rule_position_offset= self.total_nagg_calls)
 
                     #grounded_program = custom_printer.get_string()
                     #grounded_program = grounded_program + custom_printer.get_string()
                     self.grounded_program.add_string(custom_printer.get_string())
+
+                    self.total_nagg_calls += 1
                     
                 if len(tmp_bdg_old_found_rules) > 0:
 
@@ -221,10 +225,12 @@ class GroundingStrategyHandler:
                     nagg = NaGG(no_show = no_show, ground_guess = ground_guess, output_printer = custom_printer,
                         aggregate_mode = aggregate_mode, cyclic_strategy=cyclic_strategy,
                         grounding_mode=grounding_mode, foundedness_strategy=foundedness_strategy)
-                    nagg.start(program_input, nagg_domain_connector)
-
+                    nagg.start(program_input, domain_inference = nagg_domain_connector,
+                        rule_position_offset = self.total_nagg_calls)
                     #grounded_program = grounded_program + custom_printer.get_string()
                     self.grounded_program.add_string(custom_printer.get_string())
+
+                    self.total_nagg_calls += 1
 
             if len(sota_rules) > 0:
                 # Ground SOTA rules with SOTA (gringo/IDLV):
@@ -261,7 +267,7 @@ class GroundingStrategyHandler:
         if self.debug_mode is True:
             print("--- FINAL ---") 
 
-        show_statements = "\n".join([f"#show {key}/{all_heads[key]}." for key in all_heads.keys()])
+        show_statements = "\n".join([f"#show {key}/{all_heads[key]}." for key in all_heads.keys()] + [f"#show -{key}/{all_heads[key]}." for key in all_heads.keys()])
 
         query_statement = ""
         if len(self.query.keys()) > 0:

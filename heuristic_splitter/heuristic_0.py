@@ -52,7 +52,7 @@ class Heuristic0(HeuristicInterface):
                 #bdg_rules.append(rule_position)
                 bdg_rules[rule_position] = True
 
-            elif is_tight is True and tw_effective > maximum_rule_arity + 1 and all_comparison_variables_safe_by_predicate is True:
+            elif is_tight is True and tw_effective > maximum_rule_arity * 2 and all_comparison_variables_safe_by_predicate is True:
                 #bdg_rules.append(rule_position)
                 bdg_rules[rule_position] = True
             

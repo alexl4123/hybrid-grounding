@@ -50,6 +50,8 @@ class GraphCreatorTransformer(Transformer):
         self.head_aggregate_element_head = False
         self.head_aggregate_element_body = False
 
+        self.in_unary_operation = False
+
     def visit_Minimize(self, node):
         """
         Visit weak constraint:
@@ -144,6 +146,7 @@ class GraphCreatorTransformer(Transformer):
 
             self.graph_ds.add_node_to_rule_lookup([self.current_rule_position], node.name)
 
+
         elif self.in_head and self.in_disjunction is True:
             # Or for the "a,d" in a|d :- b, not c.
             self.graph_ds.add_vertex(node.name)
@@ -155,6 +158,15 @@ class GraphCreatorTransformer(Transformer):
             # Somewhere in a sub-function in the head:
             # Do nothing
             pass
+
+        elif self.in_head and self.in_unary_operation:
+            # In "-a :- b." (strong negation)
+            # If all others fail, then we are in the strong negated head.
+            self.head_functions.append(node)
+
+            self.graph_ds.add_vertex(node.name)
+
+            self.graph_ds.add_node_to_rule_lookup([self.current_rule_position], node.name)
 
         elif self.in_head:
             print("HEAD TYPE NOT IMPLEMENTED:")
@@ -302,6 +314,15 @@ class GraphCreatorTransformer(Transformer):
     def _reset_temporary_function_variables(self):
         self.current_function = None
         self.current_function_position = 0
+
+    
+    def visit_UnaryOperation(self, node):
+
+        self.in_unary_operation = True
+        self.visit_children(node)
+        self.in_unary_operation = False
+
+        return node
 
     
     def visit_Definition(self, node):

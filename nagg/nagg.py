@@ -35,7 +35,7 @@ class NaGG:
         aggregate_mode=AggregateMode.RA,
         cyclic_strategy=CyclicStrategy.ASSUME_TIGHT,
         grounding_mode=GroundingModes.REWRITE_AGGREGATES_GROUND_PARTLY,
-        foundedness_strategy=None,
+        foundedness_strategy=FoundednessStrategy.DEFAULT,
     ):
         self.no_show = no_show
         self.ground_guess = ground_guess
@@ -52,14 +52,15 @@ class NaGG:
 
         self.foundedness_strategy = foundedness_strategy
 
-    def start(self, contents, domain_inference = None):
+        self.rule_position_offset = 0
+
+    def start(self, contents, domain_inference = None, rule_position_offset = 0):
         """
         Start method of the nagg.
         Call this method to start the rewriting procedure.
         """
 
-        
-
+        self.rule_position_offset = rule_position_offset
 
         if domain_inference is None:
             (
@@ -204,6 +205,7 @@ class NaGG:
                 predicates_strongly_connected_comps,
                 scc_rule_functions_scc_lookup,
                 self.foundedness_strategy,
+                self.rule_position_offset,
             )
 
             parse_string(
@@ -296,18 +298,18 @@ class NaGG:
                 self.output_printer.custom_print(f":- {key}, {','.join(sum_strings)}.")
 
     def _add_global_sat_statements(self, program_builder, transformer):
-        parse_string(":- not sat.", lambda stm: program_builder.add(stm))
-        self.output_printer.custom_print(":- not sat.")
+        parse_string(f":- not sat_{self.rule_position_offset}.", lambda stm: program_builder.add(stm))
+        self.output_printer.custom_print(f":- not sat_{self.rule_position_offset}.")
 
         sat_strings = []
         non_ground_rules = transformer.non_ground_rules
         for non_ground_rule_key in non_ground_rules.keys():
-            sat_strings.append(f"sat_r{non_ground_rule_key}")
+            sat_strings.append(f"sat_r_{self.rule_position_offset}_{non_ground_rule_key}")
 
         if len(sat_strings) > 0:
-            self.output_printer.custom_print(f"sat :- {','.join(sat_strings)}.")
+            self.output_printer.custom_print(f"sat_{self.rule_position_offset} :- {','.join(sat_strings)}.")
         else:
-            self.output_printer.custom_print("sat.")
+            self.output_printer.custom_print(f"sat_{self.rule_position_offset}.")
 
     def compute_scc_data_structures(self, term_transformer):
         """

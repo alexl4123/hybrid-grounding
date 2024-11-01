@@ -539,9 +539,9 @@ class GenerateNewFoundednessPart:
             # Positive body!
             literal_index = self.rule_literals.index(current_function_symbol)
 
-            self.printer.custom_print(
-                f"cyc{self.current_rule_position}{literal_index} :- {body_interpretation}{sat_predicate}."
-            )
+            #self.printer.custom_print(
+            #    f"cyc{self.current_rule_position}{literal_index} :- {body_interpretation}{sat_predicate}."
+            #)
 
 
 
