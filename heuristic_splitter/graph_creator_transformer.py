@@ -51,6 +51,7 @@ class GraphCreatorTransformer(Transformer):
         self.head_aggregate_element_body = False
 
         self.in_unary_operation = False
+        self.is_constraint = False
 
     def visit_Minimize(self, node):
         """

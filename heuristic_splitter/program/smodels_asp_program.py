@@ -20,6 +20,7 @@ class SmodelsASPProgram(ASPProgram):
         self.sup_flag = "sup_flag"
         self.inf_flag = "inf_flag"
 
+        self.weak_constraint_priority = 0
         self.global_weight_index = 0
 
 
@@ -137,6 +138,7 @@ class SmodelsASPProgram(ASPProgram):
             print("+++++ END REWRITING SMODELS OUTPUT +++++")
 
         self.global_weight_index = 0
+        self.weak_constraint_priority = 0
 
         return "\n".join(parsed_rules) + self.other_prg_string
 
@@ -324,8 +326,10 @@ class SmodelsASPProgram(ASPProgram):
             else:
                 signum_string = ""
 
-            parsed_rules.append(f":~ {signum_string}{literal}. [{weight},{self.global_weight_index}]")
+            parsed_rules.append(f":~ {signum_string}{literal}. [{weight}@{self.weak_constraint_priority},{self.global_weight_index}]")
             self.global_weight_index += 1
+
+        self.weak_constraint_priority += 1
 
     def handle_smodels_disjunctive_head_rule(self, symbols, insert_flags):
         """
