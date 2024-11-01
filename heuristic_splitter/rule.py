@@ -18,6 +18,9 @@ class Rule:
         self.is_disjunctive = False
         self.is_constraint = None
 
+        self.in_program_rules = False
+
+        self.functions = []
 
         self.scc = None
 

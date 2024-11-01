@@ -9,6 +9,7 @@ from clingo.ast import Transformer
 from heuristic_splitter.graph_data_structure import GraphDataStructure
 
 from heuristic_splitter.rule import Rule
+from heuristic_splitter.function import Function
 
 class HeadFuncObject:
     def __init__(self, name):
@@ -53,6 +54,10 @@ class GraphCreatorTransformer(Transformer):
         self.in_unary_operation = False
         self.is_constraint = False
 
+        self.in_program_rules = False
+
+        self.current_function_creation_object = None
+
     def visit_Minimize(self, node):
         """
         Visit weak constraint:
@@ -85,6 +90,9 @@ class GraphCreatorTransformer(Transformer):
         self.current_rule = node
 
         self.rule_dictionary[self.current_rule_position] = Rule(node, self.rules_as_strings[self.current_rule_position])
+
+        if self.in_program_rules is True:
+            self.rule_dictionary[self.current_rule_position].in_program_rules = True
 
         try:
             if "head" in node.child_keys:
@@ -122,6 +130,8 @@ class GraphCreatorTransformer(Transformer):
         if self.current_function is None:
             # Current-Function is the top-level function
             self.current_function = node
+            self.current_function_creation_object = Function()
+            self.current_function_creation_object.name = node.name
 
 
         if self.in_head and self.head_is_choice_rule and self.head_aggregate_element_head:
@@ -209,6 +219,10 @@ class GraphCreatorTransformer(Transformer):
 
         if str(self.current_function) == str(node):
             # Top level function:
+
+            self.rule_dictionary[self.current_rule_position].functions.append(self.current_function_creation_object)
+            self.current_function_creation_object = None
+
             self._reset_temporary_function_variables()
         return node
 
@@ -276,6 +290,8 @@ class GraphCreatorTransformer(Transformer):
         Takes care of most things about domain-inference.
         """
 
+        if self.current_function_creation_object is not None:
+            self.current_function_creation_object.arguments.append({"VARIABLE":str(node)})
         self.visit_children(node)
 
         return node
@@ -286,7 +302,6 @@ class GraphCreatorTransformer(Transformer):
         -> 0 means positive
         -> -1 means negative
         """
-
         if node.sign == 0:
             self.node_signum = +1
         else:
@@ -297,6 +312,22 @@ class GraphCreatorTransformer(Transformer):
         self._reset_temporary_literal_variables()
 
         return node
+
+    def visit_SymbolicTerm(self, node):
+        """
+        Visits an clingo-AST symbolic term (constant).
+        """
+
+        if self.current_function_creation_object is not None:
+            self.current_function_creation_object.arguments.append({"TERM":str(node)})
+
+        self.visit_children(node)
+
+
+
+        return node
+
+
 
     def _reset_temporary_literal_variables(self):
         self.node_signum = None
@@ -359,6 +390,13 @@ class GraphCreatorTransformer(Transformer):
     def visit_Program(self, node):
         if self.debug_mode is True:
             print(f"Program: {str(node)}")
+
+        if self.rules_as_strings[self.current_rule_position] == str(node):
+            del self.rules_as_strings[self.current_rule_position]
+
+        if node.name == "rules":
+            self.in_program_rules = True
+
         self.visit_children(node)
         return node
 

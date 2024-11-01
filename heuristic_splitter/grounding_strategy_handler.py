@@ -29,6 +29,8 @@ from heuristic_splitter.domain_inferer import DomainInferer
 from heuristic_splitter.program.string_asp_program import StringASPProgram
 from heuristic_splitter.program.smodels_asp_program import SmodelsASPProgram
 
+from cython_nagg.cython_nagg import CythonNagg
+
 class CustomOutputPrinter(DefaultOutputPrinter):
 
     def __init__(self):
@@ -137,19 +139,23 @@ class GroundingStrategyHandler:
                 #domain_transformer.update_domain_sizes()
                 tmp_bdg_old_found_rules = []
                 tmp_bdg_new_found_rules = []
+                tmp_bdg_newest_found_rules = []
 
                 for bdg_rule in bdg_rules:
 
                     rule = self.rule_dictionary[bdg_rule]
 
-                    approx_number_rules, used_method, rule_str = self.get_best_method_by_approximated_rule_count(domain_transformer, rule)
-
-                    if used_method == "SOTA":
-                        sota_rules.append(bdg_rule)
-                    elif used_method == "BDG_OLD":
-                        tmp_bdg_old_found_rules.append(bdg_rule)
+                    if rule.in_program_rules is True:
+                        tmp_bdg_newest_found_rules.append(bdg_rule)
                     else:
-                        tmp_bdg_new_found_rules.append(bdg_rule) 
+                        approx_number_rules, used_method, rule_str = self.get_best_method_by_approximated_rule_count(domain_transformer, rule)
+
+                        if used_method == "SOTA":
+                            sota_rules.append(bdg_rule)
+                        elif used_method == "BDG_OLD":
+                            tmp_bdg_old_found_rules.append(bdg_rule)
+                        else:
+                            tmp_bdg_new_found_rules.append(bdg_rule) 
 
                 no_show = True
                 ground_guess = True
@@ -157,6 +163,30 @@ class GroundingStrategyHandler:
                 aggregate_mode = AggregateMode.RA
                 cyclic_strategy = CyclicStrategy.LEVEL_MAPPING
                 grounding_mode = GroundingModes.REWRITE_AGGREGATES_GROUND_FULLY
+
+                if len(tmp_bdg_newest_found_rules) > 0:
+                    program_input = self.rule_list_to_rule_string(tmp_bdg_newest_found_rules)
+
+                    if self.enable_logging is True:
+                        self.logging_file.write("-------------------------------------------------------\n")
+                        self.logging_file.write("The following rules were grounded via BDG NEW approache:\n")
+                        self.logging_file.write(tmp_rules_string)
+
+                    input_rules = []
+                    for bdg_rule in bdg_rules:
+                        input_rules.append(self.rule_dictionary[bdg_rule])
+
+                    custom_printer = CustomOutputPrinter()
+                    #program_input = grounded_program + "\n#program rules.\n" + tmp_rules_string
+                    cython_nagg = CythonNagg(domain_transformer, custom_printer)
+                    cython_nagg.rewrite_rules(input_rules)
+
+                    #grounded_program = custom_printer.get_string()
+                    #grounded_program = grounded_program + custom_printer.get_string()
+                    self.grounded_program.add_string(custom_printer.get_string())
+
+                    self.total_nagg_calls += 1
+                    
 
                 if len(tmp_bdg_new_found_rules) > 0:
 

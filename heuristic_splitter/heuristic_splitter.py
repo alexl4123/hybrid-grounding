@@ -4,7 +4,6 @@ import os
 import subprocess
 
 from datetime import datetime
-from pathlib import Path
 
 from clingo.ast import ProgramBuilder, parse_string
 
@@ -44,11 +43,13 @@ class HeuristicSplitter:
         self.enable_logging = enable_logging
         path = None
         if self.enable_logging is True and logging_file is None:
+            from pathlib import Path
             # Set default logging file:
             current_datetime = datetime.now()
             path_list = ["logs", current_datetime.strftime("%Y%m%d-%H%M%S") + ".log"]
             path = Path(*path_list)
         elif self.enable_logging is True:
+            from pathlib import Path
             path = Path(logging_file)
 
         if path is not None: 
@@ -121,7 +122,7 @@ class HeuristicSplitter:
                     self.debug_mode, self.enable_lpopt,
                     output_printer = self.output_printer,
                     enable_logging = self.enable_logging, logging_file = self.logging_file,)
-                if len(grounding_strategy) > 1:
+                if len(grounding_strategy) > 1 or len(grounding_strategy[0]["bdg"]) > 0:
                     grounding_handler.ground()
                     grounding_handler.output_grounded_program(all_heads)
                 else:

@@ -212,8 +212,11 @@ class GroundingStrategyGenerator:
                         # These rules include the "external support rules" for a cycle
                         if rule in self.sota_rules:
                             current_sota_grounded_rules.append(rule)
+                        elif rule in self.stratified_rules:
+                            pass
                         else:
                             print(f"[ERROR] - Cannot associate rules: {rule}")
+                            print(str(self.rule_dictionary[rule]))
                             raise NotImplementedError()
                     else:
                         if cur_rule.is_tight is True:

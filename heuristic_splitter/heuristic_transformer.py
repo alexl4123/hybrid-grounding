@@ -482,5 +482,3 @@ class HeuristicTransformer(Transformer):
 
         return node
 
-
-

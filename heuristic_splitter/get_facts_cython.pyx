@@ -45,6 +45,7 @@ def get_facts_from_file_handle(f):
     cdef int comment_char = b"%"[0]
     cdef int backslash_char = b"\\"[0] # Backslash
     cdef int t_char = b"t"[0]
+    cdef int m_char = b"m"[0]
 
     cdef int quotation_mark_char = b"\""[0]
     cdef int question_mark_char = b"?"[0]
@@ -132,8 +133,9 @@ def get_facts_from_file_handle(f):
             # Ignore white space, newline, and commented-out code:
             if in_string is False:
                 if cur_char == space_char:
-                    if prev_char == t_char:
+                    if prev_char == t_char or prev_char == m_char:
                         # E.g., in body: 'not a', then the space must not be removed!
+                        # E.g., in #program rules.
                         current_rule_bytearray[current_rule_list_head] = cur_char
                         current_rule_list_head += 1
                         continue

@@ -28,11 +28,24 @@ class Heuristic0(HeuristicInterface):
 
         is_tight = len([True for head_key in head_atoms_scc_membership.keys() if head_key in body_atoms_scc_membership]) == 0
 
-        if body_is_stratified is True and has_aggregate is False:
+        if self.rule_dictionary[rule_position].in_program_rules is True:
+            # If user specifies grounded by BDG, then ground by BDG
+            bdg_rules[rule_position] = True
+        elif body_is_stratified is True and has_aggregate is False:
+            # If stratified then ground at first
+            # TODO -> Fix aggregate dependencies.
             stratified_rules[rule_position] = True
         elif has_aggregate is True:
+            # Aggregates are for now grounded via SOTA approaches.
             sota_rules[rule_position] = True
-        if body_is_stratified is False and in_minimize_statement is False:
+
+        elif body_is_stratified is True or in_minimize_statement is True:
+            # Purely stratified rules are surely grounded by SOTA techniques
+            # Also minimize statements
+            sota_rules[rule_position] = True
+        else:
+            # A more complex decision is needed:
+
             # Stratified variables are not considered in the rewriting, as they are not grounded in SOTA grounders.
             for stratified_variable in set(stratified_variables):
                 variable_graph.remove_variable(str(stratified_variable))
@@ -64,9 +77,6 @@ class Heuristic0(HeuristicInterface):
                 #sota_rules.append(rule_position)
                 sota_rules[rule_position] = True
         
-        else:
-            sota_rules[rule_position] = True
-
         self.rule_dictionary[rule_position].add_variable_graph(full_variable_graph)
         self.rule_dictionary[rule_position].add_is_tight(is_tight)
         self.rule_dictionary[rule_position].add_is_constraint(is_constraint)
