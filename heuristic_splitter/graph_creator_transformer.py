@@ -127,12 +127,17 @@ class GraphCreatorTransformer(Transformer):
         Visits an clingo-AST function.
         """
 
-        if self.current_function is None:
-            # Current-Function is the top-level function
-            self.current_function = node
-
         self.current_function_creation_stack.append(Function())
         self.current_function_creation_stack[-1].name = node.name
+
+        if self.current_function is None:
+            # Current-Function is the top-level function
+            self.current_function_creation_stack[0].define_signum(self.node_signum)
+
+            if self.in_head is True:
+                self.current_function_creation_stack[0].in_head = True
+
+            self.current_function = node
 
 
         if self.in_head and self.head_is_choice_rule and self.head_aggregate_element_head:

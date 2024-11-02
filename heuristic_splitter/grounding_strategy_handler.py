@@ -178,7 +178,7 @@ class GroundingStrategyHandler:
 
                     custom_printer = CustomOutputPrinter()
                     #program_input = grounded_program + "\n#program rules.\n" + tmp_rules_string
-                    cython_nagg = CythonNagg(domain_transformer, custom_printer)
+                    cython_nagg = CythonNagg(domain_transformer, custom_printer, nagg_call_number=self.total_nagg_calls)
                     cython_nagg.rewrite_rules(input_rules)
 
                     #grounded_program = custom_printer.get_string()

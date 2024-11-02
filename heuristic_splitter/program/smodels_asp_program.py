@@ -24,17 +24,21 @@ class SmodelsASPProgram(ASPProgram):
         self.global_weight_index = 0
 
 
-    def recursive_domain_size_computation(self, _dict):
+    def recursive_domain_size_computation(self, function_position_dict_list):
 
-        cur_number = 0
-        for key in _dict:
+        for function_position_index in range(len(function_position_dict_list)):
 
-            if _dict[key] == True:
-                cur_number += 1
-            else:
-                self.recursive_domain_size_computation(_dict[key])
+            _dict = function_position_dict_list[function_position_index]
 
-        _dict["__size__"] = cur_number
+            cur_number = 0
+            for key in _dict:
+
+                if _dict[key] == True:
+                    cur_number += 1
+                else:
+                    self.recursive_domain_size_computation(_dict[key])
+
+            _dict["__size__"] = cur_number
 
 
     def preprocess_smodels_program(self, smodels_program_string, domain_inferer: DomainInferer):
