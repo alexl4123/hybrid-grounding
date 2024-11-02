@@ -95,9 +95,20 @@ def preprocess_smodels_program(smodels_program_string, processed_heads_dict):
     cdef bytearray term_bytearray
     cdef unicode term_string
 
+    # Needed for parsing function arguments (e.g., p(q(1))):
+    cdef dict cur_dict = None
+    cdef list tmp_dict = None
 
-    # Number of terms in fact
-    cdef int current_fact_number_terms = 0
+    cdef int current_function_position = 0
+
+    cdef list function_stack = []
+    cdef list indices_stack = []
+
+    cdef bint just_exited_function = False
+
+
+
+
     # Nesting depth w.r.t. to ( and )
     cdef int current_head_nesting_depth = 0
 
@@ -202,11 +213,20 @@ def preprocess_smodels_program(smodels_program_string, processed_heads_dict):
                             current_fact_head_in_dict = True
                         head_atom_string_compiled = True
 
+                        if head_atom_string in domain_dictionary:
+                            cur_dict = domain_dictionary[head_atom_string]
+                            cur_dict[tuples_size_string] += 1
+                        else:
+                            cur_dict = {
+                                tuples_size_string:1,
+                                terms_string:[],
+                                terms_size_string:[],
+                            }
+                            domain_dictionary[head_atom_string] = cur_dict
+
 
                         term_string_start_index = char_index + 1
-
-                        # Number of terms increases:
-                        current_fact_number_terms += 1
+                        function_stack.append([0,cur_dict[terms_string], term_string_start_index])
 
                         continue
 
@@ -219,58 +239,132 @@ def preprocess_smodels_program(smodels_program_string, processed_heads_dict):
                             # Position "abc(.,..,..)"
                             in_fact_terms = False
 
-                            term_string_end_index = char_index
-                            term_length = term_string_end_index - term_string_start_index
-                            term_bytearray = bytearray(term_length)
-                            for cur_index in range(term_length):
-                                term_bytearray[cur_index] = line_start[cur_index + term_string_start_index]
+                            if just_exited_function is False:
+                                term_string_end_index = char_index
+                                term_length = term_string_end_index - term_string_start_index
+                                term_bytearray = bytearray(term_length)
+                                for cur_index in range(term_length):
+                                    term_bytearray[cur_index] = line_start[cur_index + term_string_start_index]
 
-                            term_string = PyUnicode_FromString(term_bytearray)
+                                term_string = PyUnicode_FromString(term_bytearray)
 
-                            if sup_string in term_string:
-                                term_string = term_string.replace(sup_string, sup_flag)
-                            if inf_string in term_string:
-                                term_string = term_string.replace(inf_string, inf_flag)
+                                if sup_string in term_string:
+                                    term_string = term_string.replace(sup_string, sup_flag)
+                                if inf_string in term_string:
+                                    term_string = term_string.replace(inf_string, inf_flag)
 
-                            splits.append(term_string)
+                                # Add term to domain to parent function ([-1] call)
+                                current_function_position = function_stack[-1][0]
+                                if current_function_position >= len(function_stack[-1][1]):
+                                    function_stack[-1][1].append({term_string:True})
+                                else:
+                                    function_stack[-1][1][current_function_position][term_string] = True
+                                function_stack[-1][0] += 1
+
+                            function_stack.clear()
+                            just_exited_function = False
 
                             continue
-                        elif cur_char == comma_char and current_head_nesting_depth == 0:
+                        elif cur_char == comma_char:
 
-                            term_string_end_index = char_index
-                            term_length = term_string_end_index - term_string_start_index
-                            term_bytearray = bytearray(term_length)
-                            for cur_index in range(term_length):
-                                term_bytearray[cur_index] = line_start[cur_index + term_string_start_index]
+                            if just_exited_function is False:
+                                term_string_end_index = char_index
+                                term_length = term_string_end_index - term_string_start_index
+                                term_bytearray = bytearray(term_length)
+                                for cur_index in range(term_length):
+                                    term_bytearray[cur_index] = line_start[cur_index + term_string_start_index]
 
-                            term_string = PyUnicode_FromString(term_bytearray)
+                                term_string = PyUnicode_FromString(term_bytearray)
 
-                            if sup_string in term_string:
-                                term_string = term_string.replace(sup_string, sup_flag)
-                            if inf_string in term_string:
-                                term_string = term_string.replace(inf_string, inf_flag)
+                                if sup_string in term_string:
+                                    term_string = term_string.replace(sup_string, sup_flag)
+                                if inf_string in term_string:
+                                    term_string = term_string.replace(inf_string, inf_flag)
 
-                            splits.append(term_string)
+                                # Add term to domain to parent function ([-1] call)
+                                current_function_position = function_stack[-1][0]
+                                if current_function_position >= len(function_stack[-1][1]):
+                                    function_stack[-1][1].append({term_string:True})
+                                else:
+                                    function_stack[-1][1][current_function_position][term_string] = True
 
+                                if term_string not in total_domain:
+                                    total_domain[term_string] = True
+
+                            just_exited_function = False
+                            function_stack[-1][0] += 1
                             term_string_start_index = char_index + 1
-
-                            current_fact_number_terms += 1
-
                             continue
 
                         elif cur_char == closing_bracket_char:
                             current_head_nesting_depth -= 1
 
+                            if just_exited_function is False:
+                                term_string_end_index = char_index
+                                term_length = term_string_end_index - term_string_start_index
+                                term_bytearray = bytearray(term_length)
+                                for cur_index in range(term_length):
+                                    term_bytearray[cur_index] = line_start[cur_index + term_string_start_index]
+
+                                term_string = PyUnicode_FromString(term_bytearray)
+
+                                if sup_string in term_string:
+                                    term_string = term_string.replace(sup_string, sup_flag)
+                                if inf_string in term_string:
+                                    term_string = term_string.replace(inf_string, inf_flag)
+
+                                # Add term to domain to parent function ([-1] call)
+                                current_function_position = function_stack[-1][0]
+                                if current_function_position >= len(function_stack[-1][1]):
+                                    function_stack[-1][1].append({term_string:True})
+                                else:
+                                    function_stack[-1][1][current_function_position][term_string] = True
+
+                                if term_string not in total_domain:
+                                    total_domain[term_string] = True
+
+                            term_string_start_index = char_index + 1
+                            function_stack.pop()
+                            just_exited_function = True
+
                             continue
                         elif cur_char == opening_bracket_char:
                             current_head_nesting_depth += 1
 
+                            term_string_end_index = char_index
+                            term_length = term_string_end_index - term_string_start_index
+                            term_bytearray = bytearray(term_length)
+                            for cur_index in range(term_length):
+                                term_bytearray[cur_index] = line_start[cur_index + term_string_start_index]
+
+                            term_string = PyUnicode_FromString(term_bytearray)
+
+                            if sup_string in term_string:
+                                term_string = term_string.replace(sup_string, sup_flag)
+                            if inf_string in term_string:
+                                term_string = term_string.replace(inf_string, inf_flag)
+
+                            current_function_position = function_stack[-1][0]
+                            parent_dict = function_stack[-1][1]
+                            tmp_dict = []
+                            if current_function_position >= len(function_stack[-1][1]):
+                                parent_dict.append({term_string:tmp_dict})
+                            elif term_string not in parent_dict[current_function_position]:
+                                parent_dict[current_function_position][term_string] = tmp_dict
+                            else:
+                                tmp_dict = parent_dict[current_function_position][term_string]
+
+                            term_string_start_index = char_index + 1
+                            function_stack.append([0, tmp_dict, term_string_start_index])
+
                             continue
                         elif cur_char == quotation_mark_char:
                             in_string = True
+                            just_exited_function = False
 
                             continue
                         else:
+                            just_exited_function = False
                             continue
 
                     else: # In String
@@ -287,7 +381,7 @@ def preprocess_smodels_program(smodels_program_string, processed_heads_dict):
             # ---------------------------------------------------
             # Parsing complete, add to domain, ...
             # ---------------------------------------------------
-            if current_fact_number_terms == 0:
+            if head_atom_string_compiled is False:
                 head_atom_end_index = char_index + 1
             predicate_end_index = char_index + 1
 
@@ -312,44 +406,14 @@ def preprocess_smodels_program(smodels_program_string, processed_heads_dict):
                 if PyDict_Contains(processed_heads_dict, head_atom_string):
                     current_fact_head_in_dict = True
 
-            if current_fact_number_terms == 0 and current_fact_head_in_dict is False:
-                # Handle atom (0-arity)
-                if head_atom_string not in domain_dictionary:
-                    domain_dictionary[head_atom_string] = {
-                        tuples_size_string:1,
-                        terms_string:[],
-                        terms_size_string:[],
-                    }
-                else:
-                    domain_dictionary[head_atom_string][tuples_size_string] += 1
-
-            elif current_fact_head_in_dict is False:
-                # Handle predicate (>0-arity)
-
-                if head_atom_string not in domain_dictionary:
-                    # Add head atom to domain:
-                    domain_dictionary[head_atom_string] = {
-                        tuples_size_string:1,
-                        terms_string:[], # TODO
-                        terms_size_string:[],
-                    }
-                    for term_index in range(current_fact_number_terms):
-                        domain_dictionary[head_atom_string][terms_string].append({splits[term_index]:True})
-                        domain_dictionary[head_atom_string][terms_size_string].append(1)
-
-                        if splits[term_index] not in total_domain:
-                            total_domain[splits[term_index]] = True
-                    
-                else:
-                    # Head atom already in domain:
-                    for term_index in range(current_fact_number_terms):
-                        if splits[term_index] not in domain_dictionary[head_atom_string][terms_string][term_index]:
-                            domain_dictionary[head_atom_string][terms_string][term_index][splits[term_index]] = True
-                            domain_dictionary[head_atom_string][terms_size_string][term_index] += 1
-
-                        if splits[term_index] not in total_domain:
-                            total_domain[splits[term_index]] = True
-                    domain_dictionary[head_atom_string][tuples_size_string] += 1
+                if current_fact_head_in_dict is False:
+                    # Handle atom (0-arity)
+                    if head_atom_string not in domain_dictionary:
+                        domain_dictionary[head_atom_string] = {
+                            tuples_size_string:1,
+                            terms_string:[],
+                            terms_size_string:[],
+                        }
 
             # Reset temporary variables:
             splits = []
@@ -358,7 +422,7 @@ def preprocess_smodels_program(smodels_program_string, processed_heads_dict):
             head_atom_start_index = -1
             head_atom_end_index = -1
 
-            current_fact_number_terms = 0
+            just_exited_function = False
 
             head_atom_string_compiled = False
             in_fact_id = True

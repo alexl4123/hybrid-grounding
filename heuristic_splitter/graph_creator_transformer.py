@@ -56,7 +56,7 @@ class GraphCreatorTransformer(Transformer):
 
         self.in_program_rules = False
 
-        self.current_function_creation_object = None
+        self.current_function_creation_stack = []
 
     def visit_Minimize(self, node):
         """
@@ -130,8 +130,9 @@ class GraphCreatorTransformer(Transformer):
         if self.current_function is None:
             # Current-Function is the top-level function
             self.current_function = node
-            self.current_function_creation_object = Function()
-            self.current_function_creation_object.name = node.name
+
+        self.current_function_creation_stack.append(Function())
+        self.current_function_creation_stack[-1].name = node.name
 
 
         if self.in_head and self.head_is_choice_rule and self.head_aggregate_element_head:
@@ -217,13 +218,16 @@ class GraphCreatorTransformer(Transformer):
 
         self.visit_children(node)
 
-        if str(self.current_function) == str(node):
+        if len(self.current_function_creation_stack) == 1:
             # Top level function:
 
-            self.rule_dictionary[self.current_rule_position].functions.append(self.current_function_creation_object)
-            self.current_function_creation_object = None
-
+            self.rule_dictionary[self.current_rule_position].functions.append(self.current_function_creation_stack[0])
+            self.current_function_creation_stack.clear()
             self._reset_temporary_function_variables()
+        else:
+            prev_func = self.current_function_creation_stack.pop()
+            self.current_function_creation_stack[-1].arguments.append({"FUNCTION":prev_func})
+
         return node
 
     def visit_Aggregate(self, node):
@@ -290,8 +294,8 @@ class GraphCreatorTransformer(Transformer):
         Takes care of most things about domain-inference.
         """
 
-        if self.current_function_creation_object is not None:
-            self.current_function_creation_object.arguments.append({"VARIABLE":str(node)})
+        if len(self.current_function_creation_stack) > 0:
+            self.current_function_creation_stack[-1].arguments.append({"VARIABLE":str(node)})
         self.visit_children(node)
 
         return node
@@ -318,8 +322,8 @@ class GraphCreatorTransformer(Transformer):
         Visits an clingo-AST symbolic term (constant).
         """
 
-        if self.current_function_creation_object is not None:
-            self.current_function_creation_object.arguments.append({"TERM":str(node)})
+        if len(self.current_function_creation_stack) > 0:
+            self.current_function_creation_stack[-1].arguments.append({"TERM":str(node)})
 
         self.visit_children(node)
 
