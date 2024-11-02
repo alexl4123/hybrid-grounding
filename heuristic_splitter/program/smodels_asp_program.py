@@ -24,9 +24,37 @@ class SmodelsASPProgram(ASPProgram):
         self.global_weight_index = 0
 
 
+    def recursive_domain_size_computation(self, _dict):
+
+        cur_number = 0
+        for key in _dict:
+
+            if _dict[key] == True:
+                cur_number += 1
+            else:
+                self.recursive_domain_size_computation(_dict[key])
+
+        _dict["__size__"] = cur_number
+
+
     def preprocess_smodels_program(self, smodels_program_string, domain_inferer: DomainInferer):
     
         rules, domain_dictionary, total_domain, literals_dict = cython_preprocess_smodels_program(smodels_program_string, domain_inferer.processed_literals)
+
+        # Compute sizes of terms (recursively):
+        for function in domain_dictionary.keys():
+            _dict = domain_dictionary[function]
+            _dict["terms_size"] = [0 for _ in _dict["terms"]]
+
+            for function_position_index in range(len(_dict["terms"])):
+                cur_number_items = 0
+                for key in _dict["terms"][function_position_index]:
+                    if _dict["terms"][function_position_index][key] == True:
+                        cur_number_items += 1
+                    else:
+                        self.recursive_domain_size_computation(_dict["terms"][function_position_index][key])
+                
+                _dict["terms_size"][function_position_index] = cur_number_items
 
         self.program = rules
         self.literals_dict = literals_dict

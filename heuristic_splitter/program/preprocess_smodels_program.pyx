@@ -261,6 +261,32 @@ def preprocess_smodels_program(smodels_program_string, processed_heads_dict):
                                     function_stack[-1][1][current_function_position][term_string] = True
                                 function_stack[-1][0] += 1
 
+                            full_term_start_index = function_stack[-1][2]
+                            if full_term_start_index != term_string_start_index:
+                                # Full Term Domain inference (happens for every level of the stack!)    
+                                term_string_end_index = char_index
+                                term_length = term_string_end_index - full_term_start_index
+                                term_bytearray = bytearray(term_length)
+                                for cur_index in range(term_length):
+                                    term_bytearray[cur_index] = line_start[cur_index + full_term_start_index]
+
+                                term_string = PyUnicode_FromString(term_bytearray)
+
+                                if sup_string in term_string:
+                                    term_string = term_string.replace(sup_string, sup_flag)
+                                if inf_string in term_string:
+                                    term_string = term_string.replace(inf_string, inf_flag)
+
+                                # Add term to domain to parent function ([-1] call)
+                                current_function_position = function_stack[-1][0]
+                                if current_function_position >= len(function_stack[-1][1]):
+                                    function_stack[-1][1].append({term_string:True})
+                                else:
+                                    function_stack[-1][1][current_function_position][term_string] = True
+
+                                if term_string not in total_domain:
+                                    total_domain[term_string] = True
+
                             function_stack.clear()
                             just_exited_function = False
 
@@ -268,6 +294,7 @@ def preprocess_smodels_program(smodels_program_string, processed_heads_dict):
                         elif cur_char == comma_char:
 
                             if just_exited_function is False:
+                                # Smallest term domain inference (happens only for leaf function))
                                 term_string_end_index = char_index
                                 term_length = term_string_end_index - term_string_start_index
                                 term_bytearray = bytearray(term_length)
@@ -291,8 +318,36 @@ def preprocess_smodels_program(smodels_program_string, processed_heads_dict):
                                 if term_string not in total_domain:
                                     total_domain[term_string] = True
 
+                            full_term_start_index = function_stack[-1][2]
+                            if full_term_start_index != term_string_start_index:
+                                # Full Term Domain inference (happens for every level of the stack!)    
+                                term_string_end_index = char_index
+                                term_length = term_string_end_index - full_term_start_index
+                                term_bytearray = bytearray(term_length)
+                                for cur_index in range(term_length):
+                                    term_bytearray[cur_index] = line_start[cur_index + full_term_start_index]
+
+                                term_string = PyUnicode_FromString(term_bytearray)
+
+                                if sup_string in term_string:
+                                    term_string = term_string.replace(sup_string, sup_flag)
+                                if inf_string in term_string:
+                                    term_string = term_string.replace(inf_string, inf_flag)
+
+                                # Add term to domain to parent function ([-1] call)
+                                current_function_position = function_stack[-1][0]
+                                if current_function_position >= len(function_stack[-1][1]):
+                                    function_stack[-1][1].append({term_string:True})
+                                else:
+                                    function_stack[-1][1][current_function_position][term_string] = True
+
+                                if term_string not in total_domain:
+                                    total_domain[term_string] = True
+
                             just_exited_function = False
                             function_stack[-1][0] += 1
+
+                            function_stack[-1][2] = char_index + 1
                             term_string_start_index = char_index + 1
                             continue
 
