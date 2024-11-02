@@ -1,6 +1,5 @@
 
 
-from heuristic_splitter.rule import Rule
 from heuristic_splitter.domain_inferer import DomainInferer
 
 from libc.stdio cimport printf
@@ -84,7 +83,7 @@ cdef void generate_function_combinations(char*** domain_array, int* length_array
             continue_loop = False
 
 
-def generate_satisfiability_part_function(function, rule, domain, string_template, variable_domain_lists):
+def generate_satisfiability_part_function(string_template, variable_domain_lists):
 
     # Get relevant domain stuff (and convert to DSs)
     # ---> Need relevant domain -> variable domains -> convert to C data-structure -> 
@@ -96,11 +95,6 @@ def generate_satisfiability_part_function(function, rule, domain, string_templat
     cdef int index
     cdef char* string_template_char
     cdef char* error_string_char
-
-    print(string_template)
-    print("+++")
-    print(variable_domain_lists)
-    print("+++")
 
     domain_array = <char***>malloc(len(variable_domain_lists) * sizeof(char**))
     length_array = <int*>malloc(len(variable_domain_lists) * sizeof(int)) 
@@ -116,7 +110,6 @@ def generate_satisfiability_part_function(function, rule, domain, string_templat
 
         index += 1
 
-
     string_template_char = <char*>malloc(sizeof(int) * len(string_template))
     strcpy(string_template_char, string_template.encode('ascii'))
 
@@ -128,8 +121,3 @@ def generate_satisfiability_part_function(function, rule, domain, string_templat
     index = 0
     for index in range(number_arguments):
         free_c_string_list(domain_array[index], length_array[index])
-
-
-
-        
-
