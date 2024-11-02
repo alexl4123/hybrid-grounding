@@ -39,15 +39,13 @@ cdef void free_c_string_list(char** c_string_array, Py_ssize_t n):
         free(c_string_array[i])  # Free each string
     free(c_string_array)         # Free the array of pointers
 
-cdef void generate_function_combinations(char*** domain_array, int* length_array, int length_of_arrays, char* template_string):
 
-    printf("%s\n", template_string)
+cdef void generate_function_combinations(char*** domain_array, int* length_array, int length_of_arrays, char* template_string, char* error_string) noexcept nogil:
 
     cdef int* index_array = <int*>malloc(length_of_arrays * sizeof(int))
     cdef bint continue_loop
     cdef bint overflow
     cdef int index
-    cdef char[] error_string = "[ERROR] - Not implemented".encode('ascii')
 
     for index in range(length_of_arrays):
         index_array[index] = 0
@@ -67,7 +65,8 @@ cdef void generate_function_combinations(char*** domain_array, int* length_array
         elif length_of_arrays == 5:
             printf(template_string, domain_array[0][index_array[0]], domain_array[1][index_array[1]], domain_array[2][index_array[2]], domain_array[3][index_array[3]], domain_array[4][index_array[4]])
         else:
-            printf(error_string)
+            printf("%s", error_string)
+            printf("\n<<<%d>>>\n", length_of_arrays)
 
         overflow = True
         for index in range(length_of_arrays):
@@ -85,115 +84,52 @@ cdef void generate_function_combinations(char*** domain_array, int* length_array
             continue_loop = False
 
 
-def generate_satisfiability_part_for_function(function, rule, domain):
+def generate_satisfiability_part_function(function, rule, domain, string_template, variable_domain_lists):
 
     # Get relevant domain stuff (and convert to DSs)
     # ---> Need relevant domain -> variable domains -> convert to C data-structure -> 
     # Run loop -> How to:
-
-    variables_in_function = {}
-
-    atom_string_template = function.name
-
-    terms_list = domain[function.name]["terms"]
 
     cdef int* length_array
     cdef char*** domain_array
     cdef int number_arguments
     cdef int index
     cdef char* string_template_char
+    cdef char* error_string_char
+
+    print(string_template)
+    print("+++")
+    print(variable_domain_lists)
+    print("+++")
+
+    domain_array = <char***>malloc(len(variable_domain_lists) * sizeof(char**))
+    length_array = <int*>malloc(len(variable_domain_lists) * sizeof(int)) 
+    number_arguments = len(variable_domain_lists)
+
+    index = 0
+    for variable_domain_list in variable_domain_lists:
+
+        c_array, length = convert_to_c_string_list(variable_domain_list)
+        
+        domain_array[index] = c_array
+        length_array[index] = length
+
+        index += 1
 
 
-    variable_domain_lists = []
+    string_template_char = <char*>malloc(sizeof(int) * len(string_template))
+    strcpy(string_template_char, string_template.encode('ascii'))
 
-    if len(function.arguments) > 0:
+    error_string = "[ERROR] - Not arity implemented"
+    error_string_char = <char*>malloc(sizeof(int) * len(error_string))
+    strcpy(error_string_char, error_string.encode('ascii'))
+    generate_function_combinations(domain_array, length_array, number_arguments, string_template_char, error_string_char)
 
-        variable_strings = []
-
-        atom_string_template += "("
-
-        variable_index = 1
-
-        for argument_index in range(len(function.arguments)):
-
-            argument = function.arguments[argument_index]
-
-            if "VARIABLE" in argument:
-                variable = argument["VARIABLE"]
-                if variable not in variables_in_function:
-                    variables_in_function[variable] = variable_index
-                    variable_strings.append(f"sat_var_{variable}(%{variable_index}$s)")
-                    atom_string_template += f"%{variable_index}$s"
-                    
-                    domain_list = list(terms_list[variable_index - 1].keys())
-                    variable_domain_lists.append(domain_list)
-                else:
-                    tmp_variable_index = variables_in_function[variable]
-                    atom_string_template += f"%{tmp_variable_index}$s"
-
-                    # If e.g., p(X,Y,X), then do intersection between variable domain X
-                    # TODO -> Do this later rule wide
-
-                    domain_list = list(terms_list[tmp_variable_index - 1].keys())
-                    variable_domain_lists[tmp_variable_index - 1] = list(set(domain_list).intersection(set(terms_list[variable_index - 1])))
-
-                variable_index += 1
-            else:
-                atom_string_template += f"%{variable_index}$s"
-
-            if argument_index < len(function.arguments) - 1:
-                atom_string_template += ","
-
-        atom_string_template += ")"
-
-        string_template = f"sat :- {','.join(variable_strings)}, {atom_string_template}.\n"
-
-        print(string_template)
-        print("+++")
-        print(variable_domain_lists)
-        print("+++")
-
-        domain_array = <char***>malloc(len(variable_domain_lists) * sizeof(char**))
-        length_array = <int*>malloc(len(variable_domain_lists) * sizeof(int)) 
-        number_arguments = len(variable_domain_lists)
-
-        index = 0
-        for variable_domain_list in variable_domain_lists:
-
-            c_array, length = convert_to_c_string_list(variable_domain_list)
-            
-            domain_array[index] = c_array
-            length_array[index] = length
-
-            index += 1
+    index = 0
+    for index in range(number_arguments):
+        free_c_string_list(domain_array[index], length_array[index])
 
 
-        string_template_char = <char*>malloc(sizeof(int) * len(string_template))
-        strcpy(string_template_char, string_template.encode('ascii'))
-
-        generate_function_combinations(domain_array, length_array, number_arguments, string_template_char)
-
-
-        index = 0
-        for index in range(number_arguments):
-            free_c_string_list(domain_array[index], length_array[index])
-
-
-    else:
-        print("[ERROR] - Currently sat part for atom (0-ary-pred.) not implemented.")
-
-
-    quit()
 
         
-
-
-
-def generate_satisfiability_part(rule: Rule, domain: DomainInferer):
-
-    # Preprocess/Convert to data-structures
-    # Then print stuff
-
-    for function in rule.functions:
-        generate_satisfiability_part_for_function(function, rule, domain.domain_dictionary)
 
