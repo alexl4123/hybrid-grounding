@@ -91,7 +91,7 @@ class HeuristicSplitter:
 
             graph_transformer = GraphCreatorTransformer(graph_ds, rule_dictionary, other_rules, self.debug_mode)
             parse_string(other_rules_string, lambda stm: graph_transformer(stm))
-            
+
             graph_analyzer = GraphAnalyzer(graph_ds)
             graph_analyzer.start()
 

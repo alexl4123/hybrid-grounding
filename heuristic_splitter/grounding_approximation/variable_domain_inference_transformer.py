@@ -8,7 +8,7 @@ from clingo.ast import Transformer
 
 from heuristic_splitter.graph_data_structure import GraphDataStructure
 
-from heuristic_splitter.rule import Rule
+from heuristic_splitter.program_structures.rule import Rule
 
 
 class VariableDomainInferenceTransformer(Transformer):

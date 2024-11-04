@@ -1,4 +1,5 @@
-
+import time
+import sys
 import os
 import subprocess
 
@@ -178,8 +179,13 @@ class GroundingStrategyHandler:
 
                     custom_printer = CustomOutputPrinter()
                     #program_input = grounded_program + "\n#program rules.\n" + tmp_rules_string
+
+
+                    start_time = time.time()
                     cython_nagg = CythonNagg(domain_transformer, custom_printer, nagg_call_number=self.total_nagg_calls)
                     cython_nagg.rewrite_rules(input_rules)
+                    end_time = time.time()
+                    print(f"---> TIME DURATION CYTHON NAGG: {end_time - start_time}", file=sys.stderr)
 
                     #grounded_program = custom_printer.get_string()
                     #grounded_program = grounded_program + custom_printer.get_string()
@@ -214,11 +220,14 @@ class GroundingStrategyHandler:
 
                     foundedness_strategy = FoundednessStrategy.SATURATION
 
+                    start_time = time.time()
                     nagg = NaGG(no_show = no_show, ground_guess = ground_guess, output_printer = custom_printer,
                         aggregate_mode = aggregate_mode, cyclic_strategy=cyclic_strategy,
                         grounding_mode=grounding_mode, foundedness_strategy=foundedness_strategy)
                     nagg.start(program_input, domain_inference = nagg_domain_connector,
                         rule_position_offset= self.total_nagg_calls)
+                    end_time = time.time()
+                    print(f"---> TIME DURATION (NEW) NAGG: {end_time - start_time}", file=sys.stderr)
 
                     #grounded_program = custom_printer.get_string()
                     #grounded_program = grounded_program + custom_printer.get_string()
@@ -252,11 +261,16 @@ class GroundingStrategyHandler:
 
                     foundedness_strategy = FoundednessStrategy.DEFAULT
 
+                    start_time = time.time()
                     nagg = NaGG(no_show = no_show, ground_guess = ground_guess, output_printer = custom_printer,
                         aggregate_mode = aggregate_mode, cyclic_strategy=cyclic_strategy,
                         grounding_mode=grounding_mode, foundedness_strategy=foundedness_strategy)
                     nagg.start(program_input, domain_inference = nagg_domain_connector,
                         rule_position_offset = self.total_nagg_calls)
+                    end_time = time.time()
+                    print(f"---> TIME DURATION (OLD) NAGG: {end_time - start_time}", file=sys.stderr)
+
+
                     #grounded_program = grounded_program + custom_printer.get_string()
                     self.grounded_program.add_string(custom_printer.get_string())
 

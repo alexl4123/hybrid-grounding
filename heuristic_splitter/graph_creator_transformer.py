@@ -8,8 +8,13 @@ from clingo.ast import Transformer
 
 from heuristic_splitter.graph_data_structure import GraphDataStructure
 
-from heuristic_splitter.rule import Rule
-from heuristic_splitter.function import Function
+from heuristic_splitter.program_structures.rule import Rule
+from heuristic_splitter.program_structures.function import Function
+from heuristic_splitter.program_structures.comparison import Comparison
+from heuristic_splitter.program_structures.binary_operation import BinaryOperation
+
+from nagg.comparison_tools import ComparisonTools
+
 
 class HeadFuncObject:
     def __init__(self, name):
@@ -57,6 +62,12 @@ class GraphCreatorTransformer(Transformer):
         self.in_program_rules = False
 
         self.current_function_creation_stack = []
+
+        self.comparison_string = "COMPARISON"
+        self.function_string = "FUNCTION"
+        self.term_string = "TERM"
+        self.variable_string = "VARIABLE"
+        self.binary_operation_string = "BINARY_OPERATION"
 
     def visit_Minimize(self, node):
         """
@@ -126,6 +137,9 @@ class GraphCreatorTransformer(Transformer):
         """
         Visits an clingo-AST function.
         """
+
+        if len(self.current_function_creation_stack) > 0 and type(self.current_function_creation_stack[0]) is Comparison:
+            self.current_function_creation_stack[0].is_simple_comparison = False
 
         self.current_function_creation_stack.append(Function())
         self.current_function_creation_stack[-1].name = node.name
@@ -226,12 +240,12 @@ class GraphCreatorTransformer(Transformer):
         if len(self.current_function_creation_stack) == 1:
             # Top level function:
 
-            self.rule_dictionary[self.current_rule_position].functions.append(self.current_function_creation_stack[0])
+            self.rule_dictionary[self.current_rule_position].literals.append({self.function_string:self.current_function_creation_stack[0]})
             self.current_function_creation_stack.clear()
             self._reset_temporary_function_variables()
         else:
             prev_func = self.current_function_creation_stack.pop()
-            self.current_function_creation_stack[-1].arguments.append({"FUNCTION":prev_func})
+            self.current_function_creation_stack[-1].arguments.append({self.function_string:prev_func})
 
         return node
 
@@ -300,7 +314,7 @@ class GraphCreatorTransformer(Transformer):
         """
 
         if len(self.current_function_creation_stack) > 0:
-            self.current_function_creation_stack[-1].arguments.append({"VARIABLE":str(node)})
+            self.current_function_creation_stack[-1].arguments.append({self.variable_string:str(node)})
         self.visit_children(node)
 
         return node
@@ -328,15 +342,11 @@ class GraphCreatorTransformer(Transformer):
         """
 
         if len(self.current_function_creation_stack) > 0:
-            self.current_function_creation_stack[-1].arguments.append({"TERM":str(node)})
+            self.current_function_creation_stack[-1].arguments.append({self.term_string:str(node)})
 
         self.visit_children(node)
 
-
-
         return node
-
-
 
     def _reset_temporary_literal_variables(self):
         self.node_signum = None
@@ -449,4 +459,46 @@ class GraphCreatorTransformer(Transformer):
         if self.debug_mode is True:
             print(f"Comment: {str(node)}")
         self.visit_children(node)
+        return node
+
+    def visit_Comparison(self, node):
+
+        guard = node.guards[0].comparison
+
+        str_guard = ComparisonTools.get_comp_operator(guard)
+
+        comp = Comparison()
+        comp.operator = str_guard
+        comp.signum = self.node_signum
+
+        self.current_function_creation_stack.append(comp)
+
+        self.visit_children(node)
+
+        if len(self.current_function_creation_stack) == 1:
+            # Top level function:
+
+            self.rule_dictionary[self.current_rule_position].literals.append({self.comparison_string:self.current_function_creation_stack[0]})
+            self.current_function_creation_stack.clear()
+            self._reset_temporary_function_variables()
+
+        return node
+
+    def visit_BinaryOperation(self, node):
+
+        if type(self.current_function_creation_stack[0]) is Comparison:
+            self.current_function_creation_stack[0].is_simple_comparison = False
+
+        str_operator = ComparisonTools._get_binary_operator_type_as_string(node.operator_type)
+
+        binary_operation = BinaryOperation()
+        binary_operation.operation = str_operator
+
+        self.current_function_creation_stack.append(binary_operation)
+
+        self.visit_children(node)
+
+        prev_func = self.current_function_creation_stack.pop()
+        self.current_function_creation_stack[-1].arguments.append({self.binary_operation_string:prev_func})
+
         return node

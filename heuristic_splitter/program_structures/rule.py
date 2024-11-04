@@ -20,7 +20,7 @@ class Rule:
 
         self.in_program_rules = False
 
-        self.functions = []
+        self.literals = []
 
         self.scc = None
 
