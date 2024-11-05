@@ -33,13 +33,11 @@ class CythonNagg:
 
             variable_domain, head_variables = self.get_variable_domain(rule, self.domain.domain_dictionary)
 
-            """
             satisfiability.generate_satisfiability_part(rule, variable_domain, rule_number)
 
             sat_atom_rules_list.append(satisfiability.sat_atom_rule_string.format(
                 nagg_call_number=self.nagg_call_number,
                 rule_number = rule_number))
-            """
 
             if rule.is_constraint is False:
 

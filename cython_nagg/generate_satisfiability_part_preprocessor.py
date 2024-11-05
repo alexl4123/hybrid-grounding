@@ -2,9 +2,8 @@
 from heuristic_splitter.program_structures.rule import Rule
 from heuristic_splitter.domain_inferer import DomainInferer
 
-from cython_nagg.generate_satisfiability_part import generate_satisfiability_part_function, generate_satisfiability_part_comparison
-
-
+from cython_nagg.cython.generate_function_combination_part import generate_function_combinations_caller
+from cython_nagg.cython.generate_comparison_combination_part import generate_comparison_combinations_caller
 
 class GenerateSatisfiabilityPartPreprocessor:
 
@@ -181,16 +180,17 @@ class GenerateSatisfiabilityPartPreprocessor:
                     full_string_template += ":-" + ",".join(variable_strings) + "," + atom_string_template + ".\n"
 
                     if "FUNCTION" in literal:
-                        generate_satisfiability_part_function(full_string_template, variable_domain_lists)
+                        generate_function_combinations_caller(full_string_template, variable_domain_lists)
                     elif "COMPARISON" in literal:
                         comparison_operator = literal["COMPARISON"].operator
                         is_simple_comparison = literal["COMPARISON"].is_simple_comparison
 
                         signum = literal["COMPARISON"].signum
 
-                        generate_satisfiability_part_comparison(
+                        generate_comparison_combinations_caller(
                             full_string_template, full_string_template_reduced,
                             variable_domain_lists, comparison_operator, is_simple_comparison, signum)
+
                 elif literal.signum > 0:
                     # If domain is empty then is surely satisfied (and in B_r^+)
                     full_string_template += "."

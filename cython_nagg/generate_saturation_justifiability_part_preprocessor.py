@@ -2,7 +2,8 @@
 from heuristic_splitter.program_structures.rule import Rule
 from heuristic_splitter.domain_inferer import DomainInferer
 
-from cython_nagg.generate_satisfiability_part import generate_satisfiability_part_function, generate_satisfiability_part_comparison
+from cython_nagg.cython.generate_function_combination_part import generate_function_combinations_caller
+from cython_nagg.cython.generate_comparison_combination_part import generate_comparison_combinations_caller
 
 
 
@@ -273,12 +274,9 @@ class GenerateSaturationJustifiabilityPartPreprocessor:
                     print(saturation_string)
 
         for variable in variable_domain:
-
-
             if variable in head_variables:
                 # Skip head variables:
                 continue
-
 
             just_atom_variable_string_helper = "just_h_{nagg_call_number}_{rule_number}_{variable}({cython_variable_identifier})"
 
