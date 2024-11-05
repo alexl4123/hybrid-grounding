@@ -14,6 +14,8 @@ class Rule:
         self.str_rule = str_rule
 
         self.variable_graph = None
+        self.variable_no_head_graph = None
+
         self.is_tight = None
         self.is_disjunctive = False
         self.is_constraint = None
@@ -26,6 +28,9 @@ class Rule:
 
     def add_variable_graph(self, variable_graph):
         self.variable_graph = variable_graph
+
+    def add_variable_no_head_graph(self, variable_no_head_graph):
+        self.variable_no_head_graph = variable_no_head_graph
 
     def add_is_tight(self, is_tight):
         self.is_tight = is_tight

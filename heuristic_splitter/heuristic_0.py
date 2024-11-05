@@ -25,6 +25,8 @@ class Heuristic0(HeuristicInterface):
         all_comparison_variables_safe_by_predicate = set(all_comparison_variables.keys()).issubset(set(all_positive_function_variables.keys()))
 
         full_variable_graph = variable_graph.clone()
+        variable_no_head_graph = variable_graph.clone()
+        variable_no_head_graph.remove_head_edges()
 
         is_tight = len([True for head_key in head_atoms_scc_membership.keys() if head_key in body_atoms_scc_membership]) == 0
 
@@ -78,5 +80,6 @@ class Heuristic0(HeuristicInterface):
                 sota_rules[rule_position] = True
         
         self.rule_dictionary[rule_position].add_variable_graph(full_variable_graph)
+        self.rule_dictionary[rule_position].add_variable_no_head_graph(variable_no_head_graph)
         self.rule_dictionary[rule_position].add_is_tight(is_tight)
         self.rule_dictionary[rule_position].add_is_constraint(is_constraint)

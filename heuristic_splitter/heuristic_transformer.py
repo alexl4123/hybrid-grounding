@@ -209,7 +209,10 @@ class HeuristicTransformer(Transformer):
                         variable_0 = self.current_function_variables[variable_0_index]
                         variable_1 = self.current_function_variables[variable_1_index]
 
-                        self.variable_graph.add_edge(str(variable_0), str(variable_1))
+                        if self.in_head is False:
+                            self.variable_graph.add_edge(str(variable_0), str(variable_1), in_head=False)
+                        else:
+                            self.variable_graph.add_edge(str(variable_0), str(variable_1), in_head=True)
             else:
                 for variable in self.current_function_variables:
                     self.variable_graph.add_node(str(variable))
@@ -413,7 +416,7 @@ class HeuristicTransformer(Transformer):
                         variable_0 = self.current_comparison_variables[variable_0_index]
                         variable_1 = self.current_comparison_variables[variable_1_index]
 
-                        self.variable_graph.add_edge(str(variable_0),str(variable_1))
+                        self.variable_graph.add_edge(str(variable_0), str(variable_1), in_head=False)
             else:
                 for variable in self.current_comparison_variables:
                     self.variable_graph.add_node(str(variable))

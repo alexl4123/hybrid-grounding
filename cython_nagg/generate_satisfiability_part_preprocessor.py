@@ -15,6 +15,9 @@ class GenerateSatisfiabilityPartPreprocessor:
         self.nagg_call_number = nagg_call_number
 
 
+        self.function_string = "FUNCTION"
+
+
         self.sat_atom_string = "sat_{nagg_call_number}"
         self.sat_atom_rule_string = "sat_{nagg_call_number}_{rule_number}"
         self.sat_atom_variable_string = "sat_{nagg_call_number}_{rule_number}_{variable}({cython_variable_identifier})"
@@ -194,7 +197,7 @@ class GenerateSatisfiabilityPartPreprocessor:
                             full_string_template, full_string_template_reduced,
                             variable_domain_lists, comparison_operator, is_simple_comparison, signum)
 
-                elif literal.signum > 0:
+                elif self.function_string in literal and literal[self.function_string].signum > 0:
                     # If domain is empty then is surely satisfied (and in B_r^+)
                     full_string_template += "."
                     if self.custom_printer is not None:

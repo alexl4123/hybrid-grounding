@@ -279,22 +279,27 @@ class ApproximateGeneratedBDGRulesTransformer(Transformer):
 
             # ------- OLD FOUNDEDNESS PART ------
             reachable = False
+
+            to_ground_head_variables = []
+
             for head_variable in self.head_variables.keys():
                 for function_variable in function_variables.keys():
 
                     v_head_variable = self.rule.variable_graph.predicate_to_index_lookup[head_variable]
                     v_function_variable = self.rule.variable_graph.predicate_to_index_lookup[function_variable]
 
-                    is_reachable = self.rule.variable_graph.is_reachable(v_head_variable, v_function_variable)
+                    is_reachable = self.rule.variable_no_head_graph.is_reachable(v_head_variable, v_function_variable)
 
                     if is_reachable is True:
                         reachable = is_reachable
                         break
-                
+
                 if reachable is True:
-                    break
+                    # Exactly those variables that are reachable have to be grounded.
+                    to_ground_head_variables.append(head_variable)
+                    is_reachable = False
             
-            if reachable is False:
+            if len(to_ground_head_variables) == 0:
                 # Variable Justifying independence:
                 o_found_rules = 1
                 for function_variable in function_variables.keys():
@@ -303,7 +308,7 @@ class ApproximateGeneratedBDGRulesTransformer(Transformer):
             else:
                 # Worst case 2*artiy exponential:
                 # Head variables + variables in function differing from head variables (union of variables):
-                to_ground_variables = list(set(list(self.head_variables.keys()) + list(function_variables.keys())))
+                to_ground_variables = list(set(to_ground_head_variables + list(function_variables.keys())))
 
                 combinations = 1
                 for to_ground_variable in to_ground_variables:

@@ -28,7 +28,7 @@ class VariableGraphDataStructure:
             self.current_node_index += 1       
 
 
-    def add_edge(self, variable_1, variable_2):
+    def add_edge(self, variable_1, variable_2, in_head = False):
         """
         Adding an edge between two variables (if they occur in the same literal)
         """
@@ -52,7 +52,23 @@ class VariableGraphDataStructure:
         variable_1_index = self.predicate_to_index_lookup[variable_2]
         variable_2_index = self.predicate_to_index_lookup[variable_1]
 
-        self.graph.add_edge(variable_1_index, variable_2_index)
+        if self.graph.has_edge(variable_1_index, variable_2_index) is False and self.graph.has_edge(variable_2_index, variable_1_index) is False:
+            if in_head is True:
+                self.graph.add_edge(variable_1_index, variable_2_index, in_head=True)
+            else:
+                self.graph.add_edge(variable_1_index, variable_2_index, in_body=True)
+        else:
+            if in_head is True:
+                if self.graph.has_edge(variable_1_index, variable_2_index) is True:
+                    attribute = {(variable_1_index, variable_2_index):{"in_head":True}}
+                elif self.graph.has_edge(variable_2_index, variable_1_index) is True:
+                    attribute = {(variable_2_index, variable_1_index):{"in_head":True}}
+            else:
+                if self.graph.has_edge(variable_1_index, variable_2_index) is True:
+                    attribute = {(variable_1_index, variable_2_index):{"in_body":True}}
+                elif self.graph.has_edge(variable_2_index, variable_1_index) is True:
+                    attribute = {(variable_2_index, variable_1_index):{"in_body":True}}
+            nx.set_edge_attributes(self.graph, attribute)
     
     def remove_variable(self, variable):
         if variable in self.predicate_to_index_lookup:
@@ -62,12 +78,15 @@ class VariableGraphDataStructure:
             print(f"[ERROR] - Could not find variable: {variable}")
             raise Exception(f"[ERROR] - Could not find variable: {variable}")
 
+    def remove_head_edges(self):
+
+        edges_to_remove = [(u, v) for u, v, attr in self.graph.edges(data=True) if attr.get("in_body") != True]
+        self.graph.remove_edges_from(edges_to_remove)
+
     def plot_graph(self):
 
-        G = self.graph
-
-        pos = nx.spring_layout(G)  # layout for positions
-        nx.draw(G, pos, with_labels=True, node_color='lightblue', node_size=1500, font_size=10, font_weight='bold', arrows=True)
+        pos = nx.spring_layout(self.graph)  # layout for positions
+        nx.draw(self.graph, pos, with_labels=True, node_color='lightblue', node_size=1500, font_size=10, font_weight='bold', arrows=True)
         
         # Show the plot
         plt.show()
@@ -84,8 +103,6 @@ class VariableGraphDataStructure:
         clone.index_to_variable_lookup = self.index_to_variable_lookup.copy()
 
         return clone
-
-
 
     def compute_networkx_bag_size(self):
         """
@@ -158,4 +175,11 @@ class VariableGraphDataStructure:
         return nx.has_path(self.graph, v1, v2)
 
 
+    def is_reachable_variables(self, variable_1, variable_2):
 
+        v_head_variable = self.predicate_to_index_lookup[variable_1]
+        v_function_variable = self.predicate_to_index_lookup[variable_2]
+
+        is_reachable = self.is_reachable(v_head_variable, v_function_variable)
+
+        return is_reachable

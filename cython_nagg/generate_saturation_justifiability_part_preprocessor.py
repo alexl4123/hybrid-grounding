@@ -352,3 +352,4 @@ class GenerateSaturationJustifiabilityPartPreprocessor:
             print(justifiability_rule)
 
         sys.stdout.flush()
+

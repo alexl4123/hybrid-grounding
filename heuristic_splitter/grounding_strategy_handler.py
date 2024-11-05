@@ -185,7 +185,7 @@ class GroundingStrategyHandler:
                     cython_nagg = CythonNagg(domain_transformer, custom_printer, nagg_call_number=self.total_nagg_calls)
                     cython_nagg.rewrite_rules(input_rules)
                     end_time = time.time()
-                    print(f"---> TIME DURATION CYTHON NAGG: {end_time - start_time}", file=sys.stderr)
+                    #print(f"---> TIME DURATION CYTHON NAGG: {end_time - start_time}", file=sys.stderr)
 
                     #grounded_program = custom_printer.get_string()
                     #grounded_program = grounded_program + custom_printer.get_string()
@@ -227,7 +227,7 @@ class GroundingStrategyHandler:
                     nagg.start(program_input, domain_inference = nagg_domain_connector,
                         rule_position_offset= self.total_nagg_calls)
                     end_time = time.time()
-                    print(f"---> TIME DURATION (NEW) NAGG: {end_time - start_time}", file=sys.stderr)
+                    #print(f"---> TIME DURATION (NEW) NAGG: {end_time - start_time}", file=sys.stderr)
 
                     #grounded_program = custom_printer.get_string()
                     #grounded_program = grounded_program + custom_printer.get_string()
@@ -268,7 +268,7 @@ class GroundingStrategyHandler:
                     nagg.start(program_input, domain_inference = nagg_domain_connector,
                         rule_position_offset = self.total_nagg_calls)
                     end_time = time.time()
-                    print(f"---> TIME DURATION (OLD) NAGG: {end_time - start_time}", file=sys.stderr)
+                    #print(f"---> TIME DURATION (OLD) NAGG: {end_time - start_time}", file=sys.stderr)
 
 
                     #grounded_program = grounded_program + custom_printer.get_string()
