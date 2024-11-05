@@ -40,8 +40,10 @@ cdef void print_string(
     char*** domain_array, int* index_array,
     int length_of_arrays, char* template_string, char* error_string ) noexcept nogil:
 
-    if length_of_arrays == 1: 
-        printf(template_string,domain_array[0][index_array[0]] )
+    if length_of_arrays == 0:
+        printf("%s", template_string)
+    elif length_of_arrays == 1: 
+        printf(template_string,domain_array[0][index_array[0]])
     elif length_of_arrays == 2:
         printf(template_string, domain_array[0][index_array[0]], domain_array[1][index_array[1]])
     elif length_of_arrays == 3:

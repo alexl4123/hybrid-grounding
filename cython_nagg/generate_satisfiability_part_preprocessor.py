@@ -127,6 +127,9 @@ class GenerateSatisfiabilityPartPreprocessor:
 
         string_template = left_string_template + comparison.operator + right_string_template
 
+        if comparison.signum > 0:
+            string_template = "not " + string_template
+
         return variable_index_dict, string_template
 
     def generate_satisfiability_part(self, rule: Rule, variable_domain, rule_number):
@@ -185,7 +188,7 @@ class GenerateSatisfiabilityPartPreprocessor:
                         comparison_operator = literal["COMPARISON"].operator
                         is_simple_comparison = literal["COMPARISON"].is_simple_comparison
 
-                        signum = literal["COMPARISON"].signum
+                        signum = literal["COMPARISON"].signum * (-1)
 
                         generate_comparison_combinations_caller(
                             full_string_template, full_string_template_reduced,

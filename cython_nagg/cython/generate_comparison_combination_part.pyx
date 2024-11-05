@@ -231,7 +231,7 @@ cdef void generate_comparison_combinations(
                 print_string(domain_array, index_array, length_of_arrays, template_string, error_string)
 
             elif value == 1 and signum > 0:
-                # ..., not 1 != 1 -> Remove last part
+                # ..., 1 != 1 -> Remove last part
                 print_string(domain_array, index_array, length_of_arrays, template_string_reduced, error_string)
 
             elif value == 1 and signum < 0:

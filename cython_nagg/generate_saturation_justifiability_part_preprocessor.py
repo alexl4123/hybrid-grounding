@@ -1,10 +1,12 @@
 
+import sys
+
 from heuristic_splitter.program_structures.rule import Rule
 from heuristic_splitter.domain_inferer import DomainInferer
 
 from cython_nagg.cython.generate_function_combination_part import generate_function_combinations_caller
 from cython_nagg.cython.generate_comparison_combination_part import generate_comparison_combinations_caller
-
+from cython_nagg.cython.generate_saturation_justification_helper_variables_part import generate_saturation_justification_helper_variables_caller
 
 
 class GenerateSaturationJustifiabilityPartPreprocessor:
@@ -151,6 +153,7 @@ class GenerateSaturationJustifiabilityPartPreprocessor:
 
         literal_index = 0
 
+        head_literal_template = None
         literal_templates = []
 
         for literal in rule.literals:
@@ -173,6 +176,9 @@ class GenerateSaturationJustifiabilityPartPreprocessor:
                 full_string_template = self.just_atom_rule_string.format(
                     nagg_call_number=self.nagg_call_number,
                     rule_number = rule_number)
+
+                head_literal_template = full_string_template
+
             else:
                 literal_template = self.just_atom_literal_string.format(
                     nagg_call_number=self.nagg_call_number,
@@ -213,19 +219,19 @@ class GenerateSaturationJustifiabilityPartPreprocessor:
                     full_string_template += ":-" + ",".join(variable_strings) + "," + atom_string_template + ".\n"
 
                     if self.function_string in literal:
-                        # TODO
-                        #generate_satisfiability_part_function(full_string_template, variable_domain_lists)
-                        pass
+                        generate_function_combinations_caller(full_string_template, variable_domain_lists)
+
                     elif self.comparison_string in literal:
                         comparison_operator = literal[self.comparison_string].operator
                         is_simple_comparison = literal[self.comparison_string].is_simple_comparison
 
                         signum = literal[self.comparison_string].signum
 
-                        # TODO
-                        #generate_satisfiability_part_comparison(
-                        #    full_string_template, full_string_template_reduced,
-                        #    variable_domain_lists, comparison_operator, is_simple_comparison, signum)
+                        generate_comparison_combinations_caller(
+                            full_string_template, full_string_template_reduced,
+                            variable_domain_lists, comparison_operator, is_simple_comparison, signum
+                        )
+
                 elif literal.signum > 0:
                     # If domain is empty then is surely satisfied (and in B_r^+)
                     full_string_template += "."
@@ -244,6 +250,7 @@ class GenerateSaturationJustifiabilityPartPreprocessor:
 
             literal_index += 1
 
+        # HEAD VARIABLES:
         for variable in head_variables:
             # Justifiability saturation only for head-variables:
             saturation_string_list = []
@@ -273,6 +280,7 @@ class GenerateSaturationJustifiabilityPartPreprocessor:
                 else:
                     print(saturation_string)
 
+        # OTHER VARIABLES:
         for variable in variable_domain:
             if variable in head_variables:
                 # Skip head variables:
@@ -282,46 +290,65 @@ class GenerateSaturationJustifiabilityPartPreprocessor:
 
             variables_identifiers = []
             variable_domain_lists  = []
+            variable_strings = []
 
-            variables_identifiers.append(f"%1$$")
+            variables_identifiers.append(f"%1$s")
             variable_domain_lists.append(variable_domain[variable])
 
             index = 2
             for head_variable in sorted(list(head_variables.keys())):
 
-                variables_identifiers.append(f"%{index}$")
+                variables_identifiers.append(f"%{index}$s")
                 variable_domain_lists.append(variable_domain[head_variable])
+
+                variable_strings.append(self.just_atom_variable_string.format(
+                    nagg_call_number=self.nagg_call_number,
+                    rule_number = rule_number,
+                    variable = head_variable,
+                    # index-1 as they are used in printf individually
+                    cython_variable_identifier = f"%{index-1}$s" 
+                ))
 
                 index += 1
  
-            cur_just_atom_variable_stirng_helper_instantiated =  just_atom_variable_string_helper.format(
+            cur_just_atom_variable_string_helper_instantiated =  just_atom_variable_string_helper.format(
                 nagg_call_number = self.nagg_call_number,
                 rule_number = rule_number,
                 variable = variable,
                 cython_variable_identifier = ",".join(variables_identifiers)
             )           
-            cur_just_atom_variable_stirng_instantiated = self.just_atom_variable_string.format(
+            cur_just_atom_variable_string_instantiated = self.just_atom_variable_string.format(
                 nagg_call_number = self.nagg_call_number,
                 rule_number = rule_number,
                 variable = variable,
-                cython_variable_identifier = "%1$"
+                cython_variable_identifier = "%1$s"
                 )
 
 
-            print(variable_domain_lists)
-            print(cur_just_atom_variable_stirng_helper_instantiated)
-            print(cur_just_atom_variable_stirng_instantiated)
+            guess_rule_start = "1{"
+            guess_rule_choice_template = cur_just_atom_variable_string_helper_instantiated
+            if len(list(head_variables.keys())) > 0:
+                guess_rule_end_instantiated = "}1:-" + ','.join(variable_strings) + ".\n"
+            else:
+                guess_rule_end_instantiated = "}1.\n"
+
+            generate_saturation_justification_helper_variables_caller(guess_rule_start, guess_rule_choice_template, guess_rule_end_instantiated, variable_domain_lists)
+
+            abstract_rule_template = cur_just_atom_variable_string_instantiated + ":-" + cur_just_atom_variable_string_helper_instantiated + ".\n"
+
+            sys.stdout.flush()
+
+            generate_function_combinations_caller(abstract_rule_template, variable_domain_lists)
+
+            sys.stdout.flush()
 
 
+        sys.stdout.flush()
+        justifiability_rule = head_literal_template + ":-" +  ",".join(literal_templates) + "."
 
+        if self.custom_printer is not None:
+            self.custom_printer.custom_print(justifiability_rule)
+        else:
+            print(justifiability_rule)
 
-
-
-
-
-
-
-
-
-                
-    
+        sys.stdout.flush()
