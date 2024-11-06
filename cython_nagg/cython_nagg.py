@@ -1,22 +1,36 @@
 
+import sys
+import os
+
 from heuristic_splitter.program_structures.rule import Rule
 from heuristic_splitter.domain_inferer import DomainInferer
+
+from cython_nagg.justifiability_type import JustifiabilityType
 
 from cython_nagg.generate_satisfiability_part_preprocessor import GenerateSatisfiabilityPartPreprocessor
 from cython_nagg.generate_saturation_justifiability_part_preprocessor import GenerateSaturationJustifiabilityPartPreprocessor
 from cython_nagg.generate_head_guesses import GenerateHeadGuesses
 from cython_nagg.generate_justifiability_old_part_preprocessor import GenerateJustifiabilityOldPartPreprocessor
+from cython_nagg.cython.cython_helpers import print_to_fd
+
 
 class CythonNagg:
 
-    def __init__(self, domain : DomainInferer, custom_printer, nagg_call_number = 0):
+    def __init__(self, domain : DomainInferer,
+        nagg_call_number = 0, justifiability_type = JustifiabilityType.UNFOUND,
+        output_fd = sys.stdout.fileno()):
 
         self.domain = domain
-        self.custom_printer = custom_printer
 
         self.nagg_call_number = nagg_call_number
 
         self.function_string = "FUNCTION"
+
+        self.justifiability_type = justifiability_type
+
+        self.output_fd = output_fd
+
+
 
     def rewrite_rules(self, rules: [Rule]):
 
@@ -24,15 +38,13 @@ class CythonNagg:
         sat_atom_rules_list = []
         just_atom_rules_list = []
 
-        justifiability_type = "OLD"
+        satisfiability = GenerateSatisfiabilityPartPreprocessor(self.domain, self.nagg_call_number, output_fd=self.output_fd)
+        if self.justifiability_type == JustifiabilityType.SATURATION:
+            justifiability = GenerateSaturationJustifiabilityPartPreprocessor(self.domain, self.nagg_call_number, output_fd=self.output_fd)
+        elif self.justifiability_type == JustifiabilityType.UNFOUND:
+            justifiability = GenerateJustifiabilityOldPartPreprocessor(self.domain, self.nagg_call_number, output_fd=self.output_fd)
 
-        satisfiability = GenerateSatisfiabilityPartPreprocessor(self.domain, self.custom_printer, self.nagg_call_number)
-        if justifiability_type == "SATURATION":
-            justifiability = GenerateSaturationJustifiabilityPartPreprocessor(self.domain, self.custom_printer, self.nagg_call_number)
-        else:
-            justifiability = GenerateJustifiabilityOldPartPreprocessor(self.domain, self.custom_printer, self.nagg_call_number)
-
-        head_guesses = GenerateHeadGuesses(self.domain, self.custom_printer, self.nagg_call_number)
+        head_guesses = GenerateHeadGuesses(self.domain, self.nagg_call_number, output_fd=self.output_fd)
 
         for rule in rules:
 
@@ -49,34 +61,27 @@ class CythonNagg:
 
                 justifiability.generate_saturation_justifiability_part(rule, variable_domain, rule_number, head_variables)
 
-                if justifiability_type == "SATURATION":
+                if self.justifiability_type == JustifiabilityType.SATURATION:
                     just_atom_rules_list.append(justifiability.just_atom_rule_string.format(
                         nagg_call_number=self.nagg_call_number,
                         rule_number = rule_number))
 
             rule_number += 1
 
-        sat_constraint = ":- not " + satisfiability.sat_atom_string.format(nagg_call_number=self.nagg_call_number) + "."
-        sat_rule = satisfiability.sat_atom_string.format(nagg_call_number=self.nagg_call_number) + ":-" + ",".join(sat_atom_rules_list) + "."
+        sat_constraint = ":- not " + satisfiability.sat_atom_string.format(nagg_call_number=self.nagg_call_number) + ".\n"
+        sat_rule = satisfiability.sat_atom_string.format(nagg_call_number=self.nagg_call_number) + ":-" + ",".join(sat_atom_rules_list) + ".\n"
 
-        if self.custom_printer is not None:
-            self.custom_printer.custom_print(sat_constraint)
-            self.custom_printer.custom_print(sat_rule)
-        else:
-            print(sat_constraint)
-            print(sat_rule)
 
+        print_to_fd(os.dup(self.output_fd), sat_constraint.encode("ascii"))
+        print_to_fd(os.dup(self.output_fd), sat_rule.encode("ascii"))
 
         if len(just_atom_rules_list) > 0: # and (implicit) justifiability_type == "SATURATION"
             just_constraint = ":- not " + justifiability.just_atom_string.format(nagg_call_number=self.nagg_call_number) + "."
             just_rule = justifiability.just_atom_string.format(nagg_call_number=self.nagg_call_number) + ":-" + ",".join(just_atom_rules_list) + "."
 
-            if self.custom_printer is not None:
-                self.custom_printer.custom_print(just_constraint)
-                self.custom_printer.custom_print(just_rule)
-            else:
-                print(just_constraint)
-                print(just_rule)
+
+            print_to_fd(os.dup(self.output_fd), just_constraint.encode("ascii"))
+            print_to_fd(os.dup(self.output_fd), just_rule.encode("ascii"))
 
     def get_variable_domain_helper(self, function, domain_fragment, variable_domain, head_variable_inference = False):
 

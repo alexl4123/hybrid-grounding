@@ -1,4 +1,3 @@
-#program facts.
 b(1).
 c(1,2).
 

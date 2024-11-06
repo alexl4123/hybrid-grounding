@@ -1,4 +1,5 @@
 
+import os
 import sys
 
 from heuristic_splitter.program_structures.rule import Rule
@@ -6,13 +7,15 @@ from heuristic_splitter.domain_inferer import DomainInferer
 
 from cython_nagg.cython.generate_head_guesses_helper_part import generate_head_guesses_caller
 from cython_nagg.cython.generate_function_combination_part import generate_function_combinations_caller
+from cython_nagg.cython.cython_helpers import print_to_fd
 
 class GenerateHeadGuesses:
 
-    def __init__(self, domain : DomainInferer, custom_printer, nagg_call_number = 0):
+    def __init__(self, domain : DomainInferer, nagg_call_number = 0, output_fd = sys.stdout.fileno()):
 
+
+        self.output_fd = output_fd
         self.domain = domain
-        self.custom_printer = custom_printer
 
         self.nagg_call_number = nagg_call_number
 
@@ -170,14 +173,12 @@ class GenerateHeadGuesses:
 
                     generate_head_guesses_caller(
                         head_guess_rule_start, head_guess_rule_choice_template,
-                        head_guess_rule_end, variable_domain_lists)
+                        head_guess_rule_end, variable_domain_lists, os.dup(self.output_fd))
 
 
                     head_inference_template = atom_string_template + ":-" + atom_string_template_encapsulated  + ".\n"
 
-                    sys.stdout.flush()
-                    generate_function_combinations_caller(head_inference_template, variable_domain_lists)
-                    sys.stdout.flush()
+                    generate_function_combinations_caller(head_inference_template, variable_domain_lists, os.dup(self.output_fd))
 
                 else:
                     # Do nothing if there cannot exist a head!
@@ -189,12 +190,7 @@ class GenerateHeadGuesses:
 
                 head_inference = atom_string_template + ":-" + atom_string_template_encapsulated + "."
 
-
-                if self.custom_printer is not None:
-                    self.custom_printer.custom_print(head_guess)
-                    self.custom_printer.custom_print(head_inference)
-                else:
-                    print(head_guess)
-                    print(head_inference)
+                print_to_fd(os.dup(self.output_fd), head_guess.encode("ascii"))
+                print_to_fd(os.dup(self.output_fd), head_inference.encode("ascii"))
 
             literal_index += 1

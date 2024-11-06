@@ -7,7 +7,7 @@ class StringASPProgram(ASPProgram):
 
         self.program = program
 
-    def get_string(self):
+    def get_string(self, insert_flags = False):
 
         return self.program
 

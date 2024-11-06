@@ -1,7 +1,10 @@
+
+import io
 import time
 import sys
 import os
 import subprocess
+import gc
 
 from clingo.ast import ProgramBuilder, parse_string
 
@@ -19,8 +22,9 @@ from heuristic_splitter.nagg_domain_connector import NaGGDomainConnector
 
 from heuristic_splitter.program.preprocess_smodels_program import preprocess_smodels_program
 
-from nagg.nagg import NaGG
 from nagg.default_output_printer import DefaultOutputPrinter
+
+from nagg.nagg import NaGG
 from nagg.aggregate_strategies.aggregate_mode import AggregateMode
 from nagg.cyclic_strategy import CyclicStrategy
 from nagg.grounding_modes import GroundingModes
@@ -31,6 +35,7 @@ from heuristic_splitter.program.string_asp_program import StringASPProgram
 from heuristic_splitter.program.smodels_asp_program import SmodelsASPProgram
 
 from cython_nagg.cython_nagg import CythonNagg
+from cython_nagg.justifiability_type import JustifiabilityType
 
 class CustomOutputPrinter(DefaultOutputPrinter):
 
@@ -114,15 +119,19 @@ class GroundingStrategyHandler:
             self.logging_file.write(str(self.grounding_strategy))
             self.logging_file.write("-------------------------------------------------------\n")
 
-
+        domain_inference_called_at_least_once = False
 
         if self.grounded_program is None: 
             self.grounded_program = StringASPProgram("\n".join(list(self.facts.keys())))
 
-        #domain_transformer = DomainTransformer()
+        # Explicitly invoke garbage collection (I do not need facts anymore) 
+        del self.facts
+        gc.collect()
+
         domain_transformer = DomainInferer()
 
-        for level_index in range(len(self.grounding_strategy)):
+        level_index = 0
+        while level_index < len(self.grounding_strategy):
 
             if domain_transformer.unsat_prg_found is True:
                 break
@@ -135,19 +144,19 @@ class GroundingStrategyHandler:
             if self.debug_mode is True:
                 print(f"-- {level_index}: SOTA-RULES: {sota_rules}, BDG-RULES: {bdg_rules}")
 
-            if len(bdg_rules) > 0:
+            if len(bdg_rules) > 0 and domain_inference_called_at_least_once is True:
 
                 #domain_transformer.update_domain_sizes()
                 tmp_bdg_old_found_rules = []
                 tmp_bdg_new_found_rules = []
-                tmp_bdg_newest_found_rules = []
 
                 for bdg_rule in bdg_rules:
 
                     rule = self.rule_dictionary[bdg_rule]
 
                     if rule.in_program_rules is True:
-                        tmp_bdg_newest_found_rules.append(bdg_rule)
+                        # TDB -> TODO
+                        tmp_bdg_new_found_rules.append(bdg_rule)
                     else:
                         approx_number_rules, used_method, rule_str = self.get_best_method_by_approximated_rule_count(domain_transformer, rule)
 
@@ -165,118 +174,94 @@ class GroundingStrategyHandler:
                 cyclic_strategy = CyclicStrategy.LEVEL_MAPPING
                 grounding_mode = GroundingModes.REWRITE_AGGREGATES_GROUND_FULLY
 
-                if len(tmp_bdg_newest_found_rules) > 0:
-                    program_input = self.rule_list_to_rule_string(tmp_bdg_newest_found_rules)
+                if len(tmp_bdg_new_found_rules) > 0:
+                    program_input = self.rule_list_to_rule_string(tmp_bdg_new_found_rules)
 
                     if self.enable_logging is True:
                         self.logging_file.write("-------------------------------------------------------\n")
-                        self.logging_file.write("The following rules were grounded via BDG NEW approache:\n")
+                        self.logging_file.write("The following rules were grounded via BDG NEW approach:\n")
                         self.logging_file.write(tmp_rules_string)
 
                     input_rules = []
                     for bdg_rule in bdg_rules:
                         input_rules.append(self.rule_dictionary[bdg_rule])
 
-                    custom_printer = CustomOutputPrinter()
-                    #program_input = grounded_program + "\n#program rules.\n" + tmp_rules_string
-
-
                     start_time = time.time()
-                    cython_nagg = CythonNagg(domain_transformer, custom_printer, nagg_call_number=self.total_nagg_calls)
+
+                    # Create pipe for input-output:
+                    read_from_pipe, write_to_pipe = os.pipe()
+
+                    cython_nagg = CythonNagg(domain_transformer,
+                        nagg_call_number=self.total_nagg_calls, justifiability_type=JustifiabilityType.SATURATION,
+                        output_fd=write_to_pipe)
                     cython_nagg.rewrite_rules(input_rules)
                     end_time = time.time()
-                    #print(f"---> TIME DURATION CYTHON NAGG: {end_time - start_time}", file=sys.stderr)
 
-                    #grounded_program = custom_printer.get_string()
-                    #grounded_program = grounded_program + custom_printer.get_string()
-                    self.grounded_program.add_string(custom_printer.get_string())
+                    os.close(write_to_pipe)
+                    f = os.fdopen(read_from_pipe)
+                    f.flush()
+                    #print(f"---> TOTAL CALLS: {self.total_nagg_calls}")
+                    #print(f"---> RULES: {','.join([str(rule) for rule in input_rules])}")
+                    output = f.read()
+                    f.close() # Should close read_from_pipe as well!
+                    #os.close(read_from_pipe)
 
-                    self.total_nagg_calls += 1
-                    
+                    #print(output)
 
-                if len(tmp_bdg_new_found_rules) > 0:
-
-                    tmp_rules_string = self.rule_list_to_rule_string(tmp_bdg_new_found_rules)
+                    self.grounded_program.add_string(output)
 
                     if self.enable_logging is True:
-                        self.logging_file.write("-------------------------------------------------------\n")
-                        self.logging_file.write("The following rules were grounded via BDG NEW approache:\n")
-                        self.logging_file.write(tmp_rules_string)
-
-
-
-                    nagg_domain_connector_transformer = NaGGDomainConnectorTransformer(domain_transformer)
-                    parse_string(tmp_rules_string, lambda stm: nagg_domain_connector_transformer(stm))
-
-                    nagg_domain_connector = NaGGDomainConnector(
-                        domain_transformer.domain_dictionary, domain_transformer.total_domain,
-                        nagg_domain_connector_transformer.nagg_safe_variables,
-                        nagg_domain_connector_transformer.shown_predicates)
-                    nagg_domain_connector.convert_data_structures()
-                
-                    custom_printer = CustomOutputPrinter()
-                    #program_input = grounded_program + "\n#program rules.\n" + tmp_rules_string
-                    program_input = "\n#program rules.\n" + tmp_rules_string
-
-                    foundedness_strategy = FoundednessStrategy.SATURATION
-
-                    start_time = time.time()
-                    nagg = NaGG(no_show = no_show, ground_guess = ground_guess, output_printer = custom_printer,
-                        aggregate_mode = aggregate_mode, cyclic_strategy=cyclic_strategy,
-                        grounding_mode=grounding_mode, foundedness_strategy=foundedness_strategy)
-                    nagg.start(program_input, domain_inference = nagg_domain_connector,
-                        rule_position_offset= self.total_nagg_calls)
-                    end_time = time.time()
-                    #print(f"---> TIME DURATION (NEW) NAGG: {end_time - start_time}", file=sys.stderr)
-
-                    #grounded_program = custom_printer.get_string()
-                    #grounded_program = grounded_program + custom_printer.get_string()
-                    self.grounded_program.add_string(custom_printer.get_string())
+                        print(f"---> TIME DURATION CYTHON NAGG NEW: {end_time - start_time}", file=sys.stderr)
 
                     self.total_nagg_calls += 1
-                    
+
                 if len(tmp_bdg_old_found_rules) > 0:
 
-                    tmp_rules_string = self.rule_list_to_rule_string(tmp_bdg_old_found_rules)
+                    program_input = self.rule_list_to_rule_string(tmp_bdg_old_found_rules)
 
                     if self.enable_logging is True:
                         self.logging_file.write("-------------------------------------------------------\n")
-                        self.logging_file.write("The following rules were grounded via BDG OLD approache:\n")
+                        self.logging_file.write("The following rules were grounded via BDG OLD approach:\n")
                         self.logging_file.write(tmp_rules_string)
 
-
-
-                    nagg_domain_connector_transformer = NaGGDomainConnectorTransformer(domain_transformer)
-                    parse_string(tmp_rules_string, lambda stm: nagg_domain_connector_transformer(stm))
-
-
-                    nagg_domain_connector = NaGGDomainConnector(
-                        domain_transformer.domain_dictionary, domain_transformer.total_domain,
-                        nagg_domain_connector_transformer.nagg_safe_variables,
-                        nagg_domain_connector_transformer.shown_predicates)
-                    nagg_domain_connector.convert_data_structures()
-                
-                    custom_printer = CustomOutputPrinter()
-                    program_input = "\n#program rules.\n" + tmp_rules_string
-
-                    foundedness_strategy = FoundednessStrategy.DEFAULT
+                    input_rules = []
+                    for bdg_rule in bdg_rules:
+                        input_rules.append(self.rule_dictionary[bdg_rule])
 
                     start_time = time.time()
-                    nagg = NaGG(no_show = no_show, ground_guess = ground_guess, output_printer = custom_printer,
-                        aggregate_mode = aggregate_mode, cyclic_strategy=cyclic_strategy,
-                        grounding_mode=grounding_mode, foundedness_strategy=foundedness_strategy)
-                    nagg.start(program_input, domain_inference = nagg_domain_connector,
-                        rule_position_offset = self.total_nagg_calls)
+
+                    # Create pipe for input-output:
+                    read_from_pipe, write_to_pipe = os.pipe()
+
+                    cython_nagg = CythonNagg(domain_transformer,
+                        nagg_call_number=self.total_nagg_calls, justifiability_type=JustifiabilityType.UNFOUND,
+                        output_fd=write_to_pipe)
+                    cython_nagg.rewrite_rules(input_rules)
                     end_time = time.time()
-                    #print(f"---> TIME DURATION (OLD) NAGG: {end_time - start_time}", file=sys.stderr)
+
+                    os.close(write_to_pipe)
+                    f = os.fdopen(read_from_pipe)
+                    output = f.read()
+                    os.close(read_from_pipe)
+                    
+                    self.grounded_program.add_string(output)
 
 
-                    #grounded_program = grounded_program + custom_printer.get_string()
-                    self.grounded_program.add_string(custom_printer.get_string())
+
+                    if self.enable_logging is True:
+                        print(f"---> TIME DURATION CYTHON NAGG NEW: {end_time - start_time}", file=sys.stderr)
 
                     self.total_nagg_calls += 1
 
-            if len(sota_rules) > 0:
+
+                    
+            if len(sota_rules) > 0 or domain_inference_called_at_least_once is False:
+
+                if len(sota_rules) == 0 and domain_inference_called_at_least_once is False:
+                    level_index -= 1
+
+                domain_inference_called_at_least_once = True
+
                 # Ground SOTA rules with SOTA (gringo/IDLV):
                 sota_rules_string = self.rule_list_to_rule_string(sota_rules) 
 
@@ -286,6 +271,10 @@ class GroundingStrategyHandler:
                     self.logging_file.write(sota_rules_string)
 
                 program_input = self.grounded_program.get_string() + "\n" + sota_rules_string
+
+                # Explicitly garbage collect stuff
+                del self.grounded_program
+                gc.collect()
 
                 decoded_string = self.start_sota_grounder(program_input)
 
@@ -304,6 +293,7 @@ class GroundingStrategyHandler:
                     print(decoded_string)
                     print(domain_transformer.domain_dictionary)
 
+            level_index += 1
         
 
     def output_grounded_program(self, all_heads):

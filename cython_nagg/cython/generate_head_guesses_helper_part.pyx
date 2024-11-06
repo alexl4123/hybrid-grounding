@@ -1,7 +1,9 @@
 
+import sys
+
 from heuristic_splitter.domain_inferer import DomainInferer
 
-from libc.stdio cimport printf, fflush, stdout
+from libc.stdio cimport printf, FILE, fdopen, fprintf, stdout, fflush, fclose
 from libc.stdlib cimport malloc, free
 from libc.string cimport strdup, strcpy
 from cython.operator import dereference
@@ -11,7 +13,7 @@ from cython_nagg.cython.cython_helpers cimport convert_to_c_string_list, free_c_
 cdef void generate_head_guesses_helper(
     char*** domain_array, int* length_array, int length_of_arrays,
     char* template_string_0, char* template_string_1, char* template_string_2,
-    char* error_string) noexcept nogil:
+    char* error_string, FILE* file_stream) noexcept nogil:
 
     cdef int* index_array = <int*>malloc(length_of_arrays * sizeof(int))
     cdef bint continue_loop
@@ -24,12 +26,12 @@ cdef void generate_head_guesses_helper(
     continue_loop = True
 
 
-    fflush(stdout)
-    printf("%s", template_string_0)
+    fflush(file_stream)
+    fprintf(file_stream, "%s", template_string_0)
 
     while continue_loop is True:
         # Print important stuff
-        print_string(domain_array, index_array, length_of_arrays, template_string_1, error_string)
+        print_string(domain_array, index_array, length_of_arrays, template_string_1, error_string, file_stream)
 
         overflow = True
         for index in range(length_of_arrays):
@@ -49,14 +51,19 @@ cdef void generate_head_guesses_helper(
             # Only happens at the end, when all have been processed.
             continue_loop = False
         else:
-            printf("%s", ";")
+            fprintf(file_stream, "%s", ";")
 
-    printf("%s", template_string_2)
+    fprintf(file_stream, "%s", template_string_2)
     
 
-    fflush(stdout)
+    fflush(file_stream)
 
-def generate_head_guesses_caller(string_template_0, string_template_1, string_template_2, variable_domain_lists):
+def generate_head_guesses_caller(string_template_0, string_template_1, string_template_2, variable_domain_lists, output_fd = sys.stdout.fileno()):
+
+    # Open the file descriptor as a FILE* stream
+    cdef FILE* file_stream = fdopen(output_fd, "w")
+    if file_stream is NULL:
+        raise ValueError("Could not open file descriptor")
 
     cdef int* length_array
     cdef char*** domain_array
@@ -102,7 +109,7 @@ def generate_head_guesses_caller(string_template_0, string_template_1, string_te
             strcpy(error_string_char, error_string.encode('ascii'))
 
             generate_head_guesses_helper(domain_array, length_array, number_arguments,
-                string_template_0_char, string_template_1_char, string_template_2_char, error_string_char)
+                string_template_0_char, string_template_1_char, string_template_2_char, error_string_char, file_stream)
 
     else:
         exception_occurred = True
@@ -117,6 +124,9 @@ def generate_head_guesses_caller(string_template_0, string_template_1, string_te
             exception_occurred = True
             if exception is None:
                 exception = ex
+
+    fflush(file_stream)
+    fclose(file_stream)
 
     try:
         free(domain_array)

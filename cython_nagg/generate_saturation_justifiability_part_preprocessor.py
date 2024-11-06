@@ -1,4 +1,5 @@
 
+import os
 import sys
 
 from heuristic_splitter.program_structures.rule import Rule
@@ -8,13 +9,15 @@ from cython_nagg.cython.generate_function_combination_part import generate_funct
 from cython_nagg.cython.generate_comparison_combination_part import generate_comparison_combinations_caller
 from cython_nagg.cython.generate_saturation_justification_helper_variables_part import generate_saturation_justification_helper_variables_caller
 
+from cython_nagg.cython.cython_helpers import print_to_fd
 
 class GenerateSaturationJustifiabilityPartPreprocessor:
 
-    def __init__(self, domain : DomainInferer, custom_printer, nagg_call_number = 0):
+    def __init__(self, domain : DomainInferer, nagg_call_number = 0, output_fd = sys.stdout.fileno()):
 
         self.domain = domain
-        self.custom_printer = custom_printer
+
+        self.output_fd = output_fd
 
         self.nagg_call_number = nagg_call_number
 
@@ -219,7 +222,7 @@ class GenerateSaturationJustifiabilityPartPreprocessor:
                     full_string_template += ":-" + ",".join(variable_strings) + "," + atom_string_template + ".\n"
 
                     if self.function_string in literal:
-                        generate_function_combinations_caller(full_string_template, variable_domain_lists)
+                        generate_function_combinations_caller(full_string_template, variable_domain_lists, os.dup(self.output_fd))
 
                     elif self.comparison_string in literal:
                         comparison_operator = literal[self.comparison_string].operator
@@ -229,24 +232,18 @@ class GenerateSaturationJustifiabilityPartPreprocessor:
 
                         generate_comparison_combinations_caller(
                             full_string_template, full_string_template_reduced,
-                            variable_domain_lists, comparison_operator, is_simple_comparison, signum
+                            variable_domain_lists, comparison_operator, is_simple_comparison, signum, os.dup(self.output_fd)
                         )
 
                 elif literal.signum > 0:
                     # If domain is empty then is surely satisfied (and in B_r^+)
-                    full_string_template += "."
-                    if self.custom_printer is not None:
-                        self.custom_printer.custom_print(full_string_template)
-                    else:
-                        print(full_string_template)
+                    full_string_template += ".\n"
+                    print_to_fd(os.dup(self.output_fd), full_string_template.encode("ascii"))
             else:
                 # 0-Ary atom:
                 full_string_template += ":-" +  atom_string_template + ".\n"
 
-                if self.custom_printer is not None:
-                    self.custom_printer.custom_print(full_string_template)
-                else:
-                    print(full_string_template)
+                print_to_fd(os.dup(self.output_fd), full_string_template.encode("ascii"))
 
             literal_index += 1
 
@@ -266,19 +263,14 @@ class GenerateSaturationJustifiabilityPartPreprocessor:
                 saturation_string_list.append(cur_sat_variable_instantiated)
 
                 saturation_string_2 = cur_sat_variable_instantiated +\
-                    ":-" + self.just_atom_string.format(nagg_call_number=self.nagg_call_number) + "."
+                    ":-" + self.just_atom_string.format(nagg_call_number=self.nagg_call_number) + ".\n"
 
-                if self.custom_printer is not None:
-                    self.custom_printer.custom_print(saturation_string_2)
-                else:
-                    print(saturation_string_2)
+                print_to_fd(os.dup(self.output_fd), saturation_string_2.encode("ascii"))
 
             if len(saturation_string_list) > 0:
                 saturation_string = "|".join(saturation_string_list) + "."
-                if self.custom_printer is not None:
-                    self.custom_printer.custom_print(saturation_string)
-                else:
-                    print(saturation_string)
+                
+                print_to_fd(os.dup(self.output_fd), saturation_string.encode("ascii"))
 
         # OTHER VARIABLES:
         for variable in variable_domain:
@@ -332,24 +324,15 @@ class GenerateSaturationJustifiabilityPartPreprocessor:
             else:
                 guess_rule_end_instantiated = "}1.\n"
 
-            generate_saturation_justification_helper_variables_caller(guess_rule_start, guess_rule_choice_template, guess_rule_end_instantiated, variable_domain_lists)
+            generate_saturation_justification_helper_variables_caller(guess_rule_start, guess_rule_choice_template, guess_rule_end_instantiated, variable_domain_lists, os.dup(self.output_fd))
 
             abstract_rule_template = cur_just_atom_variable_string_instantiated + ":-" + cur_just_atom_variable_string_helper_instantiated + ".\n"
 
-            sys.stdout.flush()
-
-            generate_function_combinations_caller(abstract_rule_template, variable_domain_lists)
-
-            sys.stdout.flush()
+            generate_function_combinations_caller(abstract_rule_template, variable_domain_lists, os.dup(self.output_fd))
 
 
         sys.stdout.flush()
         justifiability_rule = head_literal_template + ":-" +  ",".join(literal_templates) + "."
 
-        if self.custom_printer is not None:
-            self.custom_printer.custom_print(justifiability_rule)
-        else:
-            print(justifiability_rule)
-
-        sys.stdout.flush()
+        print_to_fd(os.dup(self.output_fd), justifiability_rule.encode("ascii"))
 
