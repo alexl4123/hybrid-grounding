@@ -186,7 +186,10 @@ class GenerateSatisfiabilityPartPreprocessor:
                     # Everything except the atom at the end
                     full_string_template_reduced = full_string_template + ":-" + ",".join(variable_strings) + ".\n"
                     # Everything 
-                    full_string_template += ":-" + ",".join(variable_strings) + "," + atom_string_template + ".\n"
+                    if len(variable_strings) > 0:
+                        full_string_template += ":-" + ",".join(variable_strings) + "," + atom_string_template + ".\n"
+                    else:
+                        full_string_template += ":-" + atom_string_template + ".\n"
 
                     if "FUNCTION" in literal:
                         generate_function_combinations_caller(full_string_template, variable_domain_lists, output_fd =  os.dup(self.output_fd))

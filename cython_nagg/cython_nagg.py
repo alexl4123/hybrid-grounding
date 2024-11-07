@@ -48,7 +48,7 @@ class CythonNagg:
 
         for rule in rules:
 
-            variable_domain, head_variables = self.get_variable_domain(rule, self.domain.domain_dictionary)
+            variable_domain, head_variables, variable_domain_including_sub_functions = self.get_variable_domain(rule, self.domain.domain_dictionary)
 
             satisfiability.generate_satisfiability_part(rule, variable_domain, rule_number)
 
@@ -57,7 +57,7 @@ class CythonNagg:
                 rule_number = rule_number))
 
             if rule.is_constraint is False:
-                head_guesses.generate_head_guesses_part(rule, variable_domain, rule_number, head_variables)
+                head_guesses.generate_head_guesses_part(rule, variable_domain, rule_number, head_variables, variable_domain_including_sub_functions)
 
                 justifiability.generate_saturation_justifiability_part(rule, variable_domain, rule_number, head_variables)
 
@@ -83,7 +83,31 @@ class CythonNagg:
             print_to_fd(os.dup(self.output_fd), just_constraint.encode("ascii"))
             print_to_fd(os.dup(self.output_fd), just_rule.encode("ascii"))
 
-    def get_variable_domain_helper(self, function, domain_fragment, variable_domain, head_variable_inference = False):
+    def recursive_intersection(self, dict1, dict2):
+
+        return_dict = {}
+
+        for key in dict1:
+
+            if key in dict2 and dict1[key] == True:
+                return_dict[key] = True
+            elif key in dict2: # Is Function
+                if len(dict1[key]) == len(dict2[key]):
+
+                    return_dict[key] = []
+                    for argument_index in range(len(dict1[key].keys())):
+
+                        tmp_dict_1 = dict1[key][argument_index]
+                        tmp_dict_2 = dict2[key][argument_index]
+
+                        tmp_return_dict = self.recursive_intersection(tmp_dict_1, tmp_dict_2)
+                        return_dict[key].append(tmp_return_dict)
+
+        return return_dict
+
+    def get_variable_domain_helper(self, function, domain_fragment, variable_domain,
+        variable_domain_including_sub_functions=None,
+        head_variable_inference = False):
 
         index = 0
         for argument in function.arguments:
@@ -96,6 +120,7 @@ class CythonNagg:
                 if variable not in variable_domain:
                     if head_variable_inference is False:
                         variable_domain[variable] = [key for key in arg_domain_fragment if arg_domain_fragment[key] == True]
+                        variable_domain_including_sub_functions[variable] = arg_domain_fragment
                     else:
                         variable_domain[variable] = True
                 else:
@@ -103,9 +128,20 @@ class CythonNagg:
                         tmp_variable_domain = set([key for key in arg_domain_fragment if arg_domain_fragment[key] == True])
                         variable_domain[variable] = list(set(variable_domain[variable]).intersection(tmp_variable_domain))
 
+                        # No recursive merge, as (correct recursive) merge would be rather expensive:
+                        variable_domain_including_sub_functions[variable] = self.recursive_intersection(arg_domain_fragment, variable_domain_including_sub_functions[variable])
+
             elif self.function_string in argument:
                 child_function = argument[self.function_string]
-                self.get_variable_domain_helper(child_function, domain_fragment[child_function.name], variable_domain)
+                if head_variable_inference is False:
+                    self.get_variable_domain_helper(child_function, domain_fragment[child_function.name], variable_domain,
+                        variable_domain_including_sub_functions=variable_domain_including_sub_functions,
+                        head_variable_inference=head_variable_inference
+                    )
+                else:
+                    self.get_variable_domain_helper(child_function, {}, variable_domain,
+                        head_variable_inference=head_variable_inference
+                    )
             else:
                 # TODO -> Extend for e.g., comparisons, etc.
                 pass
@@ -116,6 +152,9 @@ class CythonNagg:
     def get_variable_domain(self, rule, domain):
 
         variable_domain = {}
+
+        # Also including special sub-dicts for functions:
+        variable_domain_including_sub_functions = {}
         head_variables = {}
 
         for literal in rule.literals:
@@ -124,13 +163,14 @@ class CythonNagg:
                 if literal[self.function_string].in_head is False and literal[self.function_string].signum > 0:
                     # Only for B_r^+ domain inference occurs:
                     self.get_variable_domain_helper(function, domain[function.name]["terms"],
-                        variable_domain, head_variable_inference=False)
+                        variable_domain, variable_domain_including_sub_functions=variable_domain_including_sub_functions,
+                        head_variable_inference=False)
                 elif literal[self.function_string].in_head is True:
                     # For H_r
                     self.get_variable_domain_helper(function, {},
                         head_variables, head_variable_inference=True)
 
 
-        return variable_domain, head_variables
+        return variable_domain, head_variables, variable_domain_including_sub_functions
 
 
