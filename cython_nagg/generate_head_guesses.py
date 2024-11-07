@@ -8,14 +8,13 @@ from heuristic_splitter.domain_inferer import DomainInferer
 
 from cython_nagg.cython.generate_head_guesses_helper_part import generate_head_guesses_caller
 from cython_nagg.cython.generate_function_combination_part import generate_function_combinations_caller
-from cython_nagg.cython.cython_helpers import print_to_fd
+from cython_nagg.cython.cython_helpers import printf_
 
 class GenerateHeadGuesses:
 
-    def __init__(self, domain : DomainInferer, nagg_call_number = 0, output_fd = sys.stdout.fileno()):
+    def __init__(self, domain : DomainInferer, nagg_call_number = 0):
 
 
-        self.output_fd = output_fd
         self.domain = domain
 
         self.nagg_call_number = nagg_call_number
@@ -180,12 +179,12 @@ class GenerateHeadGuesses:
 
                     generate_head_guesses_caller(
                         head_guess_rule_start, head_guess_rule_choice_template,
-                        head_guess_rule_end, variable_domain_lists, os.dup(self.output_fd))
+                        head_guess_rule_end, variable_domain_lists)
 
 
                     head_inference_template = atom_string_template + ":-" + atom_string_template_encapsulated  + ".\n"
 
-                    generate_function_combinations_caller(head_inference_template, variable_domain_lists, os.dup(self.output_fd))
+                    generate_function_combinations_caller(head_inference_template, variable_domain_lists)
 
                 else:
                     # Do nothing if there cannot exist a head!
@@ -197,8 +196,8 @@ class GenerateHeadGuesses:
 
                 head_inference = atom_string_template + ":-" + atom_string_template_encapsulated + "."
 
-                print_to_fd(os.dup(self.output_fd), head_guess.encode("ascii"))
-                print_to_fd(os.dup(self.output_fd), head_inference.encode("ascii"))
+                printf_(head_guess.encode("ascii"))
+                printf_(head_inference.encode("ascii"))
 
             literal_index += 1
 

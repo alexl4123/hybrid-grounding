@@ -3,7 +3,7 @@ import sys
 
 from heuristic_splitter.domain_inferer import DomainInferer
 
-from libc.stdio cimport printf, FILE, fdopen, fprintf, stdout, fflush, fclose
+from libc.stdio cimport printf, FILE, fdopen, stdout, fflush, fclose
 from libc.stdlib cimport malloc, free
 from libc.string cimport strdup, strcpy
 from cython.operator import dereference
@@ -13,8 +13,7 @@ from cython_nagg.cython.cython_helpers cimport convert_to_c_string_list, free_c_
 
 cdef void generate_function_combinations(
     char*** domain_array, int* length_array,
-    int length_of_arrays, char* template_string, char* error_string,
-    FILE* file_stream) noexcept nogil:
+    int length_of_arrays, char* template_string, char* error_string) noexcept nogil:
 
     cdef int* index_array = <int*>malloc(length_of_arrays * sizeof(int))
     cdef bint continue_loop
@@ -28,7 +27,7 @@ cdef void generate_function_combinations(
     while continue_loop is True:
 
         # Print important stuff
-        print_string(domain_array, index_array, length_of_arrays, template_string, error_string, file_stream)
+        print_string(domain_array, index_array, length_of_arrays, template_string, error_string)
 
         overflow = True
         for index in range(length_of_arrays):
@@ -45,18 +44,13 @@ cdef void generate_function_combinations(
             # Only happens at the end, when all have been processed.
             continue_loop = False
 
-def generate_function_combinations_caller(string_template, variable_domain_lists, output_fd = sys.stdout.fileno()):
+def generate_function_combinations_caller(string_template, variable_domain_lists):
 
     cdef int* length_array
     cdef char*** domain_array
     cdef int number_arguments
     cdef int index
 
-
-    # Open the file descriptor as a FILE* stream
-    cdef FILE* file_stream = fdopen(output_fd, "w")
-    if file_stream is NULL:
-        raise ValueError("Could not open file descriptor")
 
     domain_array = <char***>malloc(len(variable_domain_lists) * sizeof(char**))
     length_array = <int*>malloc(len(variable_domain_lists) * sizeof(int)) 
@@ -91,7 +85,7 @@ def generate_function_combinations_caller(string_template, variable_domain_lists
             strcpy(error_string_char, error_string.encode('ascii'))
 
             generate_function_combinations(domain_array, length_array, number_arguments,
-                string_template_char, error_string_char, file_stream)
+                string_template_char, error_string_char)
     else:
         exception_occurred = True
         exception = Exception(f"Memory allocation failed for string template {string_template}")
@@ -105,10 +99,6 @@ def generate_function_combinations_caller(string_template, variable_domain_lists
             exception_occurred = True
             if exception is None:
                 exception = ex
-
-    fflush(file_stream)
-    fclose(file_stream)
-
     try:
         free(domain_array)
     except Exception as ex:

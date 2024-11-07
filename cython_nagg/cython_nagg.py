@@ -11,14 +11,13 @@ from cython_nagg.generate_satisfiability_part_preprocessor import GenerateSatisf
 from cython_nagg.generate_saturation_justifiability_part_preprocessor import GenerateSaturationJustifiabilityPartPreprocessor
 from cython_nagg.generate_head_guesses import GenerateHeadGuesses
 from cython_nagg.generate_justifiability_old_part_preprocessor import GenerateJustifiabilityOldPartPreprocessor
-from cython_nagg.cython.cython_helpers import print_to_fd
+from cython_nagg.cython.cython_helpers import printf_
 
 
 class CythonNagg:
 
     def __init__(self, domain : DomainInferer,
-        nagg_call_number = 0, justifiability_type = JustifiabilityType.UNFOUND,
-        output_fd = sys.stdout.fileno()):
+        nagg_call_number = 0, justifiability_type = JustifiabilityType.UNFOUND):
 
         self.domain = domain
 
@@ -28,23 +27,19 @@ class CythonNagg:
 
         self.justifiability_type = justifiability_type
 
-        self.output_fd = output_fd
-
-
-
     def rewrite_rules(self, rules: [Rule]):
 
         rule_number = 0
         sat_atom_rules_list = []
         just_atom_rules_list = []
 
-        satisfiability = GenerateSatisfiabilityPartPreprocessor(self.domain, self.nagg_call_number, output_fd=self.output_fd)
+        satisfiability = GenerateSatisfiabilityPartPreprocessor(self.domain, self.nagg_call_number)
         if self.justifiability_type == JustifiabilityType.SATURATION:
-            justifiability = GenerateSaturationJustifiabilityPartPreprocessor(self.domain, self.nagg_call_number, output_fd=self.output_fd)
+            justifiability = GenerateSaturationJustifiabilityPartPreprocessor(self.domain, self.nagg_call_number)
         elif self.justifiability_type == JustifiabilityType.UNFOUND:
-            justifiability = GenerateJustifiabilityOldPartPreprocessor(self.domain, self.nagg_call_number, output_fd=self.output_fd)
+            justifiability = GenerateJustifiabilityOldPartPreprocessor(self.domain, self.nagg_call_number)
 
-        head_guesses = GenerateHeadGuesses(self.domain, self.nagg_call_number, output_fd=self.output_fd)
+        head_guesses = GenerateHeadGuesses(self.domain, self.nagg_call_number)
 
         for rule in rules:
 
@@ -72,16 +67,16 @@ class CythonNagg:
         sat_rule = satisfiability.sat_atom_string.format(nagg_call_number=self.nagg_call_number) + ":-" + ",".join(sat_atom_rules_list) + ".\n"
 
 
-        print_to_fd(os.dup(self.output_fd), sat_constraint.encode("ascii"))
-        print_to_fd(os.dup(self.output_fd), sat_rule.encode("ascii"))
+        printf_(sat_constraint.encode("ascii"))
+        printf_(sat_rule.encode("ascii"))
 
         if len(just_atom_rules_list) > 0: # and (implicit) justifiability_type == "SATURATION"
             just_constraint = ":- not " + justifiability.just_atom_string.format(nagg_call_number=self.nagg_call_number) + "."
             just_rule = justifiability.just_atom_string.format(nagg_call_number=self.nagg_call_number) + ":-" + ",".join(just_atom_rules_list) + "."
 
 
-            print_to_fd(os.dup(self.output_fd), just_constraint.encode("ascii"))
-            print_to_fd(os.dup(self.output_fd), just_rule.encode("ascii"))
+            printf_(just_constraint.encode("ascii"))
+            printf_(just_rule.encode("ascii"))
 
     def recursive_intersection(self, dict1, dict2):
 

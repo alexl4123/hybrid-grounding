@@ -3,7 +3,7 @@ import sys
 
 from heuristic_splitter.domain_inferer import DomainInferer
 
-from libc.stdio cimport printf, FILE, fdopen, fprintf, stdout, fflush, fclose
+from libc.stdio cimport printf, FILE, fdopen, stdout, fflush, fclose
 from libc.stdlib cimport malloc, free
 from libc.string cimport strdup, strcpy
 from cython.operator import dereference
@@ -205,9 +205,7 @@ cdef void generate_comparison_combinations(
     char*** domain_array, int* length_array, int length_of_arrays,
     char* template_string, char* template_string_reduced,
     char* error_string, int** string_length_array,
-    int (*comparison_function)(char*, char*, int, int) noexcept nogil, bint is_simple_comparison, int signum,
-    FILE* file_stream
-    ) noexcept nogil:
+    int (*comparison_function)(char*, char*, int, int) noexcept nogil, bint is_simple_comparison, int signum) noexcept nogil:
 
     cdef int* index_array = <int*>malloc(length_of_arrays * sizeof(int))
     cdef bint continue_loop
@@ -230,11 +228,11 @@ cdef void generate_comparison_combinations(
 
             if value == 0:
                 # Ground fully
-                print_string(domain_array, index_array, length_of_arrays, template_string, error_string, file_stream)
+                print_string(domain_array, index_array, length_of_arrays, template_string, error_string)
 
             elif value == 1 and signum > 0:
                 # ..., 1 != 1 -> Remove last part
-                print_string(domain_array, index_array, length_of_arrays, template_string_reduced, error_string, file_stream)
+                print_string(domain_array, index_array, length_of_arrays, template_string_reduced, error_string)
 
             elif value == 1 and signum < 0:
                 # ..., not 1 = 1 -> Do not print rule!
@@ -246,10 +244,10 @@ cdef void generate_comparison_combinations(
 
             elif value == -1 and signum < 0:
                 # ..., not 1 != 1 -> Remove last part
-                print_string(domain_array, index_array, length_of_arrays, template_string_reduced, error_string, file_stream)
+                print_string(domain_array, index_array, length_of_arrays, template_string_reduced, error_string)
 
         else:
-            print_string(domain_array, index_array, length_of_arrays, template_string, error_string, file_stream)
+            print_string(domain_array, index_array, length_of_arrays, template_string, error_string)
 
         overflow = True
         for index in range(length_of_arrays):
@@ -271,14 +269,8 @@ cdef void generate_comparison_combinations(
 def generate_comparison_combinations_caller(
     string_template, string_template_reduced,
     variable_domain_lists, comparison_operator_string,
-    is_simple_comparison_, signum_, output_fd = sys.stdout.fileno(),
-    ):
+    is_simple_comparison_, signum_):
 
-    # Open the file descriptor as a FILE* stream
-    cdef FILE* file_stream = fdopen(output_fd, "w")
-    if file_stream is NULL:
-        raise ValueError("Could not open file descriptor")
- 
     # Keeps track of how many domain values there are per list:
     cdef int* length_array
     # The domain values
@@ -361,7 +353,6 @@ def generate_comparison_combinations_caller(
                 domain_array, length_array, number_arguments,
                 string_template_char, string_template_char_reduced, error_string_char,
                 string_length_array, comparison_function, is_simple_comparison, signum,
-                file_stream
                 )
     else:
         exception_occurred = True
@@ -385,9 +376,6 @@ def generate_comparison_combinations_caller(
             exception_occurred = True
             if exception is None:
                 exception = ex
-
-    fflush(file_stream)
-    fclose(file_stream)
 
     try:
         free(domain_array)

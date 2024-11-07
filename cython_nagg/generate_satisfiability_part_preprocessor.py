@@ -7,11 +7,11 @@ from heuristic_splitter.domain_inferer import DomainInferer
 
 from cython_nagg.cython.generate_function_combination_part import generate_function_combinations_caller
 from cython_nagg.cython.generate_comparison_combination_part import generate_comparison_combinations_caller
-from cython_nagg.cython.cython_helpers import print_to_fd
+from cython_nagg.cython.cython_helpers import printf_
 
 class GenerateSatisfiabilityPartPreprocessor:
 
-    def __init__(self, domain : DomainInferer, nagg_call_number = 0, output_fd = sys.stdout.fileno()):
+    def __init__(self, domain : DomainInferer, nagg_call_number = 0):
 
         self.domain = domain
 
@@ -22,9 +22,6 @@ class GenerateSatisfiabilityPartPreprocessor:
         self.sat_atom_string = "sat_{nagg_call_number}"
         self.sat_atom_rule_string = "sat_{nagg_call_number}_{rule_number}"
         self.sat_atom_variable_string = "sat_{nagg_call_number}_{rule_number}_{variable}({cython_variable_identifier})"
-
-        self.output_fd = output_fd
-
 
     def get_string_template_helper(self, argument, string_template, variable_index_dict, variable_index_value):
 
@@ -192,7 +189,7 @@ class GenerateSatisfiabilityPartPreprocessor:
                         full_string_template += ":-" + atom_string_template + ".\n"
 
                     if "FUNCTION" in literal:
-                        generate_function_combinations_caller(full_string_template, variable_domain_lists, output_fd =  os.dup(self.output_fd))
+                        generate_function_combinations_caller(full_string_template, variable_domain_lists)
                     elif "COMPARISON" in literal:
                         comparison_operator = literal["COMPARISON"].operator
                         is_simple_comparison = literal["COMPARISON"].is_simple_comparison
@@ -201,18 +198,18 @@ class GenerateSatisfiabilityPartPreprocessor:
 
                         generate_comparison_combinations_caller(
                             full_string_template, full_string_template_reduced,
-                            variable_domain_lists, comparison_operator, is_simple_comparison, signum, output_fd =  os.dup(self.output_fd))
+                            variable_domain_lists, comparison_operator, is_simple_comparison, signum)
 
                 elif self.function_string in literal and literal[self.function_string].signum > 0:
                     # If domain is empty then is surely satisfied (and in B_r^+)
                     full_string_template += ".\n"
-                    print_to_fd(os.dup(self.output_fd), full_string_template.encode("ascii"))
+                    printf_(full_string_template.encode("ascii"))
             else:
                 # 0-Ary atom:
                 full_string_template += ":-" +  atom_string_template + ".\n"
 
                 full_string_template = "\n" + full_string_template
-                print_to_fd(os.dup(self.output_fd), full_string_template.encode("ascii"))
+                printf_(full_string_template.encode("ascii"))
 
         for variable in variable_domain:
             saturation_string_list = []
@@ -230,9 +227,9 @@ class GenerateSatisfiabilityPartPreprocessor:
                 saturation_string_2 = cur_sat_variable_instantiated +\
                     ":-" + self.sat_atom_string.format(nagg_call_number=self.nagg_call_number) + ".\n"
 
-                print_to_fd(os.dup(self.output_fd), saturation_string_2.encode("ascii"))
+                printf_(saturation_string_2.encode("ascii"))
 
             if len(saturation_string_list) > 0:
                 saturation_string = "|".join(saturation_string_list) + ".\n"
-                print_to_fd(os.dup(self.output_fd), saturation_string.encode("ascii"))
+                printf_(saturation_string.encode("ascii"))
     

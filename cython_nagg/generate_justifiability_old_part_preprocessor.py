@@ -8,15 +8,13 @@ from heuristic_splitter.domain_inferer import DomainInferer
 from cython_nagg.cython.generate_function_combination_part import generate_function_combinations_caller
 from cython_nagg.cython.generate_comparison_combination_part import generate_comparison_combinations_caller
 from cython_nagg.cython.generate_saturation_justification_helper_variables_part import generate_saturation_justification_helper_variables_caller
-from cython_nagg.cython.cython_helpers import print_to_fd
+from cython_nagg.cython.cython_helpers import printf_
 
 class GenerateJustifiabilityOldPartPreprocessor:
 
-    def __init__(self, domain : DomainInferer, nagg_call_number = 0, output_fd = sys.stdout.fileno()):
+    def __init__(self, domain : DomainInferer, nagg_call_number = 0):
 
         self.domain = domain
-
-        self.output_fd = output_fd
 
         self.nagg_call_number = nagg_call_number
 
@@ -328,7 +326,7 @@ class GenerateJustifiabilityOldPartPreprocessor:
                         full_string_template = just_atom_rule_instantiated + ":-" + atom_string_template + ".\n"
 
                     if "FUNCTION" in literal:
-                        generate_function_combinations_caller(full_string_template, variable_domain_lists, os.dup(self.output_fd))
+                        generate_function_combinations_caller(full_string_template, variable_domain_lists)
                     elif "COMPARISON" in literal:
                         comparison_operator = literal["COMPARISON"].operator
                         is_simple_comparison = literal["COMPARISON"].is_simple_comparison
@@ -338,12 +336,12 @@ class GenerateJustifiabilityOldPartPreprocessor:
 
                         generate_comparison_combinations_caller(
                             full_string_template, full_string_template_reduced,
-                            variable_domain_lists, comparison_operator, is_simple_comparison, signum, os.dup(self.output_fd))
+                            variable_domain_lists, comparison_operator, is_simple_comparison, signum)
 
                 elif self.function_string in literal and literal[self.function_string].signum > 0:
                     # If domain is empty then is surely satisfied (and in B_r^+)
                     full_string_template = just_atom_rule_instantiated + ".\n"
-                    print_to_fd(os.dup(self.output_fd), full_string_template.encode("ascii"))
+                    printf_(full_string_template.encode("ascii"))
             else:
                 # 0-Ary atom:
 
@@ -355,7 +353,7 @@ class GenerateJustifiabilityOldPartPreprocessor:
                 )
                 full_string_template = just_atom_rule_instantiated + ":-" +  atom_string_template + ".\n"
                
-                print_to_fd(os.dup(self.output_fd), full_string_template.encode("ascii"))
+                printf_(full_string_template.encode("ascii"))
 
 
         # Print not being unfounded rules:

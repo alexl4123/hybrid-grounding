@@ -6,6 +6,8 @@ import os
 import subprocess
 import gc
 
+import tempfile
+
 from clingo.ast import ProgramBuilder, parse_string
 
 from heuristic_splitter.graph_data_structure import GraphDataStructure
@@ -36,6 +38,14 @@ from heuristic_splitter.program.smodels_asp_program import SmodelsASPProgram
 
 from cython_nagg.cython_nagg import CythonNagg
 from cython_nagg.justifiability_type import JustifiabilityType
+
+from ctypes import *
+so_file = "./heuristic_splitter/c_output_redirector.so"
+
+# C-Struct (return value)
+class PipeFds(Structure):
+    _fields_ = [("read_end", c_int), ("write_end", c_int)]
+
 
 class CustomOutputPrinter(DefaultOutputPrinter):
 
@@ -113,6 +123,10 @@ class GroundingStrategyHandler:
 
     def ground(self):
 
+        c_output_redirector = CDLL(so_file)
+        # Set the return type of open_pipe to our struct
+        c_output_redirector.open_pipe.restype = PipeFds
+
         if self.enable_logging is True:
             self.logging_file.write("-------------------------------------------------------\n")
             self.logging_file.write("The following is the final grounding strategy:\n")
@@ -188,27 +202,35 @@ class GroundingStrategyHandler:
 
                     start_time = time.time()
 
-                    # Create pipe for input-output:
-                    read_from_pipe, write_to_pipe = os.pipe()
+                    # Create a tmpfile for stdout redirect.
+                    fd, path = tempfile.mkstemp()
 
-                    cython_nagg = CythonNagg(domain_transformer,
-                        nagg_call_number=self.total_nagg_calls, justifiability_type=JustifiabilityType.SATURATION,
-                        output_fd=write_to_pipe)
-                    cython_nagg.rewrite_rules(input_rules)
-                    end_time = time.time()
+                    try:
+                        stdout_backup = c_output_redirector.redirect_stdout_to_fd_and_duplicate_and_close(fd)
 
-                    os.close(write_to_pipe)
-                    f = os.fdopen(read_from_pipe)
-                    f.flush()
-                    #print(f"---> TOTAL CALLS: {self.total_nagg_calls}")
-                    #print(f"---> RULES: {','.join([str(rule) for rule in input_rules])}")
-                    output = f.read()
-                    f.close() # Should close read_from_pipe as well!
-                    #os.close(read_from_pipe)
+                        cython_nagg = CythonNagg(domain_transformer,
+                            nagg_call_number=self.total_nagg_calls, justifiability_type=JustifiabilityType.SATURATION)
+                        cython_nagg.rewrite_rules(input_rules)
+                        end_time = time.time()
 
-                    #print(output)
+                        c_output_redirector.call_flush()
+                        pipe_write_backup = c_output_redirector.redirect_stdout_to_fd_and_duplicate_and_close(stdout_backup)
 
-                    self.grounded_program.add_string(output)
+                        os.close(pipe_write_backup)
+                        f = open(path, "r")
+                        output = f.read()
+
+                        f.close()
+
+                        self.grounded_program.add_string(output)
+
+                    except Exception as ex:
+
+                        print(ex)
+                        raise ex
+
+                    finally:
+                        os.remove(path)
 
                     if self.enable_logging is True:
                         print(f"---> TIME DURATION CYTHON NAGG NEW: {end_time - start_time}", file=sys.stderr)
@@ -230,21 +252,36 @@ class GroundingStrategyHandler:
 
                     start_time = time.time()
 
-                    # Create pipe for input-output:
-                    read_from_pipe, write_to_pipe = os.pipe()
+                    # Create a tmpfile for stdout redirect.
+                    fd, path = tempfile.mkstemp()
 
-                    cython_nagg = CythonNagg(domain_transformer,
-                        nagg_call_number=self.total_nagg_calls, justifiability_type=JustifiabilityType.UNFOUND,
-                        output_fd=write_to_pipe)
-                    cython_nagg.rewrite_rules(input_rules)
-                    end_time = time.time()
+                    try:
+                        stdout_backup = c_output_redirector.redirect_stdout_to_fd_and_duplicate_and_close(fd)
 
-                    os.close(write_to_pipe)
-                    f = os.fdopen(read_from_pipe)
-                    output = f.read()
-                    os.close(read_from_pipe)
-                    
-                    self.grounded_program.add_string(output)
+                        cython_nagg = CythonNagg(domain_transformer,
+                            nagg_call_number=self.total_nagg_calls, justifiability_type=JustifiabilityType.UNFOUND)
+                        cython_nagg.rewrite_rules(input_rules)
+                        end_time = time.time()
+
+                        c_output_redirector.call_flush()
+                        pipe_write_backup = c_output_redirector.redirect_stdout_to_fd_and_duplicate_and_close(stdout_backup)
+
+                        os.close(pipe_write_backup)
+                        f = open(path, "r")
+                        output = f.read()
+
+                        f.close()
+
+                        self.grounded_program.add_string(output)
+
+                    except Exception as ex:
+
+                        print(ex)
+                        raise ex
+
+                    finally:
+                        os.remove(path)
+
 
 
 
