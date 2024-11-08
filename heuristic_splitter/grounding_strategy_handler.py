@@ -15,7 +15,10 @@ from heuristic_splitter.graph_data_structure import GraphDataStructure
 from heuristic_splitter.grounding_strategy_generator import GroundingStrategyGenerator
 from heuristic_splitter.domain_transformer import DomainTransformer
 
-from heuristic_splitter.grounding_approximation.approximate_generated_sota_rules_transformer import ApproximateGeneratedSotaRulesTransformer
+from heuristic_splitter.grounding_approximation.approximate_generated_sota_rules import ApproximateGeneratedSotaRules
+from heuristic_splitter.grounding_approximation.approximate_generated_bdg_rules import ApproximateGeneratedBDGRules
+
+#from heuristic_splitter.grounding_approximation.approximate_generated_sota_rules_transformer import ApproximateGeneratedSotaRulesTransformer
 from heuristic_splitter.grounding_approximation.approximate_generated_bdg_rules_transformer import ApproximateGeneratedBDGRulesTransformer
 from heuristic_splitter.grounding_approximation.variable_domain_inference_transformer import VariableDomainInferenceTransformer
 
@@ -170,7 +173,8 @@ class GroundingStrategyHandler:
 
                     if rule.in_program_rules is True:
                         # TDB -> TODO
-                        tmp_bdg_new_found_rules.append(bdg_rule)
+                        #tmp_bdg_new_found_rules.append(bdg_rule)
+                        tmp_bdg_old_found_rules.append(bdg_rule)
                     else:
                         approx_number_rules, used_method, rule_str = self.get_best_method_by_approximated_rule_count(domain_transformer, rule)
 
@@ -358,23 +362,13 @@ class GroundingStrategyHandler:
         Calls those methods that approximate the number of instantiated rules.
         """
 
-        approximate_sota_rules_transformer = ApproximateGeneratedSotaRulesTransformer(domain_transformer)
-        parse_string(str_rule, lambda stm: approximate_sota_rules_transformer(stm))
-        
-        approximated_sota_rule_instantiations = approximate_sota_rules_transformer.rule_tuples
+        approximate_sota_rules = ApproximateGeneratedSotaRules(domain_transformer, rule)
+       
+        approximated_sota_rule_instantiations = approximate_sota_rules.approximate_sota_size()
         methods_approximations.append((approximated_sota_rule_instantiations, "SOTA", str_rule))
-        
-        variable_domains_transformer = VariableDomainInferenceTransformer(domain_transformer)
-        parse_string(str_rule, lambda stm: variable_domains_transformer(stm))
-        
-        variable_domains = variable_domains_transformer.variable_domains
-        head_variables = variable_domains_transformer.head_variables
-        
-        approximate_bdg_rules_transformer = ApproximateGeneratedBDGRulesTransformer(domain_transformer, variable_domains, rule, head_variables, self.graph_ds, self.rule_dictionary)
-        parse_string(str_rule, lambda stm: approximate_bdg_rules_transformer(stm))
-        
-        approximated_bdg_old_rule_instantiations = approximate_bdg_rules_transformer.bdg_rules_old
-        approximated_bdg_new_rule_instantiations = approximate_bdg_rules_transformer.bdg_rules_new
+
+        approximated_bdg_rules = ApproximateGeneratedBDGRules(domain_transformer, rule, self.graph_ds)
+        approximated_bdg_new_rule_instantiations, approximated_bdg_old_rule_instantiations = approximated_bdg_rules.approximate_bdg_sizes()
 
         methods_approximations.append((approximated_bdg_old_rule_instantiations, "BDG_OLD", str_rule))
         methods_approximations.append((approximated_bdg_new_rule_instantiations, "BDG_NEW", str_rule))

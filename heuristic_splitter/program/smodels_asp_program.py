@@ -63,8 +63,12 @@ class SmodelsASPProgram(ASPProgram):
         self.program = rules
         self.literals_dict = literals_dict
 
-        domain_inferer.domain_dictionary = domain_inferer.domain_dictionary | domain_dictionary
-        domain_inferer.total_domain = domain_inferer.total_domain | total_domain
+        for literal_name in domain_dictionary:
+            if literal_name not in domain_inferer.processed_literals:
+                domain_inferer.domain_dictionary[literal_name] = domain_dictionary[literal_name]
+
+        #domain_inferer.domain_dictionary = domain_inferer.domain_dictionary | domain_dictionary
+        domain_inferer.total_domain.update(total_domain)
 
         domain_inferer.infer_processed_literals()
         domain_inferer.compute_domain_average()

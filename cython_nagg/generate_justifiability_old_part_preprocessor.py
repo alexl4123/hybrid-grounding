@@ -147,7 +147,7 @@ class GenerateJustifiabilityOldPartPreprocessor:
 
         return variable_index_dict, string_template
 
-    def generate_saturation_justifiability_part(self, rule: Rule, variable_domain, rule_number, head_variables):
+    def generate_justifiability_part(self, rule: Rule, variable_domain, rule_number, head_variables):
 
         head_literal = None
         for literal in rule.literals:
@@ -321,9 +321,12 @@ class GenerateJustifiabilityOldPartPreprocessor:
                     # Everything 
                     if len(variable_strings) > 0:
                         full_string_template = just_atom_rule_instantiated + ":-" + ",".join(variable_strings) + "," + atom_string_template + ".\n"
+                        full_string_template_reduced = just_atom_rule_instantiated + ":-" + ",".join(variable_strings) + ".\n"
+
                     else:
                         # When all variables are in the head.
                         full_string_template = just_atom_rule_instantiated + ":-" + atom_string_template + ".\n"
+                        full_string_template_reduced = just_atom_rule_instantiated + ".\n"
 
                     if "FUNCTION" in literal:
                         generate_function_combinations_caller(full_string_template, variable_domain_lists)

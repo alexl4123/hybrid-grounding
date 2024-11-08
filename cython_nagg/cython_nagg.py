@@ -54,7 +54,7 @@ class CythonNagg:
             if rule.is_constraint is False:
                 head_guesses.generate_head_guesses_part(rule, variable_domain, rule_number, head_variables, variable_domain_including_sub_functions)
 
-                justifiability.generate_saturation_justifiability_part(rule, variable_domain, rule_number, head_variables)
+                justifiability.generate_justifiability_part(rule, variable_domain, rule_number, head_variables)
 
                 if self.justifiability_type == JustifiabilityType.SATURATION:
                     just_atom_rules_list.append(justifiability.just_atom_rule_string.format(
@@ -108,6 +108,10 @@ class CythonNagg:
         for argument in function.arguments:
 
             if head_variable_inference is False:
+                if index >= len(domain_fragment):
+                    # Happens for empty domain for example:
+                    domain_fragment.append({})
+
                 arg_domain_fragment = domain_fragment[index]
 
             if "VARIABLE" in argument:
@@ -129,7 +133,12 @@ class CythonNagg:
             elif self.function_string in argument:
                 child_function = argument[self.function_string]
                 if head_variable_inference is False:
-                    self.get_variable_domain_helper(child_function, domain_fragment[child_function.name], variable_domain,
+                    if child_function.name in domain_fragment:
+                        tmp_domain = domain_fragment[child_function.name]
+                    else:
+                        tmp_domain = []
+
+                    self.get_variable_domain_helper(child_function, tmp_domain, variable_domain,
                         variable_domain_including_sub_functions=variable_domain_including_sub_functions,
                         head_variable_inference=head_variable_inference
                     )
@@ -157,7 +166,17 @@ class CythonNagg:
                 function = literal[self.function_string]
                 if literal[self.function_string].in_head is False and literal[self.function_string].signum > 0:
                     # Only for B_r^+ domain inference occurs:
-                    self.get_variable_domain_helper(function, domain[function.name]["terms"],
+                    if function.name in domain and "terms" in domain[function.name]:
+                        terms_domain = domain[function.name]["terms"]
+                    elif rule.is_tight is True:
+                        terms_domain = []
+                    elif rule.is_tight is False:
+                        # Approximate the domain
+                        print("TODO -> Approx domain!")
+                        raise NotImplementedError("TODO -> Approx. domain!")
+                        pass
+
+                    self.get_variable_domain_helper(function, terms_domain,
                         variable_domain, variable_domain_including_sub_functions=variable_domain_including_sub_functions,
                         head_variable_inference=False)
                 elif literal[self.function_string].in_head is True:

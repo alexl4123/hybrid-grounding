@@ -40,6 +40,8 @@ class ApproximateGeneratedSotaRulesTransformer(Transformer):
         self.current_function_position = 0
         self.current_function = None
 
+        self.current_function_position_stack = []
+
     def visit_Rule(self, node):
         """
         Visits an clingo-AST rule.
@@ -60,9 +62,11 @@ class ApproximateGeneratedSotaRulesTransformer(Transformer):
         """
         Visits an clingo-AST function.
         """
-        self.current_function = node
 
         if self.in_body and self.node_signum > 0:
+
+            self.current_function_position_stack.append([node,0])
+
             # Only consider body stuff
             # For the "b" and "c" in a :- b, not c.
             # For the "e" in {a:b;c:d} :- e.
@@ -76,7 +80,8 @@ class ApproximateGeneratedSotaRulesTransformer(Transformer):
                 average_tuples = self.domain_transformer.domain_dictionary["_average_domain_tuples"]
                 total_domain = len(self.domain_transformer.total_domain.keys())
 
-                arity = len(str(self.current_function.name).split(","))
+                arity = self.current_function_position_stack[-1][1]
+                #arity = len(str(node.name).split(","))
 
                 combinations = 1
                 for _ in range(arity):
@@ -132,8 +137,39 @@ class ApproximateGeneratedSotaRulesTransformer(Transformer):
             # Multiplicative addition of new-tuples:
             self.rule_tuples = new_tuples
 
+            self.current_function_position_stack.pop()
+
         self._reset_temporary_function_variables()
         return node
+
+    def get_current_domain_size(self):
+        #self.domain_transformer.domain_dictionary[current_function.name]["terms_size"][self.current_function_position]
+
+        # Top level function:
+        top_level_function = (self.current_function_position_stack[0][0]).name
+        top_level_position = self.current_function_position_stack[0][1]
+
+        tmp_dict = self.domain_transformer.domain_dictionary[top_level_function]["terms"][top_level_position]
+
+        if len(self.current_function_position_stack) > 1:
+
+            for function_stack_index in range(1, len(self.current_function_position_stack)):
+                # Tmp variables:
+                tmp_function = (self.current_function_position_stack[function_stack_index][0]).name
+                tmp_position = self.current_function_position_stack[function_stack_index][1]
+
+                tmp_dict = tm_dict[tmp_function][tmp_position]
+
+            current_domain_size = 0
+            for key in tmp_dict.keys():
+                if tmp_dict[key] is True:
+                    current_domain_size += 1
+
+        else:
+            current_domain_size = self.domain_transformer.domain_dictionary[top_level_function]["terms_size"][top_level_position]
+
+        return current_domain_size
+
 
     def visit_Variable(self, node):
         """
@@ -143,17 +179,24 @@ class ApproximateGeneratedSotaRulesTransformer(Transformer):
 
         self.visit_children(node)
 
-        if self.current_function is not None:
-            if self.current_function is not None and self.current_function.name in self.domain_transformer.domain_dictionary:
+        if len(self.current_function_position_stack) > 0:
+            # Implicitly in body
+            current_function = self.current_function_position_stack[-1][0]
+
+            if current_function is not None and current_function.name in self.domain_transformer.domain_dictionary:
+
+                variable_domain_size = self.get_current_domain_size()
+
                 if node.name not in self.variable_domains_in_function:
-                    self.variable_domains_in_function[node.name] = self.domain_transformer.domain_dictionary[self.current_function.name]["terms_size"][self.current_function_position]
-                elif self.variable_domains_in_function[node.name] > self.domain_transformer.domain_dictionary[self.current_function.name]["terms_size"][self.current_function_position]:
-                    self.variable_domains_in_function[node.name] = self.domain_transformer.domain_dictionary[self.current_function.name]["terms_size"][self.current_function_position]
+                    self.variable_domains_in_function[node.name] = variable_domain_size
+                elif self.variable_domains_in_function[node.name] > variable_domain_size:
+                    self.variable_domains_in_function[node.name] = variable_domain_size 
             else:  
                 total_domain = len(self.domain_transformer.total_domain.keys())
                 self.variable_domains_in_function[node.name] = total_domain 
 
-            self.current_function_position += 1
+            self.current_function_position_stack[-1][1] += 1
+            #self.current_function_position += 1
 
         return node
 
@@ -162,16 +205,20 @@ class ApproximateGeneratedSotaRulesTransformer(Transformer):
         Visits an clingo-AST symbolic term (constant).
         """
         if self.current_function:
-            self.symbolic_term_positions_in_function.append(self.current_function_position) 
 
-            self.current_function_position += 1
+            self.symbolic_term_positions_in_function.append(self.current_function_position_stack[-1][1]) 
+
+            self.current_function_position_stack[-1][1] += 1
 
         return node
 
     def visit_Comparison(self, node):
 
+        self.current_function_position_stack.append([node, 0])
 
         self.visit_children(node)
+
+        self.current_function_position_stack.pop()
 
         return node
 

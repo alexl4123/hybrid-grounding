@@ -13,7 +13,7 @@ class Heuristic0(HeuristicInterface):
             variable_graph : VariableGraphDataStructure, stratified_variables,
             graph_ds : GraphDataStructure,
             head_atoms_scc_membership, body_atoms_scc_membership,
-            maximum_rule_arity, is_constraint,
+            maximum_variables_in_literal, is_constraint,
             has_aggregate,
             rule_position,
             all_positive_function_variables,
@@ -30,8 +30,11 @@ class Heuristic0(HeuristicInterface):
 
         is_tight = len([True for head_key in head_atoms_scc_membership.keys() if head_key in body_atoms_scc_membership]) == 0
 
-        if self.rule_dictionary[rule_position].in_program_rules is True:
-            # If user specifies grounded by BDG, then ground by BDG
+        can_handle_rule = is_tight is True and has_aggregate is False and in_minimize_statement is False and all_comparison_variables_safe_by_predicate is True
+
+        if self.rule_dictionary[rule_position].in_program_rules is True and can_handle_rule is True and body_is_stratified is False:
+            # If user specifies grounded by BDG, then ground by BDG (if possible in theory)
+            # If stratified -> Never use bdg
             bdg_rules[rule_position] = True
         elif body_is_stratified is True and has_aggregate is False:
             # If stratified then ground at first
@@ -63,15 +66,15 @@ class Heuristic0(HeuristicInterface):
                 raise NotImplementedError()
             
 
-            if is_constraint is True and tw_effective > maximum_rule_arity and all_comparison_variables_safe_by_predicate is True:
+            if is_constraint is True and tw_effective > maximum_variables_in_literal and all_comparison_variables_safe_by_predicate is True:
                 #bdg_rules.append(rule_position)
                 bdg_rules[rule_position] = True
 
-            elif is_tight is True and tw_effective > maximum_rule_arity * 2 and all_comparison_variables_safe_by_predicate is True:
+            elif is_tight is True and tw_effective > maximum_variables_in_literal * 2 and all_comparison_variables_safe_by_predicate is True:
                 #bdg_rules.append(rule_position)
                 bdg_rules[rule_position] = True
             
-            elif is_tight is False and tw_effective > maximum_rule_arity * 3 and all_comparison_variables_safe_by_predicate is True:
+            elif is_tight is False and tw_effective > maximum_variables_in_literal * 3 and all_comparison_variables_safe_by_predicate is True:
                 #bdg_rules.append(rule_position)
                 bdg_rules[rule_position] = True
 

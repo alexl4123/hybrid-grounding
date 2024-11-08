@@ -103,7 +103,7 @@ class HeuristicSplitter:
                 raise NotImplementedError()
 
             heuristic_transformer = HeuristicTransformer(graph_ds, heuristic, bdg_rules,
-                sota_rules, stratified_rules, constraint_rules, all_heads, self.debug_mode)
+                sota_rules, stratified_rules, constraint_rules, all_heads, self.debug_mode, rule_dictionary)
             parse_string(other_rules_string, lambda stm: heuristic_transformer(stm))
 
             generator_grounding_strategy = GroundingStrategyGenerator(graph_ds, bdg_rules, sota_rules,

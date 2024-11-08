@@ -10,6 +10,8 @@ from heuristic_splitter.variable_graph_structure import VariableGraphDataStructu
 from heuristic_splitter.graph_data_structure import GraphDataStructure
 from heuristic_splitter.heuristic import HeuristicInterface
 
+from heuristic_splitter.grounding_approximation.variable_domain_size_inferer import VariableDomainSizeInferer
+
 from nagg.comparison_tools import ComparisonTools
 
 class HeuristicTransformer(Transformer):
@@ -20,7 +22,7 @@ class HeuristicTransformer(Transformer):
 
     def __init__(self, graph_ds: GraphDataStructure, used_heuristic,
             bdg_rules, sota_rules, stratified_rules,
-            constraint_rules, all_heads, debug_mode):
+            constraint_rules, all_heads, debug_mode, rule_dictionary):
 
         self.graph_ds = graph_ds
         self.all_heads = all_heads
@@ -93,6 +95,9 @@ class HeuristicTransformer(Transformer):
         self.all_positive_function_variables = {}
         self.all_comparison_variables = {}
 
+        self.rule_dictionary = rule_dictionary
+        self.function_string = "FUNCTION"
+        self.comparison_string = "COMPARISON"
 
     def visit_Rule(self, node):
         """
@@ -121,10 +126,37 @@ class HeuristicTransformer(Transformer):
             self.in_body = False
 
         try:
+            rule_object = self.rule_dictionary[self.current_rule_position]
+
+            domain_size_inferer = VariableDomainSizeInferer()
+
+            # Better than arity:
+            maximum_variables_in_literal = 0
+
+            for literal in rule_object.literals:
+                if self.function_string in literal:
+                    # FUNCTION
+                    function = literal[self.function_string]
+                    terms_domain = []
+                elif self.comparison_string in literal:
+                    function = literal[self.comparison_string]
+                    terms_domain = []
+                else:
+                    # IF NEITHER FUNCTION NOR COMPARISON CTD.
+                    continue
+
+                function_variables_domain_sizes = {}
+                domain_size_inferer.get_function_domain_size(function, terms_domain, function_variables_domain_sizes)
+
+                number_variables_in_literal = len(list(function_variables_domain_sizes.keys()))
+
+                if number_variables_in_literal > maximum_variables_in_literal:
+                    maximum_variables_in_literal = number_variables_in_literal
+
             self.heuristic.handle_rule(self.bdg_rules, self.sota_rules, self.stratified_rules,
                 self.variable_graph, self.stratified_variables, self.graph_ds,
                 self.head_atoms_scc_membership, self.body_atoms_scc_membership,
-                self.maximum_rule_arity, self.is_constraint,
+                maximum_variables_in_literal, self.is_constraint,
                 self.has_aggregate,
                 self.current_rule_position,
                 self.all_positive_function_variables,
@@ -341,7 +373,7 @@ class HeuristicTransformer(Transformer):
                     self.current_function_variables.append(str(node))
 
                 try:    
-                    if self.node_signum is not None and self.current_function is not None and self.node_signum > 0:
+                    if self.node_signum is not None and self.current_function is not None and self.node_signum > 0 and self.is_comparison is False and self.in_body is True:
                         if str(node) not in self.all_positive_function_variables:
                             self.all_positive_function_variables[str(node)] = True
                 except Exception as ex:

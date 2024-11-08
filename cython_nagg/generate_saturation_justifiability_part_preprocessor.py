@@ -150,7 +150,7 @@ class GenerateSaturationJustifiabilityPartPreprocessor:
 
         return variable_index_dict, string_template
 
-    def generate_saturation_justifiability_part(self, rule: Rule, variable_domain, rule_number, head_variables):
+    def generate_justifiability_part(self, rule: Rule, variable_domain, rule_number, head_variables):
 
         literal_index = 0
 
@@ -236,7 +236,7 @@ class GenerateSaturationJustifiabilityPartPreprocessor:
                             variable_domain_lists, comparison_operator, is_simple_comparison, signum
                         )
 
-                elif literal.signum > 0:
+                elif (self.function_string in literal and literal[self.function_string].signum > 0) or (self.comparison_string in literal and literal[self.comparison_string].signum > 0):
                     # If domain is empty then is surely satisfied (and in B_r^+)
                     full_string_template += ".\n"
                     printf_(full_string_template.encode("ascii"))

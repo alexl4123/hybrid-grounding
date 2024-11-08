@@ -225,6 +225,9 @@ class GroundingStrategyGenerator:
                                 current_sota_grounded_rules.append(rule)
                             elif rule in self.bdg_rules:
                                 current_bdg_grounded_rules.append(rule)
+                            elif rule in self.stratified_rules:
+                                # If stratified -> Already handled
+                                pass
                             else:
                                 print(f"[ERROR] - Cannot associate rules: {rule}")
                                 raise NotImplementedError()
@@ -235,6 +238,9 @@ class GroundingStrategyGenerator:
                                 next_sota_grounded_rules.append(rule)
                             elif rule in self.bdg_rules:
                                 next_bdg_grounded_rules.append(rule)
+                            elif rule in self.stratified_rules:
+                                # If stratified -> Already handled
+                                pass
                             else:
                                 print(f"[ERROR] - Cannot associate rules: {rule}")
                                 raise NotImplementedError()
