@@ -7,13 +7,14 @@ from heuristic_splitter.graph_data_structure import GraphDataStructure
 
 class GroundingStrategyGenerator:
 
-    def __init__(self, graph_ds: GraphDataStructure, bdg_rules, sota_rules, stratified_rules, constraint_rules, rule_dictionary):
+    def __init__(self, graph_ds: GraphDataStructure, bdg_rules, sota_rules, stratified_rules, constraint_rules, lpopt_rules, rule_dictionary):
 
         self.graph_ds = graph_ds
         self.bdg_rules = bdg_rules
         self.sota_rules = sota_rules
         self.stratified_rules = stratified_rules
         self.constraint_rules = constraint_rules
+        self.lpopt_rules = lpopt_rules
         self.rule_dictionary = rule_dictionary
 
     
@@ -33,17 +34,19 @@ class GroundingStrategyGenerator:
         return grounding_strategy_dependencies
 
     def add_grounding_strategy_level(self, grounding_strategy, current_sota_grounded_rules,
-        current_bdg_grounded_rules, grounding_strategy_dependencies):
+        current_bdg_grounded_rules, current_lpopt_grounded_rules, grounding_strategy_dependencies):
 
-        if len(current_sota_grounded_rules) > 0 or len(current_bdg_grounded_rules) > 0:
+        if len(current_sota_grounded_rules) > 0 or len(current_bdg_grounded_rules) > 0 or len(current_lpopt_grounded_rules) > 0:
             grounding_strategy.append({
                 "sota":current_sota_grounded_rules.copy(),
                 "bdg":current_bdg_grounded_rules.copy(),
+                "lpopt":current_lpopt_grounded_rules.copy(),
                 "dependencies": grounding_strategy_dependencies.copy()
             })
             
             current_sota_grounded_rules.clear()
             current_bdg_grounded_rules.clear()
+            current_lpopt_grounded_rules.clear()
 
     def generate_grounding_strategy(self, grounding_strategy):
  
@@ -70,6 +73,8 @@ class GroundingStrategyGenerator:
         
         current_sota_grounded_rules = []
         current_bdg_grounded_rules = []
+        current_lpopt_grounded_rules = []
+
         current_scc_nodes = []
 
         # ---- STRATIFIED PROGRAM HANDLING ----
@@ -138,7 +143,7 @@ class GroundingStrategyGenerator:
         grounding_strategy_dependencies.add(0)
 
         self.add_grounding_strategy_level(grounding_strategy, current_sota_grounded_rules,
-            current_bdg_grounded_rules, grounding_strategy_dependencies)
+            current_bdg_grounded_rules, current_lpopt_grounded_rules, grounding_strategy_dependencies)
         return non_stratified_topological_order
 
 
@@ -146,10 +151,12 @@ class GroundingStrategyGenerator:
     
         current_sota_grounded_rules = []
         current_bdg_grounded_rules = []
+        current_lpopt_grounded_rules = []
         current_scc_nodes = []
 
         next_sota_grounded_rules = []
         next_bdg_grounded_rules = []
+        next_lpopt_grounded_rules = []
         next_scc_nodes = []
 
         # ---- NON-STRATIFIED PROGRAM HANDLING ----
@@ -162,6 +169,7 @@ class GroundingStrategyGenerator:
             current_scc_nodes.append(scc_index)
         
             exists_bdg_grounded_rule = False
+            exists_potential_lpopt_rule = False
 
             exists_disjunctive_rule = False
             exists_non_tight_rule = False
@@ -176,6 +184,9 @@ class GroundingStrategyGenerator:
         
                     if rule in self.bdg_rules:
                         exists_bdg_grounded_rule = True
+                    
+                    if rule in self.lpopt_rules:
+                        exists_potential_lpopt_rule = True
 
                     if cur_rule.is_disjunctive is True:
                         exists_disjunctive_rule = True
@@ -190,12 +201,12 @@ class GroundingStrategyGenerator:
                 # therefore 'bdg_supports_asp_program_class' is false if the complexity is Sigma_p^3 (so the wrong program class).
                 bdg_supports_asp_program_class = False
 
-            if exists_bdg_grounded_rule is True and bdg_supports_asp_program_class is True:
+            if (exists_bdg_grounded_rule is True and bdg_supports_asp_program_class is True) or exists_potential_lpopt_rule is True:
         
                 grounding_strategy_dependencies = self.get_grounding_strategy_dependency_indices(current_scc_nodes, 
                     condensed_graph_inverted, scc_node_to_grounding_order_lookup)
                 self.add_grounding_strategy_level(grounding_strategy, current_sota_grounded_rules,
-                    current_bdg_grounded_rules, grounding_strategy_dependencies)
+                    current_bdg_grounded_rules, current_lpopt_grounded_rules, grounding_strategy_dependencies)
         
             is_tight = True
             for node in subgraph.nodes:
@@ -214,6 +225,8 @@ class GroundingStrategyGenerator:
                             current_sota_grounded_rules.append(rule)
                         elif rule in self.stratified_rules:
                             pass
+                        elif rule in self.lpopt_rules:
+                            current_lpopt_grounded_rules.append(rule)
                         else:
                             print(f"[ERROR] - Cannot associate rules: {rule}")
                             print(str(self.rule_dictionary[rule]))
@@ -228,6 +241,8 @@ class GroundingStrategyGenerator:
                             elif rule in self.stratified_rules:
                                 # If stratified -> Already handled
                                 pass
+                            elif rule in self.lpopt_rules:
+                                current_lpopt_grounded_rules.append(rule)
                             else:
                                 print(f"[ERROR] - Cannot associate rules: {rule}")
                                 raise NotImplementedError()
@@ -241,11 +256,15 @@ class GroundingStrategyGenerator:
                             elif rule in self.stratified_rules:
                                 # If stratified -> Already handled
                                 pass
+                            elif rule in self.lpopt_rules:
+                                next_lpopt_grounded_rules.append(rule)
                             else:
                                 print(f"[ERROR] - Cannot associate rules: {rule}")
                                 raise NotImplementedError()
         
-            if exists_bdg_grounded_rule is True or is_tight is False:
+            #if exists_bdg_grounded_rule is True or is_tight is False:
+            if (exists_bdg_grounded_rule is True and bdg_supports_asp_program_class is True) or exists_potential_lpopt_rule is True:
+                # Handle BDG rule and lpopt rule (add layer)
                 current_scc_nodes.append(scc_index)
                 scc_node_to_grounding_order_lookup[scc_index].append(len(grounding_strategy))
         
@@ -253,8 +272,9 @@ class GroundingStrategyGenerator:
                     condensed_graph_inverted, scc_node_to_grounding_order_lookup)
         
                 self.add_grounding_strategy_level(grounding_strategy, current_sota_grounded_rules,
-                    current_bdg_grounded_rules, grounding_strategy_dependencies)
-            if is_tight is False:
+                    current_bdg_grounded_rules, current_lpopt_grounded_rules, grounding_strategy_dependencies)
+
+            if is_tight is False and ((exists_bdg_grounded_rule is True and bdg_supports_asp_program_class is True) or exists_potential_lpopt_rule is True):
                 next_scc_nodes.append(scc_index)
                 scc_node_to_grounding_order_lookup[scc_index].append(len(grounding_strategy))
         
@@ -262,12 +282,12 @@ class GroundingStrategyGenerator:
                     condensed_graph_inverted, scc_node_to_grounding_order_lookup)
         
                 self.add_grounding_strategy_level(grounding_strategy, next_sota_grounded_rules,
-                    next_bdg_grounded_rules, grounding_strategy_dependencies)
+                    next_bdg_grounded_rules, next_lpopt_grounded_rules, grounding_strategy_dependencies)
         
         grounding_strategy_dependencies = self.get_grounding_strategy_dependency_indices(current_scc_nodes, 
             condensed_graph_inverted, scc_node_to_grounding_order_lookup)
         self.add_grounding_strategy_level(grounding_strategy, current_sota_grounded_rules,
-            current_bdg_grounded_rules, grounding_strategy_dependencies)
+            current_bdg_grounded_rules, current_lpopt_grounded_rules, grounding_strategy_dependencies)
         
     def post_process_grounding_strategy(self, grounding_strategy):
         """
@@ -288,10 +308,11 @@ class GroundingStrategyGenerator:
 
                 sota_list = grounding_strategy[grounding_strategy_index]["sota"]
                 bdg_list = grounding_strategy[grounding_strategy_index]["bdg"]
+                lpopt_list = grounding_strategy[grounding_strategy_index]["lpopt"]
                 dependencies_list = grounding_strategy[grounding_strategy_index]["dependencies"]
 
 
-                if len(bdg_list) == 0 and len(sota_list) > 0:
+                if len(bdg_list) == 0 and len(sota_list) > 0 and len(lpopt_list) == 0:
                     # Only may change if BDG strategy is not used:
                     # And only changes for SOTA rules
 
@@ -306,8 +327,9 @@ class GroundingStrategyGenerator:
 
 
                         tmp_bdg_list = grounding_strategy[dependency_index]["bdg"]
+                        tmp_lpopt_list = grounding_strategy[dependency_index]["lpopt"]
 
-                        if len(tmp_bdg_list) > 0:
+                        if len(tmp_bdg_list) > 0 or len(tmp_lpopt_list) > 0:
                             dependency_list_has_bdg_rules = True
                             break
 
@@ -326,8 +348,9 @@ class GroundingStrategyGenerator:
 
             bdg_rules = grounding_strategy[grounding_strategy_reverse_index]["bdg"]
             sota_rules = grounding_strategy[grounding_strategy_reverse_index]["sota"]
+            lpopt_rules = grounding_strategy[grounding_strategy_reverse_index]["lpopt"]
 
-            if len(bdg_rules) == 0 and len(sota_rules) == 0:
+            if len(bdg_rules) == 0 and len(sota_rules) == 0 and len(lpopt_rules) == 0:
                 del grounding_strategy[grounding_strategy_reverse_index]
             else:
                 break

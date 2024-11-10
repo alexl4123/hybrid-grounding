@@ -60,6 +60,19 @@ class SmodelsASPProgram(ASPProgram):
                 
                 _dict["terms_size"][function_position_index] = cur_number_items
 
+        if "_total" not in domain_dictionary:
+            domain_dictionary["_total"] = {
+                "tuples_size":1,
+                "terms":[{}],
+                "terms_size":[0],
+            }
+
+            for total_domain_key in total_domain:
+                if total_domain_key not in domain_dictionary["_total"]["terms"][0]:
+                    domain_dictionary["_total"]["terms"][0][total_domain_key] = True
+                    domain_dictionary["_total"]["terms_size"][0] += 1
+
+
         self.program = rules
         self.literals_dict = literals_dict
 
@@ -69,6 +82,7 @@ class SmodelsASPProgram(ASPProgram):
 
         #domain_inferer.domain_dictionary = domain_inferer.domain_dictionary | domain_dictionary
         domain_inferer.total_domain.update(total_domain)
+
 
         domain_inferer.infer_processed_literals()
         domain_inferer.compute_domain_average()

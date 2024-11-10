@@ -18,9 +18,10 @@ from nagg.grounding_modes import GroundingModes
 from .regression_test_mode import RegressionTestStrategy
 
 from heuristic_splitter.heuristic_splitter import HeuristicSplitter
-from heuristic_splitter.heuristic_strategy import HeuristicStrategy
-from heuristic_splitter.treewidth_computation_strategy import TreewidthComputationStrategy
-from heuristic_splitter.grounding_strategy import GroundingStrategy
+
+from heuristic_splitter.enums.heuristic_strategy import HeuristicStrategy
+from heuristic_splitter.enums.treewidth_computation_strategy import TreewidthComputationStrategy
+from heuristic_splitter.enums.grounding_strategy import GroundingStrategy
 
 def limit_virtual_memory():
     max_virtual_memory = 1024 * 1024 * 1024 * 64 # 64GB
@@ -208,7 +209,7 @@ class EquivChecker:
             treewidth_strategy = TreewidthComputationStrategy.NETWORKX_HEUR
             grounding_strategy = GroundingStrategy.FULL
             debug_mode = False
-            enable_lpopt = False
+            enable_lpopt = True
 
             if self.heuristic_splitter_test is False:
                 total_content = instance_file_contents + "\n#program rules.\n" + encoding_file_contents

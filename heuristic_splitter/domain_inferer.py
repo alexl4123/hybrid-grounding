@@ -81,67 +81,6 @@ class DomainInferer:
                 if term not in self.total_domain:
                     self.total_domain[term] = True
 
-    def infer_domain(self, contents):
-        # Contents as a list of strings (rules):
-
-        facts = {}
-        facts_heads = {}
-        other_rules = []
-
-        pattern_atom = re.compile(r'^(_?[a-z][A-Za-z0-9_´]*)\((.+?)\).*$')
-        pattern_head_aggregate = re.compile(r'^.*{.*}.*$')
-        pattern_rule = re.compile(r'^.*:-.*$')
-
-        for content in contents.split("\n"):
-
-            head = content.split(":-")[0]
-            atom_match = pattern_atom.match(head)
-            if atom_match:
-                # Head is atom
-                constant_part = atom_match.group(1)  # The constant (e.g., '_test1')
-                arguments = atom_match.group(2)      # The comma-separated part inside the parentheses (e.g., 'a,b')
-
-                #self.add_node_to_domain(arguments, constant_part)
-                self.add_node_to_domain(arguments, constant_part)
-
-            elif pattern_head_aggregate.match(head):
-                # Head is head-aggregate
-
-                head_aggregate_elements = head.split("{")[1]
-                head_aggregate_elements = head_aggregate_elements.split("}")[0]
-                head_aggregate_elements = head_aggregate_elements.split(";")
-
-                for element in head_aggregate_elements:
-
-                    element_head = element.split(":")[0]
-
-                    atom_match = pattern_atom.match(element_head)
-                    if atom_match:
-                        # Head is atom
-                        constant_part = atom_match.group(1)  # The constant (e.g., '_test1')
-                        arguments = atom_match.group(2)      # The comma-separated part inside the parentheses (e.g., 'a,b')
-
-                        self.add_node_to_domain(arguments, constant_part)
-                    elif "<=>" in head:
-                        continue
-                    else:
-                        print(f"[ERROR] - Failed to parse head-aggregate: {head}")
-                        raise NotImplementedError()
-
-            elif len(head.strip()) == 0 or head.strip() == "#false":
-                if content.strip() == ":-.":
-                    self.unsat_prg_found = True
-
-                continue
-            elif "(" not in head:
-                # Atom
-                continue
-            elif "#delayed" in head or "#show" in head:
-                continue
-            else:
-                print(content)
-                raise NotImplementedError("HEAD NOT IMPLEMENTED!")
-
     def compute_domain_average(self):
         """
         Computes an update of the tuple_size and term_size keys of the domain object.

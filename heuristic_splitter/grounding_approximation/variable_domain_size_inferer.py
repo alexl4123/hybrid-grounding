@@ -65,12 +65,10 @@ class VariableDomainSizeInferer:
                     # Only for B_r^+ domain inference occurs:
                     if function.name in domain and "terms" in domain[function.name]:
                         terms_domain = domain[function.name]["terms"]
-                    elif rule.is_tight is True:
-                        terms_domain = []
-                    elif rule.is_tight is False:
-                        # Approximate the domain
-                        print("TODO -> Approx domain!")
-                        raise NotImplementedError("TODO -> Approx. domain!")
+                    elif "_total" in domain:
+                        terms_domain = domain["_total"]["terms"]
+                    else:
+                        raise NotImplementedError("_total domain not found!")
                         pass
 
                     self.get_function_domain_size(function, terms_domain,

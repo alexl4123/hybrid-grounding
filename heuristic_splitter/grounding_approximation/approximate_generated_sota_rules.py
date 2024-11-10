@@ -49,15 +49,18 @@ class ApproximateGeneratedSotaRules:
                     # For the "e" in {a:b;c:d} :- e.
                     if function.name in domain and "terms" in domain[function.name]:
                         terms_domain = domain[function.name]["terms"]
-                    elif self.rule.is_tight is True:
-                        terms_domain = []
+                    elif "_total" in domain:
+                        # Infer "_total" domain as an alternative (so the whole domain...)
+                        terms_domain = domain["_total"]["terms"]
+                    else:
+                        raise Exception("_total domain not found!")
 
                     function_variables_domain_sizes = {}
 
                     domain_size_inferer.get_function_domain_size(function, terms_domain, function_variables_domain_sizes)
 
                     # Infer Number of Tuples:
-                    if function.name in self.domain_transformer.domain_dictionary:
+                    if function.name in domain:
                         number_tuples = domain[function.name]["tuples_size"]
                     else:
 

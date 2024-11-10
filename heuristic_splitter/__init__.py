@@ -8,17 +8,29 @@ import time
 import argparse
 import sys
 
-from heuristic_splitter.heuristic_strategy import HeuristicStrategy
 from heuristic_splitter.heuristic_splitter import HeuristicSplitter
-from heuristic_splitter.grounding_strategy import GroundingStrategy
 
-from heuristic_splitter.treewidth_computation_strategy import TreewidthComputationStrategy
+from heuristic_splitter.enums.heuristic_strategy import HeuristicStrategy
+from heuristic_splitter.enums.grounding_strategy import GroundingStrategy
+from heuristic_splitter.enums.sota_grounder import SotaGrounder
+from heuristic_splitter.enums.treewidth_computation_strategy import TreewidthComputationStrategy
 
 def main():
     """
     Main Entry Point into the prototype.
     Parses arguments and calls heurstic_splitter class.
     """
+
+    sota_grounder = {
+        "GRINGO": {
+            "cmd_line":"gringo",
+            "enum_mode": SotaGrounder.GRINGO
+        },
+        "IDLV": {
+            "cmd_line":"idlv",
+            "enum_mode": SotaGrounder.IDLV
+        },
+    }
 
     grounding_strategies = {
         "FULL": {
@@ -63,6 +75,15 @@ def main():
         choices=[
             heuristic_methods[key]["cmd_line"]
             for key in heuristic_methods.keys()
+        ],
+    )
+
+    parser.add_argument(
+        "--sota-grounder",
+        default=sota_grounder["GRINGO"]["cmd_line"],
+        choices=[
+            sota_grounder[key]["cmd_line"]
+            for key in sota_grounder.keys()
         ],
     )
 
@@ -128,6 +149,13 @@ def main():
         if args.grounding_strategy == grounding_strategies[key]["cmd_line"]:
             grounding_strategy = grounding_strategies[key]["enum_mode"]
 
+    sota_grounder_used = None
+    for key in sota_grounder.keys():
+        if args.sota_grounder == sota_grounder[key]["cmd_line"]:
+            sota_grounder_used = sota_grounder[key]["enum_mode"]
+
+
+
     debug_mode = args.debug
     enable_lpopt = args.tw_aware
 
@@ -148,6 +176,7 @@ def main():
         enable_lpopt,
         args.enable_logging,
         args.logging_file,
+        sota_grounder_used = sota_grounder_used,
     )
 
     heuristic.start(contents)

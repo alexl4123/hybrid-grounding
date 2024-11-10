@@ -21,7 +21,7 @@ class HeuristicTransformer(Transformer):
     """
 
     def __init__(self, graph_ds: GraphDataStructure, used_heuristic,
-            bdg_rules, sota_rules, stratified_rules,
+            bdg_rules, sota_rules, stratified_rules, lpopt_rules,
             constraint_rules, all_heads, debug_mode, rule_dictionary):
 
         self.graph_ds = graph_ds
@@ -63,6 +63,7 @@ class HeuristicTransformer(Transformer):
         self.sota_rules = sota_rules
         self.stratified_rules = stratified_rules
         self.constraint_rules = constraint_rules
+        self.lpopt_rules = lpopt_rules
 
         # Used to determine if a rule is tight, or non-tight.
         self.head_atoms_scc_membership = {}
@@ -153,7 +154,8 @@ class HeuristicTransformer(Transformer):
                 if number_variables_in_literal > maximum_variables_in_literal:
                     maximum_variables_in_literal = number_variables_in_literal
 
-            self.heuristic.handle_rule(self.bdg_rules, self.sota_rules, self.stratified_rules,
+            self.heuristic.handle_rule(
+                self.bdg_rules, self.sota_rules, self.stratified_rules, self.lpopt_rules,
                 self.variable_graph, self.stratified_variables, self.graph_ds,
                 self.head_atoms_scc_membership, self.body_atoms_scc_membership,
                 maximum_variables_in_literal, self.is_constraint,
@@ -189,7 +191,8 @@ class HeuristicTransformer(Transformer):
         self.visit_children(node)
         self.in_body = False
 
-        self.heuristic.handle_rule(self.bdg_rules, self.sota_rules, self.stratified_rules,
+        self.heuristic.handle_rule(
+            self.bdg_rules, self.sota_rules, self.stratified_rules, self.lpopt_rules,
             self.variable_graph, self.stratified_variables, self.graph_ds,
             self.head_atoms_scc_membership, self.body_atoms_scc_membership,
             self.maximum_rule_arity, self.is_constraint,

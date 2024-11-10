@@ -13,9 +13,10 @@ from heuristic_splitter.graph_analyzer import GraphAnalyzer
 
 from heuristic_splitter.heuristic_transformer import HeuristicTransformer
 
-from heuristic_splitter.heuristic_strategy import HeuristicStrategy
-from heuristic_splitter.treewidth_computation_strategy import TreewidthComputationStrategy
-from heuristic_splitter.grounding_strategy import GroundingStrategy
+from heuristic_splitter.enums.heuristic_strategy import HeuristicStrategy
+from heuristic_splitter.enums.treewidth_computation_strategy import TreewidthComputationStrategy
+from heuristic_splitter.enums.grounding_strategy import GroundingStrategy
+from heuristic_splitter.enums.sota_grounder import SotaGrounder
 
 from heuristic_splitter.heuristic_0 import Heuristic0
 
@@ -31,11 +32,13 @@ class HeuristicSplitter:
     def __init__(self, heuristic_strategy: HeuristicStrategy, treewidth_strategy: TreewidthComputationStrategy, grounding_strategy:GroundingStrategy, 
         debug_mode, enable_lpopt,
         enable_logging = False, logging_file = None,
-        output_printer = None,):
+        output_printer = None, sota_grounder_used = SotaGrounder.GRINGO):
 
         self.heuristic_strategy = heuristic_strategy
         self.treewidth_strategy = treewidth_strategy
         self.grounding_strategy = grounding_strategy
+        self.sota_grounder = sota_grounder_used
+
         self.debug_mode = debug_mode
         self.enable_lpopt = enable_lpopt
         self.output_printer = output_printer
@@ -70,6 +73,8 @@ class HeuristicSplitter:
             bdg_rules = {}
             sota_rules = {}
             stratified_rules = {}
+            lpopt_rules = {}
+
             constraint_rules = {}
             grounding_strategy = []
             graph_ds = GraphDataStructure()
@@ -86,9 +91,7 @@ class HeuristicSplitter:
 
             other_rules_string = "\n".join(other_rules)
 
-            if self.enable_lpopt is True:
-                other_rules_string = self.start_lpopt(other_rules_string)
-
+            # Remove '#program' rules
             other_rules = [string_rule for string_rule in other_rules if not (string_rule.strip()).startswith("#program")]
 
             graph_transformer = GraphCreatorTransformer(graph_ds, rule_dictionary, other_rules, self.debug_mode)
@@ -98,16 +101,17 @@ class HeuristicSplitter:
             graph_analyzer.start()
 
             if self.heuristic_strategy == HeuristicStrategy.TREEWIDTH_PURE:
-                heuristic = Heuristic0(self.treewidth_strategy, rule_dictionary)
+                heuristic = Heuristic0(self.treewidth_strategy, rule_dictionary, self.sota_grounder, self.enable_lpopt)
             else:
                 raise NotImplementedError()
 
             heuristic_transformer = HeuristicTransformer(graph_ds, heuristic, bdg_rules,
-                sota_rules, stratified_rules, constraint_rules, all_heads, self.debug_mode, rule_dictionary)
+                sota_rules, stratified_rules, lpopt_rules, constraint_rules, all_heads,
+                self.debug_mode, rule_dictionary)
             parse_string(other_rules_string, lambda stm: heuristic_transformer(stm))
 
             generator_grounding_strategy = GroundingStrategyGenerator(graph_ds, bdg_rules, sota_rules,
-                stratified_rules, constraint_rules, rule_dictionary)
+                stratified_rules, constraint_rules, lpopt_rules, rule_dictionary)
             generator_grounding_strategy.generate_grounding_strategy(grounding_strategy)
 
 
@@ -122,7 +126,7 @@ class HeuristicSplitter:
                     facts,
                     query,
                     self.debug_mode, self.enable_lpopt,
-                    output_printer = self.output_printer,
+                    output_printer = self.output_printer, sota_grounder = self.sota_grounder,
                     enable_logging = self.enable_logging, logging_file = self.logging_file,)
                 if len(grounding_strategy) > 1 or len(grounding_strategy[0]["bdg"]) > 0:
                     grounding_handler.ground()
@@ -159,38 +163,3 @@ class HeuristicSplitter:
                 self.logging_file.close()
 
             raise ex
-
-    def start_lpopt(self, program_input, timeout=1800):
-
-        program_string = "./lpopt.bin"
-
-        if not os.path.isfile(program_string):
-            print("[ERROR] - For treewidth aware decomposition 'lpopt.bin' is required (current directory).")
-            raise Exception("lpopt.bin not found")
-
-        arguments = [program_string]
-
-        decoded_string = ""
-        try:
-            p = subprocess.Popen(arguments, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)       
-            (ret_vals_encoded, error_vals_encoded) = p.communicate(input=bytes(program_input, "ascii"), timeout = timeout)
-
-            decoded_string = ret_vals_encoded.decode()
-            error_vals_decoded = error_vals_encoded.decode()
-
-            if p.returncode != 0:
-                print(f">>>>> Other return code than 0 in helper: {p.returncode}")
-                raise Exception(error_vals_decoded)
-
-        except Exception as ex:
-            try:
-                p.kill()
-            except Exception as e:
-                pass
-
-            print(ex)
-
-            raise NotImplementedError() # TBD: Continue if possible
-
-        return decoded_string
-

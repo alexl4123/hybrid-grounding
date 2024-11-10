@@ -3,13 +3,14 @@ from heuristic_splitter.heuristic import HeuristicInterface
 from heuristic_splitter.variable_graph_structure import VariableGraphDataStructure
 from heuristic_splitter.graph_data_structure import GraphDataStructure
 
-from heuristic_splitter.treewidth_computation_strategy import TreewidthComputationStrategy
+from heuristic_splitter.enums.sota_grounder import SotaGrounder
+from heuristic_splitter.enums.treewidth_computation_strategy import TreewidthComputationStrategy
 
 
 
 class Heuristic0(HeuristicInterface):
 
-    def handle_rule(self, bdg_rules, sota_rules, stratified_rules,
+    def handle_rule(self, bdg_rules, sota_rules, stratified_rules, lpopt_rules,
             variable_graph : VariableGraphDataStructure, stratified_variables,
             graph_ds : GraphDataStructure,
             head_atoms_scc_membership, body_atoms_scc_membership,
@@ -67,16 +68,24 @@ class Heuristic0(HeuristicInterface):
             
 
             if is_constraint is True and tw_effective > maximum_variables_in_literal and all_comparison_variables_safe_by_predicate is True:
-                #bdg_rules.append(rule_position)
+                # Constraint:
                 bdg_rules[rule_position] = True
 
             elif is_tight is True and tw_effective > maximum_variables_in_literal * 2 and all_comparison_variables_safe_by_predicate is True:
-                #bdg_rules.append(rule_position)
+                # Tight normal:
                 bdg_rules[rule_position] = True
             
             elif is_tight is False and tw_effective > maximum_variables_in_literal * 3 and all_comparison_variables_safe_by_predicate is True:
-                #bdg_rules.append(rule_position)
+                # Non-tight normal:
                 bdg_rules[rule_position] = True
+
+            elif self.enable_lpopt is True and self.sota_grounder == SotaGrounder.GRINGO and (tw_full == maximum_variables_in_literal or tw_full < full_variable_graph.graph.number_of_nodes()):
+                # Only use when expliticly enabled (enable lpopt/TW-Aware rewriting)
+                # IDLV implemented Lpopt tools, so only potentially use it for Gringo.
+                # As number of variables = full_variable_graph.number_of_nodes
+                # Then using lpopt reduces number of variables to ground to tw_full (bag size)
+
+                lpopt_rules[rule_position] = True
 
             else:
                 #sota_rules.append(rule_position)
