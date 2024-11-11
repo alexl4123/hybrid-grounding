@@ -28,6 +28,7 @@ from heuristic_splitter.grounding_approximation.approximate_generated_sota_rules
 #from heuristic_splitter.get_facts import GetFacts
 #from heuristic_splitter.setup_get_facts_cython import get_facts_from_file_handle
 from heuristic_splitter.get_facts_cython import get_facts_from_file_handle
+from heuristic_splitter.logging_class import LoggingClass
 
 class HeuristicSplitter:
 
@@ -47,13 +48,8 @@ class HeuristicSplitter:
 
         self.enable_logging = enable_logging
         path = None
-        if self.enable_logging is True and logging_file is None:
-            from pathlib import Path
-            # Set default logging file:
-            current_datetime = datetime.now()
-            path_list = ["logs", current_datetime.strftime("%Y%m%d-%H%M%S") + ".log"]
-            path = Path(*path_list)
-        elif self.enable_logging is True:
+
+        if self.enable_logging is True:
             from pathlib import Path
             path = Path(logging_file)
 
@@ -66,6 +62,11 @@ class HeuristicSplitter:
             self.logging_file = open(path, "a")
         else:
             self.logging_file = None
+        
+        if self.enable_logging:
+            self.logging_class = LoggingClass(self.logging_file)
+        else:
+            self.logging_class = None
 
     def start(self, contents):
 
@@ -166,7 +167,7 @@ class HeuristicSplitter:
                     query,
                     self.debug_mode, self.enable_lpopt,
                     output_printer = self.output_printer, sota_grounder = self.sota_grounder,
-                    enable_logging = self.enable_logging, logging_file = self.logging_file,)
+                    enable_logging = self.enable_logging, logging_class = self.logging_class)
                 if len(grounding_strategy) > 1 or len(grounding_strategy[0]["bdg"]) > 0:
                     grounding_handler.ground()
                     grounding_handler.output_grounded_program(all_heads)
@@ -193,7 +194,8 @@ class HeuristicSplitter:
                 if len(query.keys()) > 0:
                     print(list(query.keys())[0])
 
-            if self.logging_file is not None:
+            if self.enable_logging is True:
+                self.logging_class.print_to_file()
                 self.logging_file.close()
 
         except Exception as ex:
@@ -256,6 +258,9 @@ class HeuristicSplitter:
                 do_not_use_lpopt_for_rules_string += lpopt_non_rewritten_rules_string + "\n"
         
         if lpopt_used is True:
+            if self.enable_logging is True:
+                self.logging_class.is_lpopt_used = True
+                self.logging_class.lpopt_used_for_rules = use_lpopt_for_rules_string
 
             # Call it once for all to-rewrite rules (to get temporary predicates correctly):
             tmp_rule_string = self.start_lpopt(use_lpopt_for_rules_string)
@@ -319,7 +324,6 @@ class HeuristicSplitter:
             other_rules_string = tmp_rule_string
             rule_dictionary = tmp_rule_dictionary
             graph_ds = tmp_graph_ds
-
 
         return lpopt_used, bdg_rules, sota_rules, stratified_rules, lpopt_rules, constraint_rules, other_rules, other_rules_string, rule_dictionary, graph_ds
 

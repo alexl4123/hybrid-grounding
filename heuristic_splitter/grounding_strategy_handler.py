@@ -46,6 +46,8 @@ from heuristic_splitter.program.smodels_asp_program import SmodelsASPProgram
 from cython_nagg.cython_nagg import CythonNagg
 from cython_nagg.justifiability_type import JustifiabilityType
 
+from heuristic_splitter.logging_class import LoggingClass
+
 from ctypes import *
 so_file = "./heuristic_splitter/c_output_redirector.so"
 
@@ -70,7 +72,7 @@ class GroundingStrategyHandler:
 
     def __init__(self, grounding_strategy: GroundingStrategyGenerator, rule_dictionary, graph_ds: GraphDataStructure, facts, query,
         debug_mode, enable_lpopt, sota_grounder = SotaGrounder.GRINGO,
-        output_printer = None, enable_logging = False, logging_file = None):
+        output_printer = None, enable_logging = False, logging_class: LoggingClass = None):
 
         self.grounding_strategy = grounding_strategy
         self.rule_dictionary = rule_dictionary
@@ -85,7 +87,7 @@ class GroundingStrategyHandler:
         self.sota_grounder = sota_grounder
 
         self.enable_logging = enable_logging
-        self.logging_file = logging_file
+        self.logging_class = logging_class
 
         self.grounded_program = None
 
@@ -97,14 +99,16 @@ class GroundingStrategyHandler:
         if self.grounded_program is None: 
             self.grounded_program = StringASPProgram("\n".join(list(self.facts.keys())))
 
+        if self.enable_logging is True:
+            self.logging_class.grounding_strategy = self.grounding_strategy
+
         domain_transformer = DomainInferer()
         if len(self.grounding_strategy) > 0:
             # Ground SOTA rules with SOTA (gringo/IDLV):
             sota_rules_string = self.rule_list_to_rule_string(self.grounding_strategy[0]["sota"]) 
 
             if self.enable_logging is True:
-                self.logging_file.write("All rules were grounded via SOTA approaches:")
-                self.logging_file.write(sota_rules_string)
+                self.logging_class.sota_used_for_rules += sota_rules_string
 
             program_input = self.grounded_program.get_string() + "\n" + sota_rules_string
 
@@ -141,10 +145,7 @@ class GroundingStrategyHandler:
         tmp_rules_string = ""
 
         if self.enable_logging is True:
-            self.logging_file.write("-------------------------------------------------------\n")
-            self.logging_file.write("The following is the final grounding strategy:\n")
-            self.logging_file.write(str(self.grounding_strategy))
-            self.logging_file.write("-------------------------------------------------------\n")
+            self.logging_class.grounding_strategy = self.grounding_strategy
 
         domain_inference_called_at_least_once = False
 
@@ -206,9 +207,12 @@ class GroundingStrategyHandler:
                     program_input = self.rule_list_to_rule_string(tmp_bdg_new_found_rules)
 
                     if self.enable_logging is True:
-                        self.logging_file.write("-------------------------------------------------------\n")
-                        self.logging_file.write("The following rules were grounded via BDG NEW approach:\n")
-                        self.logging_file.write(tmp_rules_string)
+                        self.logging_class.is_bdg_used = True
+                        self.logging_class.is_bdg_new_used = True
+                        self.logging_class.bdg_used_for_rules += program_input
+                        self.logging_class.bdg_new_used_for_rules += program_input
+
+
 
                     input_rules = []
                     for bdg_rule in bdg_rules:
@@ -256,9 +260,11 @@ class GroundingStrategyHandler:
                     program_input = self.rule_list_to_rule_string(tmp_bdg_old_found_rules)
 
                     if self.enable_logging is True:
-                        self.logging_file.write("-------------------------------------------------------\n")
-                        self.logging_file.write("The following rules were grounded via BDG OLD approach:\n")
-                        self.logging_file.write(tmp_rules_string)
+                        self.logging_class.is_bdg_used = True
+                        self.logging_class.is_bdg_old_used = True
+                        self.logging_class.bdg_used_for_rules += program_input
+                        self.logging_class.bdg_old_used_for_rules += program_input
+
 
                     input_rules = []
                     for bdg_rule in bdg_rules:
@@ -313,9 +319,7 @@ class GroundingStrategyHandler:
                 sota_rules_string = self.rule_list_to_rule_string(sota_rules)
 
                 if self.enable_logging is True:
-                    self.logging_file.write("-------------------------------------------------------\n")
-                    self.logging_file.write("The following rules were grounded via SOTA approaches:\n")
-                    self.logging_file.write(sota_rules_string)
+                    self.logging_class.sota_used_for_rules += sota_rules_string
 
                 program_input = self.grounded_program.get_string() + "\n" + sota_rules_string
 

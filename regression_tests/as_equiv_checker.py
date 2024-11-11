@@ -4,7 +4,11 @@ import argparse
 import subprocess
 import resource
 
+
+
 import clingo
+
+from datetime import datetime
 
 from nagg.nagg import NaGG
 from nagg.default_output_printer import DefaultOutputPrinter
@@ -58,7 +62,10 @@ class Context:
 
 class EquivChecker:
 
-    def __init__(self, chosenRegressionTestMode, foundedness_strategy, heuristic_splitter_test = False):
+    def __init__(self, chosenRegressionTestMode, foundedness_strategy, log_file_tmp_prefix, heuristic_splitter_test = False):
+
+        self.log_file_tmp_prefix = log_file_tmp_prefix
+
         self.chosenRegressiontestMode = chosenRegressionTestMode
         self.foundedness_strategy = foundedness_strategy
         self.heuristic_splitter_test = heuristic_splitter_test
@@ -210,13 +217,18 @@ class EquivChecker:
             grounding_strategy = GroundingStrategy.FULL
             debug_mode = False
             enable_lpopt = True
+            enable_logging = True
+
+            current_datetime = datetime.now()
+            log_file_name = self.log_file_tmp_prefix + "_" + current_datetime.strftime("%Y%m%d-%H%M%S") + ".log"
 
             if self.heuristic_splitter_test is False:
                 total_content = instance_file_contents + "\n#program rules.\n" + encoding_file_contents
 
                 heuristic_splitter = HeuristicSplitter(
                     heuristic_strategy, treewidth_strategy, grounding_strategy,
-                    debug_mode, enable_lpopt, output_printer = custom_printer
+                    debug_mode, enable_lpopt, output_printer = custom_printer,
+                    enable_logging=enable_logging, logging_file=log_file_name
                 )
                 heuristic_splitter.start(total_content)
 
@@ -225,7 +237,8 @@ class EquivChecker:
 
                 heuristic_splitter = HeuristicSplitter(
                     heuristic_strategy, treewidth_strategy, grounding_strategy,
-                    debug_mode, enable_lpopt, output_printer = custom_printer
+                    debug_mode, enable_lpopt, output_printer = custom_printer,
+                    enable_logging=enable_logging, logging_file=log_file_name
                 )
                 heuristic_splitter.start(heur_split_content)
             

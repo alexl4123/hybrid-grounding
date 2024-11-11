@@ -182,6 +182,8 @@ class RegressionTest:
         failed_tests = {}
         skipped_tests = {}
 
+        log_file_prefix = "logs/regression_tests_logs/"
+
         for sub in sub_directories:
             print("<<<<---->>>>")
             print(f"[INFO] \"{sub}\" test is starting")
@@ -213,7 +215,9 @@ class RegressionTest:
 
             start_time = time.time()
 
-            checker = EquivChecker(chosenRegressionTestMode, foundedness_strategy, heuristic_splitter_test = heuristic_splitter_test)
+            log_file_tmp_prefix = log_file_prefix + sub
+
+            checker = EquivChecker(chosenRegressionTestMode, foundedness_strategy, log_file_tmp_prefix, heuristic_splitter_test = heuristic_splitter_test)
             result, clingo_answersets, nagg_answersets = checker.start(instance_file_contents, encoding_file_contents)
 
             end_time = time.time()

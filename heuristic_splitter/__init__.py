@@ -4,6 +4,7 @@ Main Entry Point into the heuristic_splitter.
 Parses arguments.
 """
 
+import os
 import time
 import argparse
 import sys
@@ -14,6 +15,7 @@ from heuristic_splitter.enums.heuristic_strategy import HeuristicStrategy
 from heuristic_splitter.enums.grounding_strategy import GroundingStrategy
 from heuristic_splitter.enums.sota_grounder import SotaGrounder
 from heuristic_splitter.enums.treewidth_computation_strategy import TreewidthComputationStrategy
+
 
 def main():
     """
@@ -102,16 +104,14 @@ def main():
     parser.add_argument(
         "--enable-logging",
         action="store_true",
-        help="Write to a file which rules where grounded with BDG, and which with SOTA techniques.",
+        help="Enable additional logging information, e.g., if BDG was used.",
     )
 
     parser.add_argument(
         "--logging-file",
         type=str, 
-        help="Path to the logging file (--enable-logging must be supported as well). Default a file in logs/<CURRENT-DATE-TIME>.log is generated."
+        help="Path to the logging file (--enable-logging must be supported as well). Default a file in logs/<FIRST_FILE_NAME>-<CURRENT-DATE-TIME>.log is generated."
     )
-
-
 
 
     parser.add_argument(
@@ -161,11 +161,32 @@ def main():
 
 
     files = args.files
-    #files = [open("TEST/190_heur.lp", "r")]
+
     contents = []
     for f in files:
         contents.append(f.read())
     contents = "\n".join(contents)
+
+    if args.enable_logging is True:
+        if args.logging_file is None:
+            from datetime import datetime
+            from pathlib import Path
+
+            # Set default logging file:
+            current_datetime = datetime.now()
+            file_name = os.path.basename(files[0].name)
+            log_file_name = os.path.splitext(file_name)[0] + "_" + current_datetime.strftime("%Y%m%d-%H%M%S") + ".log"
+
+            path_list = ["logs", log_file_name]
+            log_file_path = Path(*path_list)
+        else:
+            from pathlib import Path
+            log_file_path = Path(args.logging_file)
+    
+    else:
+        log_file_path = None
+
+
 
     start_time = time.time()
     heuristic = HeuristicSplitter(
@@ -175,7 +196,7 @@ def main():
         debug_mode,
         enable_lpopt,
         args.enable_logging,
-        args.logging_file,
+        log_file_path,
         sota_grounder_used = sota_grounder_used,
     )
 
