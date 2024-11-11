@@ -20,9 +20,12 @@ class ApproximateGeneratedSotaRules:
     Approx. gen. tuples.
     """
 
-    def __init__(self, domain_transformer, rule):
+    def __init__(self, domain_transformer, rule, alternative_global_number_terms = None, alternative_global_tuples = None):
 
         self.domain_transformer = domain_transformer
+        self.alternative_global_number_terms = alternative_global_number_terms
+        self.alternative_global_tuples = alternative_global_tuples
+
         self.rule = rule
 
         self.function_string = "FUNCTION"
@@ -34,10 +37,13 @@ class ApproximateGeneratedSotaRules:
         # Necessary for variable intersections 
         processed_variables = {}
 
-        domain = self.domain_transformer.domain_dictionary
-
+        domain = None
         domain_size_inferer = VariableDomainSizeInferer()
-        variable_domain_sizes = domain_size_inferer.get_variable_domain_size(self.rule, domain)
+        variable_domain_sizes = None
+
+        if self.domain_transformer is not None:
+            domain = self.domain_transformer.domain_dictionary
+            variable_domain_sizes = domain_size_inferer.get_variable_domain_size(self.rule, domain)
 
         for literal in self.rule.literals:
             if self.function_string in literal:
@@ -47,11 +53,13 @@ class ApproximateGeneratedSotaRules:
                     # Only consider body stuff
                     # For the "b" and "c" in a :- b, not c.
                     # For the "e" in {a:b;c:d} :- e.
-                    if function.name in domain and "terms" in domain[function.name]:
+                    if domain is not None and function.name in domain and "terms" in domain[function.name]:
                         terms_domain = domain[function.name]["terms"]
-                    elif "_total" in domain:
+                    elif domain is not None and "_total" in domain:
                         # Infer "_total" domain as an alternative (so the whole domain...)
                         terms_domain = domain["_total"]["terms"]
+                    elif self.alternative_global_number_terms is not None and self.alternative_global_tuples is not None:
+                        terms_domain = []
                     else:
                         raise Exception("_total domain not found!")
 
@@ -60,10 +68,9 @@ class ApproximateGeneratedSotaRules:
                     domain_size_inferer.get_function_domain_size(function, terms_domain, function_variables_domain_sizes)
 
                     # Infer Number of Tuples:
-                    if function.name in domain:
+                    if domain is not None and function.name in domain:
                         number_tuples = domain[function.name]["tuples_size"]
-                    else:
-
+                    elif domain is not None:
                         average_tuples = domain["_average_domain_tuples"]
                         total_domain = len(self.domain_transformer.total_domain.keys())
 
@@ -74,6 +81,10 @@ class ApproximateGeneratedSotaRules:
                             combinations *= total_domain
                         
                         number_tuples = int(math.ceil(average_tuples * combinations))
+                    elif self.alternative_global_tuples is not None:
+                        number_tuples = self.alternative_global_tuples
+                    else:
+                        raise Exception("[EROR] - Could not infer domain!")
 
                     tuples_function = number_tuples
 
@@ -83,7 +94,13 @@ class ApproximateGeneratedSotaRules:
                     # Which results in a "reduction" factor:
                     for variable in function_variables_domain_sizes:
                         if variable in processed_variables:
-                            tmp_intersec_factor = variable_domain_sizes[variable]
+                            if domain is not None:
+                                tmp_intersec_factor = variable_domain_sizes[variable]
+                            elif self.alternative_global_number_terms is not None:
+                                tmp_intersec_factor = self.alternative_global_number_terms
+                            else:
+                                raise Exception("[ERROR] - Could not infer domain!")
+
                             if tmp_intersec_factor > 0:
                                 variable_intersection_reduction_factor *= tmp_intersec_factor
 

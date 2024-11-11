@@ -137,6 +137,9 @@ class GroundingStrategyHandler:
         # Set the return type of open_pipe to our struct
         c_output_redirector.open_pipe.restype = PipeFds
 
+        # TODO:
+        tmp_rules_string = ""
+
         if self.enable_logging is True:
             self.logging_file.write("-------------------------------------------------------\n")
             self.logging_file.write("The following is the final grounding strategy:\n")
@@ -156,7 +159,6 @@ class GroundingStrategyHandler:
 
         level_index = 0
         while level_index < len(self.grounding_strategy):
-            tmp_rule_string = ""
 
             if domain_transformer.unsat_prg_found is True:
                 break
@@ -164,7 +166,6 @@ class GroundingStrategyHandler:
             level = self.grounding_strategy[level_index]
             sota_rules = level["sota"]
             bdg_rules = level["bdg"]
-            lpopt_rules = level["lpopt"]
 
 
             if self.debug_mode is True:
@@ -300,43 +301,8 @@ class GroundingStrategyHandler:
 
                     self.total_nagg_calls += 1
 
-
-            if len(lpopt_rules) > 0 and domain_inference_called_at_least_once is True:
-
-                # Call Lpopt once
-                # Approximate number of used rules
-                # Take better method
-
-                for lpopt_rule in lpopt_rules:
-
-                    lpopt_non_rewritten_rules_string = str(self.rule_dictionary[lpopt_rule])
-                    lpopt_rewritten_rules_string = self.start_lpopt(lpopt_non_rewritten_rules_string)
-
-                    lpopt_graph_ds = GraphDataStructure()
-                    lpopt_rule_dictionary = {}
-                    graph_transformer = GraphCreatorTransformer(lpopt_graph_ds, lpopt_rule_dictionary, lpopt_rewritten_rules_string.split("\n"), self.debug_mode)
-                    parse_string(lpopt_rewritten_rules_string, lambda stm: graph_transformer(stm))
-
-                    approximate_non_rewritten_rules = ApproximateGeneratedSotaRules(domain_transformer, self.rule_dictionary[lpopt_rule])
-                    approximate_non_rewritten_rule_instantiations = approximate_non_rewritten_rules.approximate_sota_size()
-
-                    approximate_rewritten_rule_instantiations = 0
-                    for rewritten_rule in lpopt_rule_dictionary.keys():
-                        tmp_approximate_non_rewritten_rules = ApproximateGeneratedSotaRules(domain_transformer, lpopt_rule_dictionary[rewritten_rule])
-                        tmp_approximate_non_rewritten_rule_instantiations = tmp_approximate_non_rewritten_rules.approximate_sota_size()
-
-                        approximate_rewritten_rule_instantiations += tmp_approximate_non_rewritten_rule_instantiations
-
-                    if approximate_rewritten_rule_instantiations < approximate_non_rewritten_rule_instantiations:
-                        # Then use Lpopt rewriting
-                        tmp_rule_string += lpopt_rewritten_rules_string
-
-                    else:
-                        # Use rule directly:
-                        tmp_rule_string += lpopt_non_rewritten_rules_string
-
                     
-            if len(sota_rules) > 0 or domain_inference_called_at_least_once is False or len(tmp_rule_string) > 0:
+            if len(sota_rules) > 0 or domain_inference_called_at_least_once is False:
 
                 if len(sota_rules) == 0 and domain_inference_called_at_least_once is False and len(tmp_rule_string) == 0:
                     level_index -= 1
@@ -345,9 +311,6 @@ class GroundingStrategyHandler:
 
                 # Ground SOTA rules with SOTA (gringo/IDLV):
                 sota_rules_string = self.rule_list_to_rule_string(sota_rules)
-
-                # Used for adding e.g., Lpopt rules:
-                sota_rules_string += tmp_rule_string 
 
                 if self.enable_logging is True:
                     self.logging_file.write("-------------------------------------------------------\n")
@@ -495,38 +458,3 @@ class GroundingStrategyHandler:
             raise Exception(ex) # TBD: Continue if possible
 
         return decoded_string
-
-    def start_lpopt(self, program_input, timeout=1800):
-
-        program_string = "./lpopt.bin"
-
-        if not os.path.isfile(program_string):
-            print("[ERROR] - For treewidth aware decomposition 'lpopt.bin' is required (current directory).")
-            raise Exception("lpopt.bin not found")
-
-        arguments = [program_string]
-
-        decoded_string = ""
-        try:
-            p = subprocess.Popen(arguments, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)       
-            (ret_vals_encoded, error_vals_encoded) = p.communicate(input=bytes(program_input, "ascii"), timeout = timeout)
-
-            decoded_string = ret_vals_encoded.decode()
-            error_vals_decoded = error_vals_encoded.decode()
-
-            if p.returncode != 0:
-                print(f">>>>> Other return code than 0 in helper: {p.returncode}")
-                raise Exception(error_vals_decoded)
-
-        except Exception as ex:
-            try:
-                p.kill()
-            except Exception as e:
-                pass
-
-            print(ex)
-
-            raise NotImplementedError() # TBD: Continue if possible
-
-        return decoded_string
-

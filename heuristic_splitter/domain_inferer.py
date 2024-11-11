@@ -91,7 +91,7 @@ class DomainInferer:
         count = 0
 
         for _tuple in self.domain_dictionary.keys():
-            if _tuple == "_average_domain_tuples":
+            if _tuple == "_average_domain_tuples" or _tuple == "_total":
                 continue
 
             number_tuples = self.domain_dictionary[_tuple]["tuples_size"]

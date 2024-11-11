@@ -30,6 +30,8 @@ def get_facts_from_file_handle(f):
     cdef list other_rules = []
     cdef dict query = {}
 
+    cdef dict terms_domain = {}
+
     # These definitions are very important for efficiencies sake!
     # Otherwise it defaults back to python (performance loss of factor ~10)    
     cdef int index
@@ -86,6 +88,13 @@ def get_facts_from_file_handle(f):
     cdef bytearray current_fact_id_bytearray = bytearray(current_fact_id_function_size)
     cdef bytearray tmp_current_fact_id_bytearray 
 
+    # Term String (for inferring crude domain, for domain approx.)
+    cdef int current_term_size = 30
+    cdef int current_term_head = 0
+    cdef bytearray current_term_bytearray = bytearray(current_fact_id_function_size)
+    cdef bytearray tmp_current_term_bytearray 
+
+
     # Number of terms in fact
     cdef int current_fact_number_terms = 0
     # Nesting depth w.r.t. to ( and )
@@ -129,6 +138,16 @@ def get_facts_from_file_handle(f):
                     tmp_current_fact_id_bytearray[index] = current_fact_id_bytearray[index]
 
                 current_fact_id_bytearray = tmp_current_fact_id_bytearray
+
+            if current_term_head >= current_term_size:
+                current_term_size *= 2
+                tmp_current_term_bytearray = bytearray(current_term_size)
+
+                for index in range(current_term_head):
+                    tmp_current_term_bytearray[index] = current_term_bytearray[index]
+
+                current_term_bytearray = tmp_current_term_bytearray
+
             # ---
             # Ignore white space, newline, and commented-out code:
             if in_string is False:
@@ -259,12 +278,25 @@ def get_facts_from_file_handle(f):
                                 current_rule_bytearray[current_rule_list_head] = cur_char
                                 current_rule_list_head += 1
 
+                                if PyUnicode_FromString(current_term_bytearray) not in terms_domain:
+                                    terms_domain[PyUnicode_FromString(current_term_bytearray)] = True
+
+                                current_term_bytearray = bytearray(current_term_size)
+                                current_term_head = 0
+
                                 continue
+
                             elif cur_char == comma_char and current_head_nesting_depth == 0:
                                 current_fact_number_terms += 1
                             
                                 current_rule_bytearray[current_rule_list_head] = cur_char
                                 current_rule_list_head += 1
+
+                                if PyUnicode_FromString(current_term_bytearray) not in terms_domain:
+                                    terms_domain[PyUnicode_FromString(current_term_bytearray)] = True
+
+                                current_term_bytearray = bytearray(current_term_size)
+                                current_term_head = 0
 
                                 continue
 
@@ -273,25 +305,40 @@ def get_facts_from_file_handle(f):
                             
                                 current_rule_bytearray[current_rule_list_head] = cur_char
                                 current_rule_list_head += 1
+ 
+                                current_term_bytearray[current_term_head] = cur_char
+                                current_term_head += 1
 
                                 continue
+
                             elif cur_char == opening_bracket_char:
                                 current_head_nesting_depth += 1
                             
                                 current_rule_bytearray[current_rule_list_head] = cur_char
                                 current_rule_list_head += 1
+                            
+                                current_term_bytearray[current_term_head] = cur_char
+                                current_term_head += 1
 
                                 continue
+
                             elif cur_char == quotation_mark_char:
                                 in_string = True
                             
                                 current_rule_bytearray[current_rule_list_head] = cur_char
                                 current_rule_list_head += 1
 
+                                current_term_bytearray[current_term_head] = cur_char
+                                current_term_head += 1
+
                                 continue
+
                             else:
                                 current_rule_bytearray[current_rule_list_head] = cur_char
                                 current_rule_list_head += 1
+
+                                current_term_bytearray[current_term_head] = cur_char
+                                current_term_head += 1
 
                                 continue
 
@@ -302,10 +349,16 @@ def get_facts_from_file_handle(f):
                                 current_rule_bytearray[current_rule_list_head] = cur_char
                                 current_rule_list_head += 1
 
+                                current_term_bytearray[current_term_head] = cur_char
+                                current_term_head += 1
+
                                 continue
                             else:
                                 current_rule_bytearray[current_rule_list_head] = cur_char
                                 current_rule_list_head += 1
+
+                                current_term_bytearray[current_term_head] = cur_char
+                                current_term_head += 1
 
                                 continue
 
@@ -329,11 +382,15 @@ def get_facts_from_file_handle(f):
                         current_fact_id_list_head = 0
                         current_rule_list_head = 0
 
+                        current_term_bytearray = bytearray(current_term_size)
+                        current_term_head = 0
+
                         in_fact_id = False
                         current_fact_head_in_dict = False
                         in_weak_constraint = False
 
                         continue
+
                     elif in_fact_terms is False and in_string is False and current_head_nesting_depth == 0 and cur_char == question_mark_char:
                         # Fact "abc(.,..,..)?" finished (query):
 
@@ -348,6 +405,9 @@ def get_facts_from_file_handle(f):
                         current_fact_number_terms = 0
                         current_fact_id_list_head = 0
                         current_rule_list_head = 0
+
+                        current_term_bytearray = bytearray(current_term_size)
+                        current_term_head = 0
 
                         in_fact_id = False
                         current_fact_head_in_dict = False
@@ -409,6 +469,9 @@ def get_facts_from_file_handle(f):
                         current_fact_id_list_head = 0
                         current_rule_list_head = 0
 
+                        current_term_bytearray = bytearray(current_term_size)
+                        current_term_head = 0
+
                         in_head = False
                         comment_line = False
                         in_string = False
@@ -446,6 +509,9 @@ def get_facts_from_file_handle(f):
                         current_fact_id_list_head = 0
                         current_rule_list_head = 0
 
+                        current_term_bytearray = bytearray(current_term_size)
+                        current_term_head = 0
+
                         in_head = False
                         comment_line = False
                         in_string = False
@@ -481,4 +547,4 @@ def get_facts_from_file_handle(f):
                         continue
 
 
-    return facts, facts_heads, other_rules, query
+    return facts, facts_heads, other_rules, query, terms_domain

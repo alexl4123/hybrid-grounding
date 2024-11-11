@@ -23,6 +23,8 @@ from heuristic_splitter.heuristic_0 import Heuristic0
 from heuristic_splitter.grounding_strategy_generator import GroundingStrategyGenerator
 from heuristic_splitter.grounding_strategy_handler import GroundingStrategyHandler
 
+from heuristic_splitter.grounding_approximation.approximate_generated_sota_rules import ApproximateGeneratedSotaRules
+
 #from heuristic_splitter.get_facts import GetFacts
 #from heuristic_splitter.setup_get_facts_cython import get_facts_from_file_handle
 from heuristic_splitter.get_facts_cython import get_facts_from_file_handle
@@ -77,12 +79,13 @@ class HeuristicSplitter:
 
             constraint_rules = {}
             grounding_strategy = []
+
             graph_ds = GraphDataStructure()
             rule_dictionary = {}
 
             # Separate facts from other rules:
             #facts, facts_heads, other_rules, all_heads = GetFacts().get_facts_from_contents(contents)
-            facts, facts_heads, other_rules, query = get_facts_from_file_handle(virtual_file)
+            facts, facts_heads, other_rules, query, terms_domain = get_facts_from_file_handle(virtual_file)
 
             all_heads = facts_heads.copy()
 
@@ -109,6 +112,42 @@ class HeuristicSplitter:
                 sota_rules, stratified_rules, lpopt_rules, constraint_rules, all_heads,
                 self.debug_mode, rule_dictionary)
             parse_string(other_rules_string, lambda stm: heuristic_transformer(stm))
+
+            if self.enable_lpopt is True and self.sota_grounder == SotaGrounder.GRINGO:
+                # Check if Lpopt use is useful:
+                # If so, (lpopt_used is True), then overwrite most of the other variables:
+
+                alternative_global_number_terms=len(list(terms_domain.keys()))
+                alternative_global_tuples=len(list(facts.keys()))
+
+                # MANY ARGUMENTS:
+                lpopt_used, tmp_bdg_rules, tmp_sota_rules, tmp_stratified_rules,\
+                    tmp_lpopt_rules, tmp_constraint_rules, tmp_other_rules, tmp_other_rules_string,\
+                    tmp_rule_dictionary, tmp_graph_ds = self.lpopt_handler(bdg_rules, sota_rules,
+                        stratified_rules, lpopt_rules, constraint_rules, other_rules,
+                        other_rules_string, rule_dictionary, graph_ds, facts_heads,
+                        alternative_global_tuples, alternative_global_number_terms)
+
+                if lpopt_used is True:
+
+                    bdg_rules = tmp_bdg_rules
+                    sota_rules = tmp_sota_rules
+                    stratified_rules = tmp_stratified_rules
+                    lpopt_rules = tmp_lpopt_rules
+                    constraint_rules = tmp_constraint_rules
+
+                    other_rules = tmp_other_rules
+                    other_rules_string = tmp_other_rules_string
+
+                    rule_dictionary = tmp_rule_dictionary
+                    graph_ds = tmp_graph_ds
+
+                else:
+                    # Ground them via SOTA approaches:
+                    for lpopt_rule in lpopt_rules:
+                        sota_rules[lpopt_rule] = True
+
+                    lpopt_rules.clear()
 
             generator_grounding_strategy = GroundingStrategyGenerator(graph_ds, bdg_rules, sota_rules,
                 stratified_rules, constraint_rules, lpopt_rules, rule_dictionary)
@@ -163,3 +202,161 @@ class HeuristicSplitter:
                 self.logging_file.close()
 
             raise ex
+
+    def lpopt_handler(self, bdg_rules, sota_rules, stratified_rules,
+        lpopt_rules, constraint_rules, other_rules, other_rules_string,
+        rule_dictionary, graph_ds, facts_heads,
+        alternative_global_tuples, alternative_global_number_terms,
+        ):
+
+
+        # Handle LPOPT
+        # 1.) Rewrite
+        # 2.) Check if useful
+        # 3.) If anything useful -> Re-process all other rules as before
+
+        tmp_rule_string = ""
+
+        lpopt_used = False
+
+        use_lpopt_for_rules_string = ""
+        do_not_use_lpopt_for_rules_string = ""
+
+        for lpopt_rule in lpopt_rules:
+
+            lpopt_non_rewritten_rules_string = str(rule_dictionary[lpopt_rule])
+            lpopt_rewritten_rules_string = self.start_lpopt(lpopt_non_rewritten_rules_string)
+
+            lpopt_graph_ds = GraphDataStructure()
+            lpopt_rule_dictionary = {}
+            graph_transformer = GraphCreatorTransformer(lpopt_graph_ds, lpopt_rule_dictionary, lpopt_rewritten_rules_string.split("\n"), self.debug_mode)
+            parse_string(lpopt_rewritten_rules_string, lambda stm: graph_transformer(stm))
+
+            approximate_non_rewritten_rules = ApproximateGeneratedSotaRules(None, rule_dictionary[lpopt_rule],
+                alternative_global_number_terms=alternative_global_number_terms,
+                alternative_global_tuples=alternative_global_tuples)
+            approximate_non_rewritten_rule_instantiations = approximate_non_rewritten_rules.approximate_sota_size()
+
+            approximate_rewritten_rule_instantiations = 0
+            for rewritten_rule in lpopt_rule_dictionary.keys():
+                tmp_approximate_non_rewritten_rules = ApproximateGeneratedSotaRules(None, lpopt_rule_dictionary[rewritten_rule],
+                    alternative_global_number_terms=alternative_global_number_terms,
+                    alternative_global_tuples=alternative_global_tuples)
+                tmp_approximate_non_rewritten_rule_instantiations = tmp_approximate_non_rewritten_rules.approximate_sota_size()
+
+                approximate_rewritten_rule_instantiations += tmp_approximate_non_rewritten_rule_instantiations
+
+            if approximate_rewritten_rule_instantiations < approximate_non_rewritten_rule_instantiations:
+                # Then use Lpopt rewriting
+                use_lpopt_for_rules_string += lpopt_non_rewritten_rules_string + "\n"
+                lpopt_used = True
+
+            else:
+                # Use rule directly:
+                do_not_use_lpopt_for_rules_string += lpopt_non_rewritten_rules_string + "\n"
+        
+        if lpopt_used is True:
+
+            # Call it once for all to-rewrite rules (to get temporary predicates correctly):
+            tmp_rule_string = self.start_lpopt(use_lpopt_for_rules_string)
+            tmp_rule_string += do_not_use_lpopt_for_rules_string
+
+            tmp_graph_ds = GraphDataStructure()
+            tmp_rule_dictionary = {}
+
+            for fact_head in facts_heads.keys():
+                tmp_graph_ds.add_vertex(fact_head)
+
+            for stratified_rule in stratified_rules.keys():
+                tmp_rule_string += str(rule_dictionary[stratified_rule]) + "\n"
+
+            for sota_rule in sota_rules.keys():
+                tmp_rule_string += str(rule_dictionary[sota_rule]) + "\n"
+
+            for bdg_rule in bdg_rules.keys():
+                tmp_rule_string += str(rule_dictionary[bdg_rule]) + "\n"
+
+
+            tmp_rules_list = tmp_rule_string.split("\n")
+
+            # Rmv empty lines:
+            tmp_rules_list_2 = []
+            for tmp_rule in tmp_rules_list:
+                if len(tmp_rule) > 0: 
+                    tmp_rules_list_2.append(tmp_rule)
+
+            tmp_rules_list = tmp_rules_list_2
+            tmp_rule_string = "\n".join(tmp_rules_list)
+
+            graph_transformer = GraphCreatorTransformer(tmp_graph_ds, tmp_rule_dictionary, tmp_rules_list, self.debug_mode)
+            parse_string(tmp_rule_string, lambda stm: graph_transformer(stm))
+
+            graph_analyzer = GraphAnalyzer(tmp_graph_ds)
+            graph_analyzer.start()
+
+            if self.heuristic_strategy == HeuristicStrategy.TREEWIDTH_PURE:
+                tmp_enable_lpopt = False
+                heuristic = Heuristic0(self.treewidth_strategy, tmp_rule_dictionary, self.sota_grounder, tmp_enable_lpopt)
+            else:
+                raise NotImplementedError()
+
+            bdg_rules = {}
+            sota_rules = {}
+            stratified_rules = {}
+            lpopt_rules = {}
+
+            constraint_rules = {}
+
+            # All heads already infered, so this one is not used!
+            all_heads_dev_null = {}
+
+            heuristic_transformer = HeuristicTransformer(tmp_graph_ds, heuristic, bdg_rules,
+                sota_rules, stratified_rules, lpopt_rules, constraint_rules, all_heads_dev_null,
+                self.debug_mode, tmp_rule_dictionary)
+            parse_string(tmp_rule_string, lambda stm: heuristic_transformer(stm))
+
+            other_rules = tmp_rules_list
+            other_rules_string = tmp_rule_string
+            rule_dictionary = tmp_rule_dictionary
+            graph_ds = tmp_graph_ds
+
+
+        return lpopt_used, bdg_rules, sota_rules, stratified_rules, lpopt_rules, constraint_rules, other_rules, other_rules_string, rule_dictionary, graph_ds
+
+
+
+
+    def start_lpopt(self, program_input, timeout=1800):
+
+        program_string = "./lpopt.bin"
+
+        if not os.path.isfile(program_string):
+            print("[ERROR] - For treewidth aware decomposition 'lpopt.bin' is required (current directory).")
+            raise Exception("lpopt.bin not found")
+
+        arguments = [program_string]
+
+        decoded_string = ""
+        try:
+            p = subprocess.Popen(arguments, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)       
+            (ret_vals_encoded, error_vals_encoded) = p.communicate(input=bytes(program_input, "ascii"), timeout = timeout)
+
+            decoded_string = ret_vals_encoded.decode()
+            error_vals_decoded = error_vals_encoded.decode()
+
+            if p.returncode != 0:
+                print(f">>>>> Other return code than 0 in helper: {p.returncode}")
+                raise Exception(error_vals_decoded)
+
+        except Exception as ex:
+            try:
+                p.kill()
+            except Exception as e:
+                pass
+
+            print(ex)
+
+            raise NotImplementedError() # TBD: Continue if possible
+
+        return decoded_string
+

@@ -76,7 +76,6 @@ class ApproximateGeneratedSotaRulesTransformer(Transformer):
             if node.name in self.domain_transformer.domain_dictionary:
                 number_tuples = self.domain_transformer.domain_dictionary[node.name]["tuples_size"]
             else:
-
                 average_tuples = self.domain_transformer.domain_dictionary["_average_domain_tuples"]
                 total_domain = len(self.domain_transformer.total_domain.keys())
 
