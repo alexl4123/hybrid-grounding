@@ -1,4 +1,10 @@
-# NaGG
+
+# Compile New
+
+`./compile_all.sh`
+
+
+# Newground 3.0 (Heuristic Splitter)
 
 This is our prototypical implementation of our grounder.
 It is called Novel AggreGate Grounder.## Installation / How it works
