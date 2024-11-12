@@ -338,11 +338,13 @@ class HeuristicSplitter:
             print("[ERROR] - For treewidth aware decomposition 'lpopt.bin' is required (current directory).")
             raise Exception("lpopt.bin not found")
 
-        arguments = [program_string]
+        seed = 11904657
+        call_string = f"{program_string} -s {seed}"
+        #arguments = [program_string]
 
         decoded_string = ""
         try:
-            p = subprocess.Popen(arguments, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)       
+            p = subprocess.Popen(call_string, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)       
             (ret_vals_encoded, error_vals_encoded) = p.communicate(input=bytes(program_input, "ascii"), timeout = timeout)
 
             decoded_string = ret_vals_encoded.decode()
@@ -350,6 +352,8 @@ class HeuristicSplitter:
 
             if p.returncode != 0:
                 print(f">>>>> Other return code than 0 in helper: {p.returncode}")
+                print(decoded_string)
+                print(error_vals_decoded)
                 raise Exception(error_vals_decoded)
 
         except Exception as ex:
