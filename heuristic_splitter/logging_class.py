@@ -19,7 +19,11 @@ class LoggingClass:
         self.lpopt_used_for_rules = ""
         self.sota_used_for_rules = ""
 
+        self.bdg_marked_for_use_rules = ""
+
         self.logging_file = logging_file
+
+        self.is_single_ground_call = False
 
     def print_to_file(self):
 
@@ -27,6 +31,7 @@ class LoggingClass:
         self.logging_file.write(f"--BDG-Used:{self.is_bdg_used}\n")
         self.logging_file.write(f"--BDG-New-Used:{self.is_bdg_new_used}\n")
         self.logging_file.write(f"--BDG-Old-Used:{self.is_bdg_old_used}\n")
+        self.logging_file.write(f"--Is-Single-Ground-Call:{self.is_single_ground_call}")
         self.logging_file.write("\n------------------------------------\n")
         self.logging_file.write(f"BDG-Is-Used-For-Rules:\n")
         self.logging_file.write("====================================\n")
@@ -47,6 +52,10 @@ class LoggingClass:
         self.logging_file.write(f"Old-BDG-Is-Used-For-Rules:\n")
         self.logging_file.write("====================================\n")
         self.logging_file.write(self.bdg_old_used_for_rules)
+        self.logging_file.write("\n------------------------------------\n")
+        self.logging_file.write(f"BDG-Marked-For-Use-Rules:\n")
+        self.logging_file.write("====================================\n")
+        self.logging_file.write(self.bdg_marked_for_use_rules)
         self.logging_file.write("\n------------------------------------\n")
         self.logging_file.write(f"Final-Grounding-Strategy:\n")
         self.logging_file.write("====================================\n")

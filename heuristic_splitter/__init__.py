@@ -15,6 +15,7 @@ from heuristic_splitter.enums.heuristic_strategy import HeuristicStrategy
 from heuristic_splitter.enums.grounding_strategy import GroundingStrategy
 from heuristic_splitter.enums.sota_grounder import SotaGrounder
 from heuristic_splitter.enums.treewidth_computation_strategy import TreewidthComputationStrategy
+from heuristic_splitter.enums.output import Output
 
 
 def main():
@@ -69,6 +70,22 @@ def main():
     }
 
 
+    output_type = {
+        "STANDARD_GROUNDER": {
+            "cmd_line": "standard-grounder",
+            "enum_mode": Output.DEFAULT_GROUNDER
+            },
+        "STRING": {
+            "cmd_line": "string",
+            "enum_mode": Output.STRING,
+        },
+        "BENCHMARK": {
+            "cmd_line": "benchmark",
+            "enum_mode": Output.BENCHMARK,
+        },
+    }
+
+
 
     parser = argparse.ArgumentParser(prog="heuristic", usage="%(prog)s [files]")
     parser.add_argument(
@@ -79,6 +96,17 @@ def main():
             for key in heuristic_methods.keys()
         ],
     )
+
+    parser.add_argument(
+        "--output-type",
+        default=output_type["STANDARD_GROUNDER"]["cmd_line"],
+        choices=[
+            output_type[key]["cmd_line"]
+            for key in output_type.keys()
+        ],
+    )
+
+
 
     parser.add_argument(
         "--sota-grounder",
@@ -154,7 +182,10 @@ def main():
         if args.sota_grounder == sota_grounder[key]["cmd_line"]:
             sota_grounder_used = sota_grounder[key]["enum_mode"]
 
-
+    output_type_used = None
+    for key in output_type.keys():
+        if args.output_type == output_type[key]["cmd_line"]:
+            output_type_used = output_type[key]["enum_mode"]
 
     debug_mode = args.debug
     enable_lpopt = args.tw_aware
@@ -198,6 +229,7 @@ def main():
         args.enable_logging,
         log_file_path,
         sota_grounder_used = sota_grounder_used,
+        output_type = output_type_used
     )
 
     heuristic.start(contents)

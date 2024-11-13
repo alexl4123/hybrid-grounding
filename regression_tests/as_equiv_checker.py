@@ -26,6 +26,7 @@ from heuristic_splitter.heuristic_splitter import HeuristicSplitter
 from heuristic_splitter.enums.heuristic_strategy import HeuristicStrategy
 from heuristic_splitter.enums.treewidth_computation_strategy import TreewidthComputationStrategy
 from heuristic_splitter.enums.grounding_strategy import GroundingStrategy
+from heuristic_splitter.enums.output import Output
 
 def limit_virtual_memory():
     max_virtual_memory = 1024 * 1024 * 1024 * 64 # 64GB
@@ -207,7 +208,7 @@ class EquivChecker:
             print(f"[INFO] Checking current test with aggregate strategy: {aggregate_mode[0]}")
 
             combined_file_input = instance_file_contents + encoding_file_contents
-            optimization_problem_clingo = self.start_clingo(combined_file_input, self.clingo_output, self.clingo_hashes)
+            optimization_problem_clingo = self.start_clingo(combined_file_input, self.clingo_output, self.clingo_hashes, mode="clingo")
 
             # Custom printer keeps result of prototype (NaGG)
             custom_printer = CustomOutputPrinter()
@@ -215,7 +216,10 @@ class EquivChecker:
             heuristic_strategy = HeuristicStrategy.TREEWIDTH_PURE
             treewidth_strategy = TreewidthComputationStrategy.NETWORKX_HEUR
             grounding_strategy = GroundingStrategy.FULL
+            output_type = Output.DEFAULT_GROUNDER
+
             debug_mode = False
+
             enable_lpopt = True
             enable_logging = True
 
@@ -228,7 +232,8 @@ class EquivChecker:
                 heuristic_splitter = HeuristicSplitter(
                     heuristic_strategy, treewidth_strategy, grounding_strategy,
                     debug_mode, enable_lpopt, output_printer = custom_printer,
-                    enable_logging=enable_logging, logging_file=log_file_name
+                    enable_logging=enable_logging, logging_file=log_file_name,
+                    output_type=output_type
                 )
                 heuristic_splitter.start(total_content)
 
@@ -238,11 +243,12 @@ class EquivChecker:
                 heuristic_splitter = HeuristicSplitter(
                     heuristic_strategy, treewidth_strategy, grounding_strategy,
                     debug_mode, enable_lpopt, output_printer = custom_printer,
-                    enable_logging=enable_logging, logging_file=log_file_name
+                    enable_logging=enable_logging, logging_file=log_file_name,
+                    output_type=output_type
                 )
                 heuristic_splitter.start(heur_split_content)
             
-            optimization_problem_nagg = self.start_clingo(custom_printer.get_string(), self.nagg_output, self.nagg_hashes)
+            optimization_problem_nagg = self.start_clingo(custom_printer.get_string(), self.nagg_output, self.nagg_hashes, mode="clasp")
 
             if optimization_problem_clingo is not None and optimization_problem_nagg is not None:
                 if optimization_problem_clingo != optimization_problem_nagg:
@@ -290,9 +296,9 @@ class EquivChecker:
             return (True, len(self.clingo_output), len(self.nagg_output))
         
     
-    def start_clingo(self, program_input, output, hashes, timeout=1800):
+    def start_clingo(self, program_input, output, hashes, timeout=1800, mode="clingo"):
 
-        arguments = ["clingo", "--project", "--model=0"]
+        arguments = ["clingo", "--project", "--model=0", f"--mode={mode}"]
 
         try:
             #p = subprocess.Popen(arguments, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, preexec_fn=limit_virtual_memory)       

@@ -17,6 +17,7 @@ from heuristic_splitter.enums.heuristic_strategy import HeuristicStrategy
 from heuristic_splitter.enums.treewidth_computation_strategy import TreewidthComputationStrategy
 from heuristic_splitter.enums.grounding_strategy import GroundingStrategy
 from heuristic_splitter.enums.sota_grounder import SotaGrounder
+from heuristic_splitter.enums.output import Output
 
 from heuristic_splitter.heuristic_0 import Heuristic0
 
@@ -35,7 +36,8 @@ class HeuristicSplitter:
     def __init__(self, heuristic_strategy: HeuristicStrategy, treewidth_strategy: TreewidthComputationStrategy, grounding_strategy:GroundingStrategy, 
         debug_mode, enable_lpopt,
         enable_logging = False, logging_file = None,
-        output_printer = None, sota_grounder_used = SotaGrounder.GRINGO):
+        output_printer = None, sota_grounder_used = SotaGrounder.GRINGO,
+        output_type = Output.DEFAULT_GROUNDER):
 
         self.heuristic_strategy = heuristic_strategy
         self.treewidth_strategy = treewidth_strategy
@@ -45,6 +47,7 @@ class HeuristicSplitter:
         self.debug_mode = debug_mode
         self.enable_lpopt = enable_lpopt
         self.output_printer = output_printer
+        self.output_type = output_type
 
         self.enable_logging = enable_logging
         path = None
@@ -121,7 +124,7 @@ class HeuristicSplitter:
                 alternative_global_number_terms=len(list(terms_domain.keys()))
                 alternative_global_tuples=len(list(facts.keys()))
 
-                # MANY ARGUMENTS:
+                # MANY ARGUMENTS/CALL LPOPT:
                 lpopt_used, tmp_bdg_rules, tmp_sota_rules, tmp_stratified_rules,\
                     tmp_lpopt_rules, tmp_constraint_rules, tmp_other_rules, tmp_other_rules_string,\
                     tmp_rule_dictionary, tmp_graph_ds = self.lpopt_handler(bdg_rules, sota_rules,
@@ -163,15 +166,21 @@ class HeuristicSplitter:
             if self.grounding_strategy == GroundingStrategy.FULL:
 
                 grounding_handler = GroundingStrategyHandler(grounding_strategy, rule_dictionary, graph_ds,
-                    facts,
-                    query,
+                    facts, query,
                     self.debug_mode, self.enable_lpopt,
                     output_printer = self.output_printer, sota_grounder = self.sota_grounder,
-                    enable_logging = self.enable_logging, logging_class = self.logging_class)
+                    enable_logging = self.enable_logging, logging_class = self.logging_class,
+                    output_type = self.output_type)
                 if len(grounding_strategy) > 1 or len(grounding_strategy[0]["bdg"]) > 0:
+                    if self.enable_logging is True:
+                        self.logging_class.is_single_ground_call = False
+
                     grounding_handler.ground()
                     grounding_handler.output_grounded_program(all_heads)
                 else:
+                    if self.enable_logging is True:
+                        self.logging_class.is_single_ground_call = True
+
                     grounding_handler.single_ground_call(all_heads)
 
             else:

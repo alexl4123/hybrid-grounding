@@ -39,6 +39,7 @@ from nagg.foundedness_strategy import FoundednessStrategy
 from heuristic_splitter.domain_inferer import DomainInferer
 
 from heuristic_splitter.enums.sota_grounder import SotaGrounder
+from heuristic_splitter.enums.output import Output
 
 from heuristic_splitter.program.string_asp_program import StringASPProgram
 from heuristic_splitter.program.smodels_asp_program import SmodelsASPProgram
@@ -72,12 +73,15 @@ class GroundingStrategyHandler:
 
     def __init__(self, grounding_strategy: GroundingStrategyGenerator, rule_dictionary, graph_ds: GraphDataStructure, facts, query,
         debug_mode, enable_lpopt, sota_grounder = SotaGrounder.GRINGO,
-        output_printer = None, enable_logging = False, logging_class: LoggingClass = None):
+        output_printer = None, enable_logging = False, logging_class: LoggingClass = None,
+        output_type: Output = None):
 
         self.grounding_strategy = grounding_strategy
         self.rule_dictionary = rule_dictionary
         self.facts = facts
         self.query = query
+
+        self.output_type = output_type
         
         self.graph_ds = graph_ds
 
@@ -112,22 +116,29 @@ class GroundingStrategyHandler:
 
             program_input = self.grounded_program.get_string() + "\n" + sota_rules_string
 
-            decoded_string = self.start_sota_grounder(program_input)
+            if self.output_type == Output.DEFAULT_GROUNDER or self.output_type == Output.BENCHMARK:
+                final_string = self.start_sota_grounder(program_input, mode="standard")
 
-            self.grounded_program = SmodelsASPProgram(self.grd_call)
-            self.grounded_program.preprocess_smodels_program(decoded_string, domain_transformer)
-            gringo_string = self.grounded_program.get_string(insert_flags=True)
+            elif self.output_type == Output.STRING:
+                final_string = self.start_sota_grounder(program_input, mode="smodels")
+                self.grounded_program = SmodelsASPProgram(self.grd_call)
+                self.grounded_program.preprocess_smodels_program(final_string, domain_transformer)
+                gringo_string = self.grounded_program.get_string(insert_flags=True)
+
         else:
-            gringo_string = self.grounded_program.get_string()
+            if self.output_type == Output.DEFAULT_GROUNDER:
+                final_string = self.start_sota_grounder(program_input)
+            final_string = self.grounded_program.get_string()
 
         if self.debug_mode is True:
             print("--- FINAL ---") 
 
-        show_statements = "\n".join([f"#show {key}/{all_heads[key]}." for key in all_heads.keys()] + [f"#show -{key}/{all_heads[key]}." for key in all_heads.keys()])
-        query_statement = ""
-        if len(self.query.keys()) > 0:
-            query_statement = list(self.query.keys())[0]
-        final_string = gringo_string + "\n" + show_statements + "\n" + query_statement
+        if self.output_type == Output.STRING:
+            show_statements = "\n".join([f"#show {key}/{all_heads[key]}." for key in all_heads.keys()] + [f"#show -{key}/{all_heads[key]}." for key in all_heads.keys()])
+            query_statement = ""
+            if len(self.query.keys()) > 0:
+                query_statement = list(self.query.keys())[0]
+            final_string = gringo_string + "\n" + show_statements + "\n" + query_statement
 
         if self.output_printer:
             self.output_printer.custom_print(final_string)
@@ -141,11 +152,8 @@ class GroundingStrategyHandler:
         # Set the return type of open_pipe to our struct
         c_output_redirector.open_pipe.restype = PipeFds
 
-        # TODO:
-        tmp_rules_string = ""
-
         if self.enable_logging is True:
-            self.logging_class.grounding_strategy = self.grounding_strategy
+            self.logging_class.grounding_strategy = self.clone_grounding_strategy(self.grounding_strategy)
 
         domain_inference_called_at_least_once = False
 
@@ -182,6 +190,9 @@ class GroundingStrategyHandler:
 
                     rule = self.rule_dictionary[bdg_rule]
 
+                    if self.enable_logging is True:
+                        self.logging_class.bdg_marked_for_use_rules += str(rule) + "\n"
+
                     if rule.in_program_rules is True:
                         # TDB -> TODO
                         #tmp_bdg_new_found_rules.append(bdg_rule)
@@ -194,7 +205,10 @@ class GroundingStrategyHandler:
                         elif used_method == "BDG_OLD":
                             tmp_bdg_old_found_rules.append(bdg_rule)
                         else:
-                            tmp_bdg_new_found_rules.append(bdg_rule) 
+                            sota_rules.append(bdg_rule)
+                            # TODO!!!
+                            # For now do not use tmp_bdg_new in Benchmarks!
+                            # tmp_bdg_new_found_rules.append(bdg_rule) 
 
                 no_show = True
                 ground_guess = True
@@ -355,20 +369,25 @@ class GroundingStrategyHandler:
         if self.debug_mode is True:
             print("--- FINAL ---") 
 
-        show_statements = "\n".join([f"#show {key}/{all_heads[key]}." for key in all_heads.keys()] + [f"#show -{key}/{all_heads[key]}." for key in all_heads.keys()])
+        if self.output_type == Output.STRING or self.output_type == Output.BENCHMARK:
+            show_statements = "\n".join([f"#show {key}/{all_heads[key]}." for key in all_heads.keys()] + [f"#show -{key}/{all_heads[key]}." for key in all_heads.keys()])
 
-        query_statement = ""
-        if len(self.query.keys()) > 0:
-            query_statement = list(self.query.keys())[0]
+            query_statement = ""
+            if len(self.query.keys()) > 0:
+                query_statement = list(self.query.keys())[0]
 
-        input_program = self.grounded_program.get_string(insert_flags=True) + "\n" + show_statements + "\n" + query_statement
-
-
-        #final_program = self.start_gringo(input_program, output_mode="--output=smodels")
-        if self.output_printer:
-            self.output_printer.custom_print(input_program)
+            final_program = self.grounded_program.get_string(insert_flags=True) + "\n" + show_statements + "\n" + query_statement
         else:
-            print(input_program)
+            if self.sota_grounder == SotaGrounder.GRINGO:
+                show_statements = "\n".join([f"#show {key}/{all_heads[key]}." for key in all_heads.keys()] + [f"#show -{key}/{all_heads[key]}." for key in all_heads.keys()])
+
+            input_program = self.grounded_program.get_string(insert_flags=True) + "\n" + show_statements
+            final_program = self.start_sota_grounder(input_program, mode="standard")
+
+        if self.output_printer:
+            self.output_printer.custom_print(final_program)
+        else:
+            print(final_program)
 
     def add_approximate_generated_ground_rules_for_non_ground_rule(self, domain_transformer, rule, str_rule, methods_approximations):
         """
@@ -384,7 +403,11 @@ class GroundingStrategyHandler:
         approximated_bdg_new_rule_instantiations, approximated_bdg_old_rule_instantiations = approximated_bdg_rules.approximate_bdg_sizes()
 
         methods_approximations.append((approximated_bdg_old_rule_instantiations, "BDG_OLD", str_rule))
-        methods_approximations.append((approximated_bdg_new_rule_instantiations, "BDG_NEW", str_rule))
+        
+        # TODO!!!
+        # For now do not use tmp_bdg_new in Benchmarks!
+        # tmp_bdg_new_found_rules.append(bdg_rule) 
+        #methods_approximations.append((approximated_bdg_new_rule_instantiations, "BDG_NEW", str_rule))
 
         if self.debug_mode is True:
             print("-------------------------")
@@ -430,12 +453,27 @@ class GroundingStrategyHandler:
         return program_input
 
 
-    def start_sota_grounder(self, program_input, timeout=1800):
+    def start_sota_grounder(self, program_input, timeout=1800, mode="smodels"):
 
         if self.sota_grounder == SotaGrounder.GRINGO:
-            arguments = ["gringo", "--output=smodels"]
+            if mode =="smodels":
+                output = "--output=smodels"
+            elif mode == "standard":
+                output = "--output=intermediate"
+            else:
+                raise NotImplementedError(f"[ERROR] - Mode for grounder (internally) not supported: {mode}")
+
+            arguments = ["./gringo", output]
+
         elif self.sota_grounder == SotaGrounder.IDLV:
-            arguments = ["./idlv.bin", "--output=0", "--stdin"]
+
+            if mode in ["smodels", "standard"]:
+                output = "--output=0"
+            else:
+                raise NotImplementedError(f"[ERROR] - Mode for grounder (internally) not supported: {mode}")
+
+            arguments = ["./idlv.bin", output, "--stdin"]
+
         else:
             raise NotImplementedError(f"Grounder {grounder} not implemented!")
 
@@ -462,3 +500,19 @@ class GroundingStrategyHandler:
             raise Exception(ex) # TBD: Continue if possible
 
         return decoded_string
+
+    def clone_grounding_strategy(self, grounding_strategy):
+
+        new_grounding_strategy = []
+
+        for item in grounding_strategy:
+
+            tmp_dict = {}
+            tmp_dict["sota"] = item["sota"].copy()
+            tmp_dict["bdg"] = item["bdg"].copy()
+            tmp_dict["lpopt"] = item["lpopt"].copy()
+            tmp_dict["dependencies"] = item["dependencies"].copy()
+
+            new_grounding_strategy.append(tmp_dict)
+
+        return new_grounding_strategy
