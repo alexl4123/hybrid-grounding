@@ -23,6 +23,8 @@ class SmodelsASPProgram(ASPProgram):
         self.weak_constraint_priority = 0
         self.global_weight_index = 0
 
+        self.program_string = ""
+
 
     def recursive_domain_size_computation(self, function_position_dict_list):
 
@@ -41,7 +43,7 @@ class SmodelsASPProgram(ASPProgram):
             _dict["__size__"] = cur_number
 
 
-    def preprocess_smodels_program(self, smodels_program_string, domain_inferer: DomainInferer):
+    def preprocess_smodels_program(self, smodels_program_string, domain_inferer: DomainInferer, save_smodels_rules = False):
     
         rules, domain_dictionary, total_domain, literals_dict = cython_preprocess_smodels_program(smodels_program_string, domain_inferer.processed_literals)
 
@@ -72,17 +74,16 @@ class SmodelsASPProgram(ASPProgram):
                     domain_dictionary["_total"]["terms"][0][total_domain_key] = True
                     domain_dictionary["_total"]["terms_size"][0] += 1
 
+        if save_smodels_rules is True:
+            self.program = rules
 
-        self.program = rules
         self.literals_dict = literals_dict
 
         for literal_name in domain_dictionary:
             if literal_name not in domain_inferer.processed_literals:
                 domain_inferer.domain_dictionary[literal_name] = domain_dictionary[literal_name]
 
-        #domain_inferer.domain_dictionary = domain_inferer.domain_dictionary | domain_dictionary
         domain_inferer.total_domain.update(total_domain)
-
 
         domain_inferer.infer_processed_literals()
         domain_inferer.compute_domain_average()
@@ -129,9 +130,16 @@ class SmodelsASPProgram(ASPProgram):
         To handle compability with NaGG (NaGG output is string).
         """
 
+        self.program_string += to_add_prg
+
+    def add_other_string(self, to_add_prg):
         self.other_prg_string = self.other_prg_string + to_add_prg
 
-    def get_string(self, insert_flags = False):
+    def get_string(self, insert_flags = False, rewrite_smodels_program = False):
+
+        if rewrite_smodels_program is False:
+            return self.program_string
+        # Else do all of the following:
 
         if self.debug_mode is True:
             print("+++++ START REWRITING SMODELS OUTPUT +++++")

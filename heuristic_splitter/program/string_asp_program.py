@@ -6,6 +6,7 @@ class StringASPProgram(ASPProgram):
     def __init__(self, program):
 
         self.program = program
+        self.other_prg_string = ""
 
     def get_string(self, insert_flags = False):
 

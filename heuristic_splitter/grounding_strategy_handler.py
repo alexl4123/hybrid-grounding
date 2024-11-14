@@ -98,6 +98,9 @@ class GroundingStrategyHandler:
         self.grd_call = 0
         self.total_nagg_calls = 0
 
+        self.final_program_input_to_grounder = ""
+        self.full_ground = False
+
     def single_ground_call(self, all_heads):
 
         if self.grounded_program is None: 
@@ -241,7 +244,9 @@ class GroundingStrategyHandler:
                         stdout_backup = c_output_redirector.redirect_stdout_to_fd_and_duplicate_and_close(fd)
 
                         cython_nagg = CythonNagg(domain_transformer,
-                            nagg_call_number=self.total_nagg_calls, justifiability_type=JustifiabilityType.SATURATION)
+                            nagg_call_number=self.total_nagg_calls, justifiability_type=JustifiabilityType.SATURATION,
+                            c_output_redirector= c_output_redirector,
+                            full_ground = self.full_ground)
                         cython_nagg.rewrite_rules(input_rules)
                         end_time = time.time()
 
@@ -293,7 +298,8 @@ class GroundingStrategyHandler:
                         stdout_backup = c_output_redirector.redirect_stdout_to_fd_and_duplicate_and_close(fd)
 
                         cython_nagg = CythonNagg(domain_transformer,
-                            nagg_call_number=self.total_nagg_calls, justifiability_type=JustifiabilityType.UNFOUND)
+                            nagg_call_number=self.total_nagg_calls, justifiability_type=JustifiabilityType.UNFOUND,
+                            full_ground = self.full_ground, c_output_redirector = c_output_redirector)
                         cython_nagg.rewrite_rules(input_rules)
                         end_time = time.time()
 
@@ -304,9 +310,11 @@ class GroundingStrategyHandler:
                         f = open(path, "r")
                         output = f.read()
 
+                        self.grounded_program.add_string(cython_nagg.head_guesses_string)
+
                         f.close()
 
-                        self.grounded_program.add_string(output)
+                        self.grounded_program.add_other_string(output)
 
                     except Exception as ex:
 
@@ -337,6 +345,7 @@ class GroundingStrategyHandler:
 
                 program_input = self.grounded_program.get_string() + "\n" + sota_rules_string
 
+                other_program_str = self.grounded_program.other_prg_string
                 # Explicitly garbage collect stuff
                 del self.grounded_program
                 gc.collect()
@@ -346,6 +355,9 @@ class GroundingStrategyHandler:
                 #parse_string(decoded_string, lambda stm: domain_transformer(stm))
                 self.grounded_program = SmodelsASPProgram(self.grd_call)
                 self.grounded_program.preprocess_smodels_program(decoded_string, domain_transformer)
+                # Add non-ground string input:
+                self.grounded_program.add_string(program_input)
+                self.grounded_program.other_prg_string = other_program_str
 
                 self.grd_call += 1
 
@@ -362,27 +374,57 @@ class GroundingStrategyHandler:
                 gc.collect()
 
             level_index += 1
+
+        return domain_transformer
         
 
-    def output_grounded_program(self, all_heads):
+    def output_grounded_program(self, all_heads, domain_transformer):
 
         if self.debug_mode is True:
-            print("--- FINAL ---") 
+            print("--- FINAL ---")
 
-        if self.output_type == Output.STRING or self.output_type == Output.BENCHMARK:
+        if self.sota_grounder == SotaGrounder.GRINGO:
             show_statements = "\n".join([f"#show {key}/{all_heads[key]}." for key in all_heads.keys()] + [f"#show -{key}/{all_heads[key]}." for key in all_heads.keys()])
+        else:
+            show_statements = ""
+
+        if self.output_type == Output.STRING:
 
             query_statement = ""
             if len(self.query.keys()) > 0:
                 query_statement = list(self.query.keys())[0]
 
-            final_program = self.grounded_program.get_string(insert_flags=True) + "\n" + show_statements + "\n" + query_statement
+            input_program = self.grounded_program.get_string(insert_flags=True) + "\n" +\
+                self.grounded_program.other_prg_string + "\n" + show_statements + "\n" + query_statement
+
+            decoded_string = self.start_sota_grounder(input_program, mode="smodels")
+
+            #parse_string(decoded_string, lambda stm: domain_transformer(stm))
+            self.grounded_program = SmodelsASPProgram(self.grd_call)
+            self.grounded_program.preprocess_smodels_program(decoded_string, domain_transformer, save_smodels_rules=True)
+
+            # To get a unified acceptable string output, we parse it ourselves (but is slow):
+            final_program = self.grounded_program.get_string(insert_flags=True, rewrite_smodels_program=True)
+
         else:
             if self.sota_grounder == SotaGrounder.GRINGO:
-                show_statements = "\n".join([f"#show {key}/{all_heads[key]}." for key in all_heads.keys()] + [f"#show -{key}/{all_heads[key]}." for key in all_heads.keys()])
 
-            input_program = self.grounded_program.get_string(insert_flags=True) + "\n" + show_statements
-            final_program = self.start_sota_grounder(input_program, mode="standard")
+                if self.full_ground is False:
+                    input_program = self.grounded_program.get_string(insert_flags=True) + self.grounded_program.other_prg_string + show_statements
+                else:
+                    input_program = self.grounded_program.get_string(insert_flags=True) 
+
+                final_program = self.start_sota_grounder(input_program, mode="standard")
+
+                if self.full_ground is False:
+                    final_program = final_program
+                else:
+                    final_program += self.grounded_program.other_prg_string + "\n" + show_statements
+
+            else:
+                input_program = self.grounded_program.other_prg_string + "\n" +\
+                    self.grounded_program.get_string(insert_flags=True)
+                final_program = self.start_sota_grounder(input_program, mode="standard")
 
         if self.output_printer:
             self.output_printer.custom_print(final_program)

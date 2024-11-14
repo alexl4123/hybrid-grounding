@@ -11,7 +11,7 @@ from cython_nagg.cython.cython_helpers import printf_
 
 class GenerateSatisfiabilityPartPreprocessor:
 
-    def __init__(self, domain : DomainInferer, nagg_call_number = 0):
+    def __init__(self, domain : DomainInferer, nagg_call_number = 0, full_ground = False):
 
         self.domain = domain
 
@@ -23,7 +23,9 @@ class GenerateSatisfiabilityPartPreprocessor:
         self.sat_atom_rule_string = "sat_{nagg_call_number}_{rule_number}"
         self.sat_atom_variable_string = "sat_{nagg_call_number}_{rule_number}_{variable}({cython_variable_identifier})"
 
-    def get_string_template_helper(self, argument, string_template, variable_index_dict, variable_index_value):
+        self.full_ground = full_ground
+
+    def get_string_template_helper(self, argument, string_template, variable_index_dict, variable_index_value, full_ground):
 
         if "VARIABLE" in argument:
             variable = argument["VARIABLE"]
@@ -34,7 +36,10 @@ class GenerateSatisfiabilityPartPreprocessor:
             else:
                 tmp_variable_index_value = variable_index_dict[variable]
 
-            string_template += f"%{tmp_variable_index_value}$s"
+            if full_ground is True:
+                string_template += f"%{tmp_variable_index_value}$s"
+            else:
+                string_template += f"X{tmp_variable_index_value}"
 
         elif "FUNCTION" in argument:
             tmp_function = argument["FUNCTION"]
@@ -67,7 +72,7 @@ class GenerateSatisfiabilityPartPreprocessor:
         return variable_index_value, string_template
 
 
-    def get_sat_atom_string_template_helper(self, function, variable_index_dict = {}, variable_index_value = 1, string_template = ""):
+    def get_sat_atom_string_template_helper(self, function, full_ground, variable_index_dict = {}, variable_index_value = 1, string_template = ""):
 
         string_template += function.name
         if len(function.arguments) > 0:
@@ -79,7 +84,7 @@ class GenerateSatisfiabilityPartPreprocessor:
 
                 variable_index_value, string_template, = self.get_string_template_helper(
                     argument, string_template,
-                    variable_index_dict, variable_index_value)
+                    variable_index_dict, variable_index_value, full_ground)
 
                 index += 1
                 if index < len(function.arguments):
@@ -90,7 +95,7 @@ class GenerateSatisfiabilityPartPreprocessor:
         return  variable_index_value, string_template
 
 
-    def get_sat_atom_string_template(self, function, rule_number):
+    def get_sat_atom_string_template(self, function, rule_number, full_ground):
 
         variable_index_dict = {} 
         if function.in_head is True:
@@ -98,11 +103,11 @@ class GenerateSatisfiabilityPartPreprocessor:
             clone = function.clone()
             clone.name = f"{function.name}_{self.nagg_call_number}_{rule_number}"
 
-            _, string_template = self.get_sat_atom_string_template_helper(clone,
+            _, string_template = self.get_sat_atom_string_template_helper(clone, full_ground,
                 variable_index_dict=variable_index_dict)
 
         else:
-            _, string_template = self.get_sat_atom_string_template_helper(function,
+            _, string_template = self.get_sat_atom_string_template_helper(function, full_ground,
                 variable_index_dict=variable_index_dict)
 
             if function.signum > 0:
@@ -112,7 +117,7 @@ class GenerateSatisfiabilityPartPreprocessor:
         return variable_index_dict, string_template
 
 
-    def get_sat_comparison_string_template(self, comparison, rule_number):
+    def get_sat_comparison_string_template(self, comparison, rule_number, full_ground):
 
         variable_index_dict = {}
         string_template = ""
@@ -120,12 +125,12 @@ class GenerateSatisfiabilityPartPreprocessor:
 
         variable_index_value, left_string_template = self.get_string_template_helper(
             comparison.arguments[0], variable_index_dict=variable_index_dict,
-            string_template=string_template, variable_index_value=variable_index_value
+            string_template=string_template, variable_index_value=variable_index_value, full_ground=full_ground
             )
 
         variable_index_value, right_string_template = self.get_string_template_helper(
             comparison.arguments[1], variable_index_dict=variable_index_dict,
-            string_template=string_template, variable_index_value=variable_index_value
+            string_template=string_template, variable_index_value=variable_index_value, full_ground=full_ground
             )
 
         string_template = left_string_template + comparison.operator + right_string_template
@@ -139,11 +144,11 @@ class GenerateSatisfiabilityPartPreprocessor:
 
         for literal in rule.literals:
             if "FUNCTION" in literal:
-                variable_index_dict, atom_string_template = self.get_sat_atom_string_template(literal["FUNCTION"], rule_number)
+                variable_index_dict, atom_string_template = self.get_sat_atom_string_template(literal["FUNCTION"], rule_number, self.full_ground)
 
                 arguments = literal["FUNCTION"].arguments
             elif "COMPARISON" in literal:
-                variable_index_dict, atom_string_template = self.get_sat_comparison_string_template(literal["COMPARISON"], rule_number)
+                variable_index_dict, atom_string_template = self.get_sat_comparison_string_template(literal["COMPARISON"], rule_number, self.full_ground)
 
                 arguments = literal["COMPARISON"].arguments
             else:
@@ -172,11 +177,18 @@ class GenerateSatisfiabilityPartPreprocessor:
                     if len(variable_domain[variable]) == 0:
                         empty_variable_domain_found = True
 
+                    if self.full_ground is True:
+                        # Used with Cython (own print)
+                        variable_name = f"%{position}$s"
+                    else:
+                        # Used with Gringo
+                        variable_name = f"X{position}"
+
                     variable_strings.append(self.sat_atom_variable_string.format(
                         nagg_call_number=self.nagg_call_number,
                         rule_number = rule_number,
                         variable = variable,
-                        cython_variable_identifier = f"%{position}$s"
+                        cython_variable_identifier = variable_name
                     ))
 
                 if empty_variable_domain_found is False:
@@ -189,16 +201,22 @@ class GenerateSatisfiabilityPartPreprocessor:
                         full_string_template += ":-" + atom_string_template + ".\n"
 
                     if "FUNCTION" in literal:
-                        generate_function_combinations_caller(full_string_template, variable_domain_lists)
+                        if self.full_ground is True:
+                            generate_function_combinations_caller(full_string_template, variable_domain_lists)
+                        else:
+                            printf_(full_string_template.encode('ascii'))
                     elif "COMPARISON" in literal:
                         comparison_operator = literal["COMPARISON"].operator
                         is_simple_comparison = literal["COMPARISON"].is_simple_comparison
 
                         signum = literal["COMPARISON"].signum * (-1)
 
-                        generate_comparison_combinations_caller(
-                            full_string_template, full_string_template_reduced,
-                            variable_domain_lists, comparison_operator, is_simple_comparison, signum)
+                        if self.full_ground is True:
+                            generate_comparison_combinations_caller(
+                                full_string_template, full_string_template_reduced,
+                                variable_domain_lists, comparison_operator, is_simple_comparison, signum)
+                        else:
+                            printf_(full_string_template.encode('ascii'))
 
                 elif self.function_string in literal and literal[self.function_string].signum > 0:
                     # If domain is empty then is surely satisfied (and in B_r^+)

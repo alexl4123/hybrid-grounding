@@ -2,6 +2,8 @@
 import sys
 import os
 
+import tempfile
+
 from heuristic_splitter.program_structures.rule import Rule
 from heuristic_splitter.domain_inferer import DomainInferer
 
@@ -17,7 +19,8 @@ from cython_nagg.cython.cython_helpers import printf_
 class CythonNagg:
 
     def __init__(self, domain : DomainInferer,
-        nagg_call_number = 0, justifiability_type = JustifiabilityType.UNFOUND):
+        nagg_call_number = 0, justifiability_type = JustifiabilityType.UNFOUND,
+        c_output_redirector = None, full_ground = False):
 
         self.domain = domain
 
@@ -27,13 +30,19 @@ class CythonNagg:
 
         self.justifiability_type = justifiability_type
 
+        self.c_output_redirector = c_output_redirector
+        # Used to get the head-guesses explicitly (only those are needed for a potential next grounding step)!
+        self.head_guesses_string = ""
+
+        self.full_ground = full_ground
+
     def rewrite_rules(self, rules: [Rule]):
 
         rule_number = 0
         sat_atom_rules_list = []
         just_atom_rules_list = []
 
-        satisfiability = GenerateSatisfiabilityPartPreprocessor(self.domain, self.nagg_call_number)
+        satisfiability = GenerateSatisfiabilityPartPreprocessor(self.domain, self.nagg_call_number, self.full_ground)
         if self.justifiability_type == JustifiabilityType.SATURATION:
             justifiability = GenerateSaturationJustifiabilityPartPreprocessor(self.domain, self.nagg_call_number)
         elif self.justifiability_type == JustifiabilityType.UNFOUND:
@@ -52,7 +61,21 @@ class CythonNagg:
                 rule_number = rule_number))
 
             if rule.is_constraint is False:
+
+                fd, path = tempfile.mkstemp()
+                stdout_backup = self.c_output_redirector.redirect_stdout_to_fd_and_duplicate_and_close(fd)
+
                 head_guesses.generate_head_guesses_part(rule, variable_domain, rule_number, head_variables, variable_domain_including_sub_functions)
+
+                self.c_output_redirector.call_flush()
+                pipe_write_backup = self.c_output_redirector.redirect_stdout_to_fd_and_duplicate_and_close(stdout_backup)
+
+                os.close(pipe_write_backup)
+                f = open(path, "r")
+                output = f.read()
+                f.close()
+
+                self.head_guesses_string += output
 
                 justifiability.generate_justifiability_part(rule, variable_domain, rule_number, head_variables)
 

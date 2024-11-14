@@ -175,8 +175,8 @@ class HeuristicSplitter:
                     if self.enable_logging is True:
                         self.logging_class.is_single_ground_call = False
 
-                    grounding_handler.ground()
-                    grounding_handler.output_grounded_program(all_heads)
+                    domain_transformer = grounding_handler.ground()
+                    grounding_handler.output_grounded_program(all_heads, domain_transformer)
                 else:
                     if self.enable_logging is True:
                         self.logging_class.is_single_ground_call = True
