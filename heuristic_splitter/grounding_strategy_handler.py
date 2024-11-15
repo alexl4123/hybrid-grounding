@@ -198,8 +198,8 @@ class GroundingStrategyHandler:
 
                     if rule.in_program_rules is True:
                         # TDB -> TODO
-                        #tmp_bdg_new_found_rules.append(bdg_rule)
-                        tmp_bdg_old_found_rules.append(bdg_rule)
+                        tmp_bdg_new_found_rules.append(bdg_rule)
+                        #tmp_bdg_old_found_rules.append(bdg_rule)
                     else:
                         approx_number_rules, used_method, rule_str = self.get_best_method_by_approximated_rule_count(domain_transformer, rule)
 
@@ -245,8 +245,7 @@ class GroundingStrategyHandler:
 
                         cython_nagg = CythonNagg(domain_transformer,
                             nagg_call_number=self.total_nagg_calls, justifiability_type=JustifiabilityType.SATURATION,
-                            c_output_redirector= c_output_redirector,
-                            full_ground = self.full_ground)
+                            full_ground = self.full_ground, c_output_redirector = c_output_redirector)
                         cython_nagg.rewrite_rules(input_rules)
                         end_time = time.time()
 
@@ -257,10 +256,11 @@ class GroundingStrategyHandler:
                         f = open(path, "r")
                         output = f.read()
 
+                        self.grounded_program.add_string(cython_nagg.head_guesses_string)
+
                         f.close()
 
-                        self.grounded_program.add_string(output)
-
+                        self.grounded_program.add_other_string(output)
                     except Exception as ex:
 
                         print(ex)
