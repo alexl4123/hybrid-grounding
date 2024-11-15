@@ -44,9 +44,9 @@ class CythonNagg:
 
         satisfiability = GenerateSatisfiabilityPartPreprocessor(self.domain, self.nagg_call_number, self.full_ground)
         if self.justifiability_type == JustifiabilityType.SATURATION:
-            justifiability = GenerateSaturationJustifiabilityPartPreprocessor(self.domain, self.nagg_call_number)
+            justifiability = GenerateSaturationJustifiabilityPartPreprocessor(self.domain, self.nagg_call_number, self.full_ground)
         elif self.justifiability_type == JustifiabilityType.UNFOUND:
-            justifiability = GenerateJustifiabilityOldPartPreprocessor(self.domain, self.nagg_call_number)
+            justifiability = GenerateJustifiabilityOldPartPreprocessor(self.domain, self.nagg_call_number, self.full_ground)
 
         head_guesses = GenerateHeadGuesses(self.domain, self.nagg_call_number)
 

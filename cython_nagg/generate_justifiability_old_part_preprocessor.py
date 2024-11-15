@@ -12,9 +12,11 @@ from cython_nagg.cython.cython_helpers import printf_
 
 class GenerateJustifiabilityOldPartPreprocessor:
 
-    def __init__(self, domain : DomainInferer, nagg_call_number = 0):
+    def __init__(self, domain : DomainInferer, nagg_call_number = 0, full_ground = False):
 
         self.domain = domain
+
+        self.full_ground = full_ground
 
         self.nagg_call_number = nagg_call_number
 
