@@ -108,7 +108,7 @@ class GenerateSaturationJustifiabilityPartPreprocessor:
         return  variable_index_value, string_template
 
 
-    def get_just_atom_string_template(self, function, rule_number, full_ground):
+    def get_just_atom_string_template(self, function, rule_number, full_ground, ignore_signum = False):
 
         variable_index_dict = {} 
         if function.in_head is True:
@@ -120,7 +120,10 @@ class GenerateSaturationJustifiabilityPartPreprocessor:
                 variable_index_dict=variable_index_dict, full_ground=full_ground)
 
             # Whenever the head does not exist it is justified (actually found).
-            string_template = "not " + string_template
+            if ignore_signum is False:
+                string_template = "not " + string_template
+            else:
+                string_template = string_template
 
         else:
             _, string_template = self.get_just_atom_string_template_helper(function,
@@ -163,6 +166,7 @@ class GenerateSaturationJustifiabilityPartPreprocessor:
         literal_index = 0
 
         head_literal_template = None
+        head_literal = None
         literal_templates = []
 
         for literal in rule.literals:
@@ -187,6 +191,7 @@ class GenerateSaturationJustifiabilityPartPreprocessor:
                     rule_number = rule_number)
 
                 head_literal_template = full_string_template
+                head_literal = literal[self.function_string]
 
             else:
                 literal_template = self.just_atom_literal_string.format(
@@ -301,6 +306,8 @@ class GenerateSaturationJustifiabilityPartPreprocessor:
                 # Skip head variables:
                 continue
 
+            other_variable_local_scope = variable
+
             just_atom_variable_string_helper = "just_h_{nagg_call_number}_{rule_number}_{variable}({cython_variable_identifier})"
 
             variables_identifiers = []
@@ -336,14 +343,13 @@ class GenerateSaturationJustifiabilityPartPreprocessor:
 
                 index += 1
  
-            guess_rule_start = "1{"
-            if len(list(head_variables.keys())) > 0:
-                guess_rule_end_instantiated = "}1:-" + ','.join(variable_strings) + ".\n"
-            else:
-                guess_rule_end_instantiated = "}1.\n"
-
 
             if self.full_ground is True:
+                guess_rule_start = "1{"
+                if len(list(head_variables.keys())) > 0:
+                    guess_rule_end_instantiated = "}1:-" + ','.join(variable_strings) + ".\n"
+                else:
+                    guess_rule_end_instantiated = "}1.\n"
 
                 cur_just_atom_variable_string_helper_instantiated =  just_atom_variable_string_helper.format(
                     nagg_call_number = self.nagg_call_number,
@@ -365,41 +371,68 @@ class GenerateSaturationJustifiabilityPartPreprocessor:
                 abstract_rule_template = cur_just_atom_variable_string_instantiated + ":-" + cur_just_atom_variable_string_helper_instantiated + ".\n"
                 generate_function_combinations_caller(abstract_rule_template, variable_domain_lists)
             else:
+                guess_rule_start = "\n1{"
+
+                variable_index_dict, atom_string_template = self.get_just_atom_string_template(head_literal, rule_number, self.full_ground, ignore_signum=True)
+
+                new_variables_identifiers = ["%1$s"]
+
+                sorted_by_values_asc = dict(sorted(variable_index_dict.items(), key=lambda item: item[1], reverse=False))
+
+                variable_strings = []
+
+                for key in sorted_by_values_asc:
+
+                    variable_strings_identifier = f"X{sorted_by_values_asc[key]}"
+                    new_variables_identifiers.append(variable_strings_identifier)
+
+                    variable_strings.append(self.just_atom_variable_string.format(
+                        nagg_call_number=self.nagg_call_number,
+                        rule_number = rule_number,
+                        variable = key,
+                        cython_variable_identifier = variable_strings_identifier
+                    ))
 
                 choices = []
 
                 for domain_value in variable_domain_lists[0]:
                     # Replace %1$s with domain value (always position 0 as I defined it this way)
-                    variables_identifiers[0] = domain_value
+                    new_variables_identifiers[0] = domain_value
 
                     cur_just_atom_variable_string_helper_instantiated =  just_atom_variable_string_helper.format(
                         nagg_call_number = self.nagg_call_number,
                         rule_number = rule_number,
-                        variable = variable,
-                        cython_variable_identifier = ",".join(variables_identifiers)
+                        variable = other_variable_local_scope,
+                        cython_variable_identifier = ",".join(new_variables_identifiers)
                     )
 
                     choices.append(cur_just_atom_variable_string_helper_instantiated)
-                non_ground_choice_rule = guess_rule_start + ";".join(choices) + guess_rule_end_instantiated
+
+                non_ground_choice_rule = guess_rule_start + ";".join(choices) + "}1 :- " + atom_string_template + ".\n"
                 printf_(non_ground_choice_rule.encode('ascii'))
 
                 # Replace %1$s with special variable name (not a X<NUMBER>):
                 special_variable = "Y"
-                variables_identifiers[0] = special_variable
+                new_variables_identifiers[0] = special_variable
                 cur_just_atom_variable_string_helper_instantiated =  just_atom_variable_string_helper.format(
                     nagg_call_number = self.nagg_call_number,
                     rule_number = rule_number,
-                    variable = variable,
-                    cython_variable_identifier = ",".join(variables_identifiers)
+                    variable = other_variable_local_scope,
+                    cython_variable_identifier = ",".join(new_variables_identifiers)
                 )        
                 cur_just_atom_variable_string_instantiated = self.just_atom_variable_string.format(
                     nagg_call_number = self.nagg_call_number,
                     rule_number = rule_number,
-                    variable = variable,
+                    variable = other_variable_local_scope,
                     cython_variable_identifier = special_variable
                     )
 
-                abstract_rule_template = cur_just_atom_variable_string_instantiated + ":-" + cur_just_atom_variable_string_helper_instantiated + ".\n"
+                if len(list(head_variables.keys())) > 0:
+                    combined_other_variables_string = ',' + ','.join(variable_strings) + ".\n"
+                else:
+                    combined_other_variables_string = ".\n"
+
+                abstract_rule_template = cur_just_atom_variable_string_instantiated + ":-" + cur_just_atom_variable_string_helper_instantiated + combined_other_variables_string
                 printf_(abstract_rule_template.encode('ascii'))
 
 
