@@ -45,7 +45,7 @@ class GenerateSatisfiabilityPartPreprocessor:
             tmp_function = argument["FUNCTION"]
 
             variable_index_value, string_template = self.get_sat_atom_string_template_helper(
-                tmp_function, variable_index_dict=variable_index_dict,
+                tmp_function, full_ground, variable_index_dict=variable_index_dict,
                 variable_index_value=variable_index_value, string_template=string_template)
 
         elif "TERM" in argument:
@@ -56,13 +56,15 @@ class GenerateSatisfiabilityPartPreprocessor:
 
             variable_index_value, string_template = self.get_string_template_helper(
                 binary_operation.arguments[0], variable_index_dict=variable_index_dict,
-                variable_index_value=variable_index_value, string_template=string_template)
+                variable_index_value=variable_index_value, string_template=string_template,
+                full_ground=full_ground)
 
             string_template += binary_operation.operation
 
             variable_index_value, string_template = self.get_string_template_helper(
                 binary_operation.arguments[1], variable_index_dict=variable_index_dict,
-                variable_index_value=variable_index_value, string_template=string_template)
+                variable_index_value=variable_index_value, string_template=string_template,
+                full_ground=full_ground)
 
         else:
             print(f"[ERROR] - Unexpected argument in function arguments: {argument} in {function.name}")
@@ -133,10 +135,13 @@ class GenerateSatisfiabilityPartPreprocessor:
             string_template=string_template, variable_index_value=variable_index_value, full_ground=full_ground
             )
 
-        string_template = left_string_template + comparison.operator + right_string_template
 
-        if comparison.signum > 0:
-            string_template = "not " + string_template
+        if comparison.signum < 0:
+            string_template = left_string_template + comparison.operator + right_string_template
+        else: # So: comparison.signum >= 0:
+            # Negated one, as IDLV is unable to handle sth. like "not X1 != X2"
+            string_template = left_string_template + comparison.negated_operator + right_string_template
+        
 
         return variable_index_dict, string_template
 

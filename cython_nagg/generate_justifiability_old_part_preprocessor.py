@@ -142,10 +142,12 @@ class GenerateJustifiabilityOldPartPreprocessor:
             string_template=string_template, variable_index_value=variable_index_value
             )
 
-        string_template = left_string_template + comparison.operator + right_string_template
 
-        if comparison.signum > 0:
-            string_template = "not " + string_template
+        if comparison.signum < 0:
+            string_template = left_string_template + comparison.operator + right_string_template
+        else: # So: comparison.signum >= 0:
+            # Negated one, as IDLV is unable to handle sth. like "not X1 != X2"
+            string_template = left_string_template + comparison.negated_operator + right_string_template
 
         return variable_index_dict, string_template
 

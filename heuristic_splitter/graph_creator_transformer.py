@@ -322,8 +322,8 @@ class GraphCreatorTransformer(Transformer):
     def visit_Literal(self, node):
         """
         Visits a clingo-AST literal (negated/non-negated).
-        -> 0 means positive
-        -> -1 means negative
+        -> 0 means positive -- convert_to --> +1
+        -> -1 means negative -- convert_to --> -1
         """
         if node.sign == 0:
             self.node_signum = +1
@@ -469,6 +469,21 @@ class GraphCreatorTransformer(Transformer):
 
         comp = Comparison()
         comp.operator = str_guard
+
+        # As IDLV is unable to handle negated comparisons:
+        if str_guard == "=":
+            comp.negated_operator = "!="
+        elif str_guard == "!=":
+            comp.negated_operator = "="
+        elif str_guard == "<":
+            comp.negated_operator = ">="
+        elif str_guard == ">":
+            comp.negated_operator = "<="
+        elif str_guard == "<=":
+            comp.negated_operator = ">"
+        elif str_guard == ">=":
+            comp.negated_operator = "<"
+
         comp.signum = self.node_signum
 
         self.current_function_creation_stack.append(comp)
@@ -500,5 +515,17 @@ class GraphCreatorTransformer(Transformer):
 
         prev_func = self.current_function_creation_stack.pop()
         self.current_function_creation_stack[-1].arguments.append({self.binary_operation_string:prev_func})
+
+        return node
+
+    def visit_Guard(self, node):
+
+        self.visit_children(node)
+
+        return node
+
+    def visit_SymbolicAtom(self, node):
+
+        self.visit_children(node)
 
         return node

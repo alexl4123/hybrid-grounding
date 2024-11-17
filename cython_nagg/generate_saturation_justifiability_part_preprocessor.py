@@ -154,10 +154,12 @@ class GenerateSaturationJustifiabilityPartPreprocessor:
             full_ground=full_ground
             )
 
-        string_template = left_string_template + comparison.operator + right_string_template
 
-        if comparison.signum < 0:
-            string_template = "not " + string_template
+        if comparison.signum >= 0:
+            string_template = left_string_template + comparison.operator + right_string_template
+        else: # Comparison.signum < 0:
+            # As IDLV cannot handle "not X1 = X2" --> Becomes "X1 != X2"
+            string_template = left_string_template + comparison.negated_operator + right_string_template
 
         return variable_index_dict, string_template
 

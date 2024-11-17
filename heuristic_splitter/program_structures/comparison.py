@@ -6,6 +6,7 @@ class Comparison:
 
         self.name = ""
         self.operator = ""
+        self.negated_operator = ""
         self.arguments = []
         self.is_simple_comparison = True
         self.signum = 0
