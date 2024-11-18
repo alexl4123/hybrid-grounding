@@ -60,6 +60,7 @@ class GraphCreatorTransformer(Transformer):
         self.is_constraint = False
 
         self.in_program_rules = False
+        self.in_lpopt_rules = False
 
         self.current_function_creation_stack = []
 
@@ -104,6 +105,8 @@ class GraphCreatorTransformer(Transformer):
 
         if self.in_program_rules is True:
             self.rule_dictionary[self.current_rule_position].in_program_rules = True
+        elif self.in_lpopt_rules is True:
+            self.rule_dictionary[self.current_rule_position].in_lpopt_rules = True
 
         try:
             if "head" in node.child_keys:
@@ -415,6 +418,10 @@ class GraphCreatorTransformer(Transformer):
 
         if node.name == "rules":
             self.in_program_rules = True
+            self.in_lpopt_rules = False
+        elif node.name == "lpopt":
+            self.in_lpopt_rules = True
+            self.in_program_rules = False
 
         self.visit_children(node)
         return node

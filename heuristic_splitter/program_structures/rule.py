@@ -21,6 +21,7 @@ class Rule:
         self.is_constraint = None
 
         self.in_program_rules = False
+        self.in_lpopt_rules = False
 
         self.literals = []
 

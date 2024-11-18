@@ -37,6 +37,8 @@ class Heuristic0(HeuristicInterface):
             # If user specifies grounded by BDG, then ground by BDG (if possible in theory)
             # If stratified -> Never use bdg
             bdg_rules[rule_position] = True
+        elif self.rule_dictionary[rule_position].in_lpopt_rules is True and self.enable_lpopt is True:
+            lpopt_rules[rule_position] = True
         elif body_is_stratified is True and has_aggregate is False:
             # If stratified then ground at first
             # TODO -> Fix aggregate dependencies.

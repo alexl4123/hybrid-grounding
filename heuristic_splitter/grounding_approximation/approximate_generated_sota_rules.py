@@ -20,11 +20,11 @@ class ApproximateGeneratedSotaRules:
     Approx. gen. tuples.
     """
 
-    def __init__(self, domain_transformer, rule, alternative_global_number_terms = None, alternative_global_tuples = None):
+    def __init__(self, domain_transformer, rule, alternative_global_number_terms = None, alternative_adjusted_tuples_per_arity = None):
 
         self.domain_transformer = domain_transformer
         self.alternative_global_number_terms = alternative_global_number_terms
-        self.alternative_global_tuples = alternative_global_tuples
+        self.alternative_adjusted_global_tuples_per_arity = alternative_adjusted_tuples_per_arity
 
         self.rule = rule
 
@@ -58,7 +58,7 @@ class ApproximateGeneratedSotaRules:
                     elif domain is not None and "_total" in domain:
                         # Infer "_total" domain as an alternative (so the whole domain...)
                         terms_domain = domain["_total"]["terms"]
-                    elif self.alternative_global_number_terms is not None and self.alternative_global_tuples is not None:
+                    elif self.alternative_global_number_terms is not None and self.alternative_adjusted_global_tuples_per_arity is not None:
                         terms_domain = []
                     else:
                         raise Exception("_total domain not found!")
@@ -81,8 +81,8 @@ class ApproximateGeneratedSotaRules:
                             combinations *= total_domain
                         
                         number_tuples = int(math.ceil(average_tuples * combinations))
-                    elif self.alternative_global_tuples is not None:
-                        number_tuples = self.alternative_global_tuples
+                    elif self.alternative_adjusted_global_tuples_per_arity is not None:
+                        number_tuples = self.alternative_adjusted_global_tuples_per_arity
                     else:
                         raise Exception("[EROR] - Could not infer domain!")
 

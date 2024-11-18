@@ -124,6 +124,11 @@ class HeuristicSplitter:
                 alternative_global_number_terms=len(list(terms_domain.keys()))
                 alternative_global_tuples=len(list(facts.keys()))
 
+                #max_arity_in_facts = max(facts_heads.values())
+                #number_facts_heads = len(list(facts_heads.keys()))
+                #alternative_adjusted_tuples = alternative_global_tuples / number_facts_heads
+                #alternative_adjusted_tuples = alternative_adjusted_tuples**(1/max_arity_in_facts)
+
                 # MANY ARGUMENTS/CALL LPOPT:
                 lpopt_used, tmp_bdg_rules, tmp_sota_rules, tmp_stratified_rules,\
                     tmp_lpopt_rules, tmp_constraint_rules, tmp_other_rules, tmp_other_rules_string,\
@@ -243,19 +248,24 @@ class HeuristicSplitter:
             graph_transformer = GraphCreatorTransformer(lpopt_graph_ds, lpopt_rule_dictionary, lpopt_rewritten_rules_string.split("\n"), self.debug_mode)
             parse_string(lpopt_rewritten_rules_string, lambda stm: graph_transformer(stm))
 
-            approximate_non_rewritten_rules = ApproximateGeneratedSotaRules(None, rule_dictionary[lpopt_rule],
-                alternative_global_number_terms=alternative_global_number_terms,
-                alternative_global_tuples=alternative_global_tuples)
-            approximate_non_rewritten_rule_instantiations = approximate_non_rewritten_rules.approximate_sota_size()
-
-            approximate_rewritten_rule_instantiations = 0
-            for rewritten_rule in lpopt_rule_dictionary.keys():
-                tmp_approximate_non_rewritten_rules = ApproximateGeneratedSotaRules(None, lpopt_rule_dictionary[rewritten_rule],
+            if rule_dictionary[lpopt_rule].in_lpopt_rules is False:
+                approximate_non_rewritten_rules = ApproximateGeneratedSotaRules(None, rule_dictionary[lpopt_rule],
                     alternative_global_number_terms=alternative_global_number_terms,
-                    alternative_global_tuples=alternative_global_tuples)
-                tmp_approximate_non_rewritten_rule_instantiations = tmp_approximate_non_rewritten_rules.approximate_sota_size()
+                    alternative_adjusted_tuples_per_arity=alternative_global_tuples)
+                approximate_non_rewritten_rule_instantiations = approximate_non_rewritten_rules.approximate_sota_size()
 
-                approximate_rewritten_rule_instantiations += tmp_approximate_non_rewritten_rule_instantiations
+                approximate_rewritten_rule_instantiations = 0
+                for rewritten_rule in lpopt_rule_dictionary.keys():
+                    tmp_approximate_non_rewritten_rules = ApproximateGeneratedSotaRules(None, lpopt_rule_dictionary[rewritten_rule],
+                        alternative_global_number_terms=alternative_global_number_terms,
+                        alternative_adjusted_tuples_per_arity=alternative_global_tuples)
+                    tmp_approximate_non_rewritten_rule_instantiations = tmp_approximate_non_rewritten_rules.approximate_sota_size()
+
+                    approximate_rewritten_rule_instantiations += tmp_approximate_non_rewritten_rule_instantiations
+            else: # in_lpopt_rules is True (so use lpopt anyway):
+                # USE LPOPT if in #program lpopt.
+                approximate_rewritten_rule_instantiations = -1
+                approximate_non_rewritten_rule_instantiations = 0
 
             if approximate_rewritten_rule_instantiations < approximate_non_rewritten_rule_instantiations:
                 # Then use Lpopt rewriting

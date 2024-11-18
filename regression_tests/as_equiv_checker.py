@@ -117,6 +117,17 @@ class EquivChecker:
             one_directional_equivalence: If True, then only the direction clingo -> nagg is checked, i.e. it must be the case, that for each answer set in the clingo result, there must be one in the nagg result as well (but therefore it could be, that nagg has more answersets)
         """
 
+        gringo_encoding = []
+        encoding_splits = encoding_file_contents.split("\n")
+        for encoding_line in encoding_splits:
+            if encoding_line.startswith("#program"):
+                # Do not add lines to the encoding with #program lpopt|rules.
+                continue
+        
+            gringo_encoding.append(encoding_line)
+
+        gringo_encoding_contents = "\n".join(gringo_encoding)
+
         regression_test_strategy_string = ""
 
         if self.chosenRegressiontestMode == RegressionTestStrategy.AGGREGATES_RS_STAR or self.chosenRegressiontestMode == RegressionTestStrategy.AGGREGATES_RS_PLUS or self.chosenRegressiontestMode == RegressionTestStrategy.AGGREGATES_RS or self.chosenRegressiontestMode == RegressionTestStrategy.AGGREGATES_RA or self.chosenRegressiontestMode == RegressionTestStrategy.AGGREGATES_RECURSIVE:
@@ -207,7 +218,7 @@ class EquivChecker:
 
             print(f"[INFO] Checking current test with aggregate strategy: {aggregate_mode[0]}")
 
-            combined_file_input = instance_file_contents + encoding_file_contents
+            combined_file_input = instance_file_contents + gringo_encoding_contents
             optimization_problem_clingo = self.start_clingo(combined_file_input, self.clingo_output, self.clingo_hashes, mode="clingo")
 
             # Custom printer keeps result of prototype (NaGG)
