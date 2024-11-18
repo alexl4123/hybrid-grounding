@@ -73,8 +73,9 @@ class Heuristic0(HeuristicInterface):
                 # Constraint:
                 bdg_rules[rule_position] = True
 
-            elif is_tight is True and tw_effective > maximum_variables_in_literal * 2 and all_comparison_variables_safe_by_predicate is True:
+            elif is_tight is True and tw_effective > maximum_variables_in_literal + 1 and all_comparison_variables_safe_by_predicate is True:
                 # Tight normal:
+                # As in best case tw_effective > maximum_variables_in_literal (for foundedness encodings, although unlikely)
                 bdg_rules[rule_position] = True
             
             elif is_tight is False and tw_effective > maximum_variables_in_literal * 3 and all_comparison_variables_safe_by_predicate is True:

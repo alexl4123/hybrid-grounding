@@ -208,10 +208,10 @@ class GroundingStrategyHandler:
                         elif used_method == "BDG_OLD":
                             tmp_bdg_old_found_rules.append(bdg_rule)
                         else:
-                            sota_rules.append(bdg_rule)
+                            #sota_rules.append(bdg_rule)
                             # TODO!!!
                             # For now do not use tmp_bdg_new in Benchmarks!
-                            # tmp_bdg_new_found_rules.append(bdg_rule) 
+                            tmp_bdg_new_found_rules.append(bdg_rule) 
 
                 no_show = True
                 ground_guess = True
@@ -445,11 +445,7 @@ class GroundingStrategyHandler:
         approximated_bdg_new_rule_instantiations, approximated_bdg_old_rule_instantiations = approximated_bdg_rules.approximate_bdg_sizes()
 
         methods_approximations.append((approximated_bdg_old_rule_instantiations, "BDG_OLD", str_rule))
-        
-        # TODO!!!
-        # For now do not use tmp_bdg_new in Benchmarks!
-        # tmp_bdg_new_found_rules.append(bdg_rule) 
-        #methods_approximations.append((approximated_bdg_new_rule_instantiations, "BDG_NEW", str_rule))
+        methods_approximations.append((approximated_bdg_new_rule_instantiations, "BDG_NEW", str_rule))
 
         if self.debug_mode is True:
             print("-------------------------")
