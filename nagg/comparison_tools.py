@@ -207,10 +207,10 @@ class ComparisonTools:
             return "*"
         elif operator_type == int(clingo.ast.BinaryOperator.Division):
             return "/"
-        elif operator_type == int(clingo.ast.BinaryOperator.Modulo):
-            return "\\"
-        elif operator_type == int(clingo.ast.BinaryOperator.Power):
-            return "**"
+        #elif operator_type == int(clingo.ast.BinaryOperator.Modulo):
+        #    return "\\"
+        #elif operator_type == int(clingo.ast.BinaryOperator.Power):
+        #    return "**"
 
         print(
             f"[NOT-IMPLEMENTED] - Binary operator type '{operator_type}' is not implemented!"

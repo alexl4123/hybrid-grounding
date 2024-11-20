@@ -23,6 +23,8 @@ class Rule:
         self.in_program_rules = False
         self.in_lpopt_rules = False
 
+        self.tw_effective = -1
+
         self.literals = []
 
         self.scc = None

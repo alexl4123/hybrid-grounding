@@ -5,7 +5,7 @@ from heuristic_splitter.graph_data_structure import GraphDataStructure
 
 from heuristic_splitter.enums.sota_grounder import SotaGrounder
 from heuristic_splitter.enums.treewidth_computation_strategy import TreewidthComputationStrategy
-
+from heuristic_splitter.program_structures.program_ds import ProgramDS
 
 
 class Heuristic0(HeuristicInterface):
@@ -20,7 +20,8 @@ class Heuristic0(HeuristicInterface):
             all_positive_function_variables,
             all_comparison_variables,
             body_is_stratified,
-            in_minimize_statement):
+            in_minimize_statement,
+            program_ds: ProgramDS):
 
         # If variables are induced by a comparison, they are not handled by BDG (inefficient domain inference) 
         all_comparison_variables_safe_by_predicate = set(all_comparison_variables.keys()).issubset(set(all_positive_function_variables.keys()))
@@ -38,7 +39,9 @@ class Heuristic0(HeuristicInterface):
             # If stratified -> Never use bdg
             bdg_rules[rule_position] = True
         elif self.rule_dictionary[rule_position].in_lpopt_rules is True and self.enable_lpopt is True:
+
             lpopt_rules[rule_position] = True
+
         elif body_is_stratified is True and has_aggregate is False:
             # If stratified then ground at first
             # TODO -> Fix aggregate dependencies.
@@ -67,6 +70,9 @@ class Heuristic0(HeuristicInterface):
                 tw_full = full_variable_graph.compute_twalgor_bag_size()
             else:
                 raise NotImplementedError()
+
+            # Add tw-effective
+            self.rule_dictionary[rule_position].tw_effective = tw_effective
             
 
             if is_constraint is True and tw_effective > maximum_variables_in_literal and all_comparison_variables_safe_by_predicate is True:
@@ -87,12 +93,19 @@ class Heuristic0(HeuristicInterface):
                 # IDLV implemented Lpopt tools, so only potentially use it for Gringo.
                 # As number of variables = full_variable_graph.number_of_nodes
                 # Then using lpopt reduces number of variables to ground to tw_full (bag size)
-
                 lpopt_rules[rule_position] = True
+
+                if tw_effective > program_ds.maximum_variables_grounded_naively:
+                    program_ds.maximum_variables_grounded_naively = tw_effective
 
             else:
                 #sota_rules.append(rule_position)
                 sota_rules[rule_position] = True
+
+                if tw_effective > program_ds.maximum_variables_grounded_naively:
+                    program_ds.maximum_variables_grounded_naively = tw_effective
+
+
         
         self.rule_dictionary[rule_position].add_variable_graph(full_variable_graph)
         self.rule_dictionary[rule_position].add_variable_no_head_graph(variable_no_head_graph)

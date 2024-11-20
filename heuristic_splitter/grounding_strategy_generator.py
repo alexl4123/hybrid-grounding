@@ -4,10 +4,12 @@
 import networkx as nx
 
 from heuristic_splitter.graph_data_structure import GraphDataStructure
+from heuristic_splitter.program_structures.program_ds import ProgramDS
 
 class GroundingStrategyGenerator:
 
-    def __init__(self, graph_ds: GraphDataStructure, bdg_rules, sota_rules, stratified_rules, constraint_rules, lpopt_rules, rule_dictionary):
+    def __init__(self, graph_ds: GraphDataStructure, bdg_rules, sota_rules, stratified_rules,
+        constraint_rules, lpopt_rules, rule_dictionary, program_ds:ProgramDS):
 
         self.graph_ds = graph_ds
         self.bdg_rules = bdg_rules
@@ -16,6 +18,8 @@ class GroundingStrategyGenerator:
         self.constraint_rules = constraint_rules
         self.lpopt_rules = lpopt_rules
         self.rule_dictionary = rule_dictionary
+
+        self.program_ds = program_ds
 
     
     def get_grounding_strategy_dependency_indices(self, current_scc_nodes, condensed_graph_inverted,scc_node_to_grounding_order_lookup):
@@ -177,6 +181,9 @@ class GroundingStrategyGenerator:
 
             exists_disjunctive_rule = False
             exists_non_tight_rule = False
+
+            # TODO -> Add to cmd.-line options:
+            only_significant_bdg_rules = True
         
             for node in subgraph.nodes:
                 # All those rules that have "node" as a head.
@@ -186,10 +193,30 @@ class GroundingStrategyGenerator:
                     cur_rule = self.rule_dictionary[rule]
                     cur_rule.add_scc(scc)
 
-                    if rule in self.bdg_rules and cur_rule.is_constraint is True:
-                        bdg_constraint_rules.append((rule, scc_index))
-                    elif rule in self.bdg_rules:
-                        exists_bdg_grounded_rule = True
+                    # Idea: Minimize grounding strategy
+                    # This code fragment helps in doing so, by checking whether the rule under consideration would
+                    # have an effect on grounding size in the whole perspective.
+                    # So if rule r1 should be grounded via BDG (and has 3 vars. to be grounded),
+                    # but there is another rule r2 in SOTA with 4 (actually >= 3) vars -> Then DO NOT GROUND IT!
+                    # As the other rule is then the dominating factor, BDG has not much of an effect, and just is an overhead.
+                    decision_structure_grounded_bdg =  rule in self.bdg_rules and ((only_significant_bdg_rules is True and\
+                        cur_rule.tw_effective > self.program_ds.maximum_variables_grounded_naively) or\
+                        cur_rule.in_program_rules is True or only_significant_bdg_rules is False)
+                    if decision_structure_grounded_bdg is True:
+                        if rule in self.bdg_rules and cur_rule.is_constraint is True:
+                            bdg_constraint_rules.append((rule, scc_index))
+                        elif rule in self.bdg_rules:
+                            exists_bdg_grounded_rule = True
+
+                    elif rule in self.bdg_rules and cur_rule.in_program_rules is False:
+                        # (implicit) and decision_structure_grounded_bdg is False and only_significant_bdg_rules is True
+                        # Then remove rule from bdg and add to SOTA
+                        # Intuition: Only ground via BDG if expected number of grounded variables is larger than 
+                        self.sota_rules[rule] = True
+                        del self.bdg_rules[rule]
+
+
+
 
                     if cur_rule.is_disjunctive is True:
                         exists_disjunctive_rule = True

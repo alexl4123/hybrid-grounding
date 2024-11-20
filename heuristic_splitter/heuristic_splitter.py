@@ -26,6 +26,8 @@ from heuristic_splitter.grounding_strategy_handler import GroundingStrategyHandl
 
 from heuristic_splitter.grounding_approximation.approximate_generated_sota_rules import ApproximateGeneratedSotaRules
 
+from heuristic_splitter.program_structures.program_ds import ProgramDS
+
 #from heuristic_splitter.get_facts import GetFacts
 #from heuristic_splitter.setup_get_facts_cython import get_facts_from_file_handle
 from heuristic_splitter.get_facts_cython import get_facts_from_file_handle
@@ -71,6 +73,8 @@ class HeuristicSplitter:
         else:
             self.logging_class = None
 
+        self.program_ds = ProgramDS()
+
     def start(self, contents):
 
         virtual_file = io.BytesIO(contents.encode("utf-8"))
@@ -114,7 +118,7 @@ class HeuristicSplitter:
 
             heuristic_transformer = HeuristicTransformer(graph_ds, heuristic, bdg_rules,
                 sota_rules, stratified_rules, lpopt_rules, constraint_rules, all_heads,
-                self.debug_mode, rule_dictionary)
+                self.debug_mode, rule_dictionary, self.program_ds)
             parse_string(other_rules_string, lambda stm: heuristic_transformer(stm))
 
             if self.enable_lpopt is True and self.sota_grounder == SotaGrounder.GRINGO:
@@ -159,7 +163,7 @@ class HeuristicSplitter:
                     lpopt_rules.clear()
 
             generator_grounding_strategy = GroundingStrategyGenerator(graph_ds, bdg_rules, sota_rules,
-                stratified_rules, constraint_rules, lpopt_rules, rule_dictionary)
+                stratified_rules, constraint_rules, lpopt_rules, rule_dictionary, self.program_ds)
             generator_grounding_strategy.generate_grounding_strategy(grounding_strategy)
 
 
@@ -311,6 +315,7 @@ class HeuristicSplitter:
 
             tmp_rules_list = tmp_rules_list_2
             tmp_rule_string = "\n".join(tmp_rules_list)
+            program_ds_tmp = ProgramDS()
 
             graph_transformer = GraphCreatorTransformer(tmp_graph_ds, tmp_rule_dictionary, tmp_rules_list, self.debug_mode)
             parse_string(tmp_rule_string, lambda stm: graph_transformer(stm))
@@ -336,13 +341,14 @@ class HeuristicSplitter:
 
             heuristic_transformer = HeuristicTransformer(tmp_graph_ds, heuristic, bdg_rules,
                 sota_rules, stratified_rules, lpopt_rules, constraint_rules, all_heads_dev_null,
-                self.debug_mode, tmp_rule_dictionary)
+                self.debug_mode, tmp_rule_dictionary, program_ds_tmp)
             parse_string(tmp_rule_string, lambda stm: heuristic_transformer(stm))
 
             other_rules = tmp_rules_list
             other_rules_string = tmp_rule_string
             rule_dictionary = tmp_rule_dictionary
             graph_ds = tmp_graph_ds
+            self.program_ds = program_ds_tmp
 
         return lpopt_used, bdg_rules, sota_rules, stratified_rules, lpopt_rules, constraint_rules, other_rules, other_rules_string, rule_dictionary, graph_ds
 

@@ -22,10 +22,12 @@ class HeuristicTransformer(Transformer):
 
     def __init__(self, graph_ds: GraphDataStructure, used_heuristic,
             bdg_rules, sota_rules, stratified_rules, lpopt_rules,
-            constraint_rules, all_heads, debug_mode, rule_dictionary):
+            constraint_rules, all_heads, debug_mode, rule_dictionary,
+            program_ds):
 
         self.graph_ds = graph_ds
         self.all_heads = all_heads
+        self.program_ds = program_ds
 
         self.variable_graph = None
 
@@ -164,7 +166,8 @@ class HeuristicTransformer(Transformer):
                 self.all_positive_function_variables,
                 self.all_comparison_variables,
                 self.body_is_stratified,
-                self.in_minimize_statement,)
+                self.in_minimize_statement,
+                self.program_ds)
         except Exception as ex:
             print(f"In this rule: {str(node)}")
             raise ex
@@ -201,7 +204,8 @@ class HeuristicTransformer(Transformer):
             self.all_positive_function_variables,
             self.all_comparison_variables,
             self.body_is_stratified,
-            self.in_minimize_statement,)
+            self.in_minimize_statement,
+            self.program_ds)
 
         self.current_rule_position += 1
         self._reset_temporary_rule_variables()

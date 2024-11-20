@@ -24,6 +24,7 @@ class HeuristicInterface:
             rule_position,
             all_positive_function_variables,
             all_comparison_variables,
-            body_is_stratified):
+            body_is_stratified,
+            program_ds):
 
         pass
