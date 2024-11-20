@@ -82,7 +82,10 @@ class ApproximateGeneratedSotaRules:
                         
                         number_tuples = int(math.ceil(average_tuples * combinations))
                     elif self.alternative_adjusted_global_tuples_per_arity is not None:
-                        number_tuples = self.alternative_adjusted_global_tuples_per_arity
+                        arity = len(function.arguments)
+                        number_tuples = self.alternative_adjusted_global_tuples_per_arity**arity
+                        #number_tuples = self.alternative_adjusted_global_tuples_per_arity
+
                     else:
                         raise Exception("[EROR] - Could not infer domain!")
 
@@ -97,7 +100,8 @@ class ApproximateGeneratedSotaRules:
                             if domain is not None:
                                 tmp_intersec_factor = variable_domain_sizes[variable]
                             elif self.alternative_global_number_terms is not None:
-                                tmp_intersec_factor = self.alternative_global_number_terms
+                                #tmp_intersec_factor = self.alternative_global_number_terms
+                                tmp_intersec_factor = self.alternative_adjusted_global_tuples_per_arity
                             else:
                                 raise Exception("[ERROR] - Could not infer domain!")
 

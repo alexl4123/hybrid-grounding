@@ -109,6 +109,11 @@ class GroundingStrategyHandler:
         if self.enable_logging is True:
             self.logging_class.grounding_strategy = self.grounding_strategy
 
+        if self.sota_grounder == SotaGrounder.GRINGO:
+            show_statements = "\n".join([f"#show {key}/{all_heads[key]}." for key in all_heads.keys()] + [f"#show -{key}/{all_heads[key]}." for key in all_heads.keys()])
+        else:
+            show_statements = ""
+
         domain_transformer = DomainInferer()
         if len(self.grounding_strategy) > 0:
             # Ground SOTA rules with SOTA (gringo/IDLV):
@@ -117,10 +122,14 @@ class GroundingStrategyHandler:
             if self.enable_logging is True:
                 self.logging_class.sota_used_for_rules += sota_rules_string
 
-            program_input = self.grounded_program.get_string() + "\n" + sota_rules_string
+            program_input = self.grounded_program.get_string() + "\n" + sota_rules_string + "\n" + show_statements
 
             if self.output_type == Output.DEFAULT_GROUNDER or self.output_type == Output.BENCHMARK:
-                final_string = self.start_sota_grounder(program_input, mode="standard")
+                if self.sota_grounder == SotaGrounder.GRINGO:
+                    final_string = self.start_sota_grounder(program_input, mode="standard")
+                    #final_string += show_statements
+                else:
+                    final_string = self.start_sota_grounder(program_input, mode="standard")
 
             elif self.output_type == Output.STRING:
                 final_string = self.start_sota_grounder(program_input, mode="smodels")
@@ -137,7 +146,6 @@ class GroundingStrategyHandler:
             print("--- FINAL ---") 
 
         if self.output_type == Output.STRING:
-            show_statements = "\n".join([f"#show {key}/{all_heads[key]}." for key in all_heads.keys()] + [f"#show -{key}/{all_heads[key]}." for key in all_heads.keys()])
             query_statement = ""
             if len(self.query.keys()) > 0:
                 query_statement = list(self.query.keys())[0]

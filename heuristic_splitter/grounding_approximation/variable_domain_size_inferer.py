@@ -26,7 +26,7 @@ class VariableDomainSizeInferer:
                 if variable not in variable_domain:
                     variable_domain[variable] = tmp_var_domain_size
                 else:
-                    if variable_domain[variable] > tmp_var_domain_size and tmp_var_domain_size > 0:
+                    if variable_domain[variable] < tmp_var_domain_size and tmp_var_domain_size > 0:
                         variable_domain[variable] = tmp_var_domain_size
 
             elif self.function_string in argument:

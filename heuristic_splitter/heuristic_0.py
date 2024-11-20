@@ -72,7 +72,7 @@ class Heuristic0(HeuristicInterface):
                 raise NotImplementedError()
 
             # Add tw-effective
-            self.rule_dictionary[rule_position].tw_effective = tw_effective
+            self.rule_dictionary[rule_position].tw_effective = tw_full
             
 
             if is_constraint is True and tw_effective > maximum_variables_in_literal and all_comparison_variables_safe_by_predicate is True:
@@ -95,15 +95,15 @@ class Heuristic0(HeuristicInterface):
                 # Then using lpopt reduces number of variables to ground to tw_full (bag size)
                 lpopt_rules[rule_position] = True
 
-                if tw_effective > program_ds.maximum_variables_grounded_naively:
-                    program_ds.maximum_variables_grounded_naively = tw_effective
+                if tw_full > program_ds.maximum_variables_grounded_naively:
+                    program_ds.maximum_variables_grounded_naively = tw_full
 
             else:
                 #sota_rules.append(rule_position)
                 sota_rules[rule_position] = True
 
-                if tw_effective > program_ds.maximum_variables_grounded_naively:
-                    program_ds.maximum_variables_grounded_naively = tw_effective
+                if tw_full > program_ds.maximum_variables_grounded_naively:
+                    program_ds.maximum_variables_grounded_naively = tw_full
 
 
         
