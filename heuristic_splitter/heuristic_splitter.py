@@ -121,7 +121,7 @@ class HeuristicSplitter:
                 self.debug_mode, rule_dictionary, self.program_ds)
             parse_string(other_rules_string, lambda stm: heuristic_transformer(stm))
 
-            if self.enable_lpopt is True and self.sota_grounder == SotaGrounder.GRINGO:
+            if self.enable_lpopt is True and self.sota_grounder == SotaGrounder.GRINGO and len(list(facts_heads.values())) > 0:
                 # Check if Lpopt use is useful:
                 # If so, (lpopt_used is True), then overwrite most of the other variables:
 
@@ -131,7 +131,10 @@ class HeuristicSplitter:
                 max_arity_in_facts = max(facts_heads.values())
                 #number_facts_heads = len(list(facts_heads.keys()))
                 #alternative_adjusted_tuples = alternative_global_tuples / number_facts_heads
-                alternative_adjusted_tuples = alternative_global_tuples**(1/max_arity_in_facts)
+                if max_arity_in_facts > 0:
+                    alternative_adjusted_tuples = alternative_global_tuples**(1/max_arity_in_facts)
+                else:
+                    alternative_adjusted_tuples = alternative_global_tuples
 
                 # MANY ARGUMENTS/CALL LPOPT:
                 lpopt_used, tmp_bdg_rules, tmp_sota_rules, tmp_stratified_rules,\

@@ -259,7 +259,7 @@ class EquivChecker:
                 )
                 heuristic_splitter.start(heur_split_content)
             
-            optimization_problem_nagg = self.start_clingo(custom_printer.get_string(), self.nagg_output, self.nagg_hashes, mode="clasp")
+            optimization_problem_nagg = self.start_clingo(custom_printer.get_string(), self.nagg_output, self.nagg_hashes, mode="clingo")
 
             if optimization_problem_clingo is not None and optimization_problem_nagg is not None:
                 if optimization_problem_clingo != optimization_problem_nagg:
