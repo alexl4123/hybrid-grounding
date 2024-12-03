@@ -1,5 +1,8 @@
 
 cimport cython
+
+import gc
+
 from libc.string cimport strchr
 from libc.stdlib cimport malloc, free
 from cpython.dict cimport PyDict_SetItem, PyDict_Contains
@@ -25,6 +28,7 @@ cdef bint char_is_valid_ID_char(int cur_char):
         char_is_underscore(cur_char) is True
 
 def get_facts_from_file_handle(f):
+
     cdef dict facts = {}
     cdef dict facts_heads = {}
     cdef list other_rules = []
@@ -77,22 +81,22 @@ def get_facts_from_file_handle(f):
 
 
     # Rule String (for other rules and complete fact)
-    cdef int current_rule_size = 150
+    cdef int current_rule_size = 25
     cdef int current_rule_list_head = 0
     cdef bytearray current_rule_bytearray = bytearray(current_rule_size)
-    cdef bytearray tmp_current_rule_bytearray 
+    cdef bytearray tmp_current_rule_bytearray = bytearray(current_rule_size)
 
     # Rule String (for fact-atom)
-    cdef int current_fact_id_function_size = 30
+    cdef int current_fact_id_function_size = 5
     cdef int current_fact_id_list_head = 0
     cdef bytearray current_fact_id_bytearray = bytearray(current_fact_id_function_size)
-    cdef bytearray tmp_current_fact_id_bytearray 
+    cdef bytearray tmp_current_fact_id_bytearray  = bytearray(current_fact_id_function_size)
 
     # Term String (for inferring crude domain, for domain approx.)
-    cdef int current_term_size = 30
+    cdef int current_term_size = 5
     cdef int current_term_head = 0
     cdef bytearray current_term_bytearray = bytearray(current_fact_id_function_size)
-    cdef bytearray tmp_current_term_bytearray 
+    cdef bytearray tmp_current_term_bytearray = bytearray(current_fact_id_function_size)
 
 
     # Number of terms in fact
@@ -123,6 +127,7 @@ def get_facts_from_file_handle(f):
             # --- Increasing Size of String if needed
             if current_rule_list_head >= current_rule_size:
                 current_rule_size *= 2
+
                 tmp_current_rule_bytearray = bytearray(current_rule_size)
 
                 for index in range(current_rule_list_head):
@@ -132,6 +137,7 @@ def get_facts_from_file_handle(f):
 
             if current_fact_id_list_head >= current_fact_id_function_size:
                 current_fact_id_function_size *= 2
+
                 tmp_current_fact_id_bytearray = bytearray(current_fact_id_function_size)
 
                 for index in range(current_fact_id_list_head):
@@ -141,6 +147,7 @@ def get_facts_from_file_handle(f):
 
             if current_term_head >= current_term_size:
                 current_term_size *= 2
+
                 tmp_current_term_bytearray = bytearray(current_term_size)
 
                 for index in range(current_term_head):
@@ -369,6 +376,7 @@ def get_facts_from_file_handle(f):
 
                             PyDict_SetItem(facts_heads, PyUnicode_FromString(current_fact_id_bytearray), current_fact_number_terms)
 
+
                             current_fact_id_bytearray = bytearray(current_fact_id_function_size)
 
 
@@ -376,6 +384,7 @@ def get_facts_from_file_handle(f):
                         current_rule_list_head += 1
 
                         PyDict_SetItem(facts, PyUnicode_FromString(current_rule_bytearray), True)
+
                         current_rule_bytearray = bytearray(current_rule_size)
 
                         current_fact_number_terms = 0
@@ -400,6 +409,7 @@ def get_facts_from_file_handle(f):
                         current_rule_list_head += 1
 
                         PyDict_SetItem(query, PyUnicode_FromString(current_rule_bytearray), True)
+
                         current_rule_bytearray = bytearray(current_rule_size)
 
                         current_fact_number_terms = 0
@@ -545,6 +555,5 @@ def get_facts_from_file_handle(f):
                         current_rule_list_head += 1
 
                         continue
-
 
     return facts, facts_heads, other_rules, query, terms_domain

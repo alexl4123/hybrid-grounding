@@ -6,6 +6,8 @@ import os
 import subprocess
 import gc
 
+#from memory_profiler import profile
+
 import tempfile
 
 from clingo.ast import ProgramBuilder, parse_string
@@ -156,6 +158,7 @@ class GroundingStrategyHandler:
         else:
             print(final_string)
 
+    #@profile
     def ground(self):
 
         # Load c_output_redirector
@@ -383,6 +386,10 @@ class GroundingStrategyHandler:
 
             level_index += 1
 
+        if self.output_type != Output.STRING:
+            del domain_transformer.domain_dictionary
+            domain_transformer = None
+
         return domain_transformer
         
 
@@ -422,7 +429,13 @@ class GroundingStrategyHandler:
                 else:
                     input_program = self.grounded_program.get_string(insert_flags=True) 
 
+                del self.grounded_program.other_prg_string
+                del show_statements
+                del self.grounded_program.program_string
+
                 final_program = self.start_sota_grounder(input_program, mode="standard")
+
+                del input_program
 
                 if self.full_ground is False:
                     final_program = final_program
@@ -433,6 +446,9 @@ class GroundingStrategyHandler:
                 input_program = self.grounded_program.other_prg_string + "\n" +\
                     self.grounded_program.get_string(insert_flags=True)
                 final_program = self.start_sota_grounder(input_program, mode="standard")
+
+                del self.grounded_program
+                del input_program
 
         if self.output_printer:
             self.output_printer.custom_print(final_program)

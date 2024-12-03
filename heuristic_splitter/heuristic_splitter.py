@@ -2,6 +2,10 @@
 import io
 import os
 import subprocess
+import gc
+
+
+#from memory_profiler import profile
 
 from datetime import datetime
 
@@ -75,9 +79,14 @@ class HeuristicSplitter:
 
         self.program_ds = ProgramDS()
 
+    #@profile
     def start(self, contents):
 
         virtual_file = io.BytesIO(contents.encode("utf-8"))
+
+        # Explicitly invoke garbage collection (I do not need facts anymore) 
+        del contents
+        gc.collect()
 
         try:
             bdg_rules = {}
@@ -92,8 +101,11 @@ class HeuristicSplitter:
             rule_dictionary = {}
 
             # Separate facts from other rules:
-            #facts, facts_heads, other_rules, all_heads = GetFacts().get_facts_from_contents(contents)
             facts, facts_heads, other_rules, query, terms_domain = get_facts_from_file_handle(virtual_file)
+
+            # Explicitly invoke garbage collection (I do not need facts anymore) 
+            del virtual_file
+            gc.collect()
 
             all_heads = facts_heads.copy()
 

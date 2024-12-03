@@ -17,6 +17,14 @@ cdef int char_to_int(int cur_char):
     return cur_char - value_0 # And values 0-9 are 48 to 57, e.g., 57-48 = 9 (check)
 
 def preprocess_smodels_program(smodels_program_string, processed_heads_dict):
+
+    # Python Datatypes:
+    cdef list splits = []
+    cdef list rules = []
+    cdef dict literals_dict = {}
+    cdef dict domain_dictionary = {}
+    cdef dict total_domain = {}
+
     # Keys for domain dict:
     cdef str tuples_size_string = "tuples_size"
     cdef str terms_string = "terms"
@@ -36,6 +44,7 @@ def preprocess_smodels_program(smodels_program_string, processed_heads_dict):
 
     # Store the encoded byte string in a Python variable to extend its lifetime
     cdef bytes smodels_program_bytes = smodels_program_string.encode('utf-8')
+    del smodels_program_string
     #cdef char* smodels_program_cstr = smodels_program_bytes
     #cdef char* line_start = smodels_program_cstr
     cdef char* line_start = smodels_program_bytes
@@ -58,12 +67,6 @@ def preprocess_smodels_program(smodels_program_string, processed_heads_dict):
     # Parsed number from strings:
     cdef int cur_number = 0
 
-    # Python Datatypes:
-    cdef list splits = []
-    cdef list rules = []
-    cdef dict literals_dict = {}
-    cdef dict domain_dictionary = {}
-    cdef dict total_domain = {}
 
     # Decision Bools
     cdef bint in_fact_id = True
@@ -92,7 +95,8 @@ def preprocess_smodels_program(smodels_program_string, processed_heads_dict):
     cdef int term_string_start_index = -1
     cdef int term_string_end_index = -1
     cdef int cur_index
-    cdef bytearray term_bytearray
+    cdef bytearray term_bytearray = bytearray(50)
+
     cdef unicode term_string
 
     # Needed for parsing function arguments (e.g., p(q(1))):
@@ -151,6 +155,7 @@ def preprocess_smodels_program(smodels_program_string, processed_heads_dict):
 
         if in_rules_part == True:
             # Iterate through each character in the line
+            """
             for i in range(line_length):
                 cur_char = line_start[i]
                 # Process cur_char as needed
@@ -171,6 +176,8 @@ def preprocess_smodels_program(smodels_program_string, processed_heads_dict):
 
             cur_number = 0
             splits = []
+            """
+            pass
         elif in_domain_part == True:
             splits = [] # Reuse for parsing terms
             cur_number = 0 # Reuse for getting key number
@@ -448,7 +455,7 @@ def preprocess_smodels_program(smodels_program_string, processed_heads_dict):
             predicate_string = PyUnicode_FromString(predicate_bytearray)
             predicate_string = predicate_string.replace(sup_string, sup_flag)
             predicate_string = predicate_string.replace(inf_string, inf_flag)
-            literals_dict[cur_number] = predicate_string
+            #literals_dict[cur_number] = predicate_string
 
             if head_atom_string_compiled is False:
                 head_atom_length = head_atom_end_index - head_atom_start_index
@@ -491,6 +498,8 @@ def preprocess_smodels_program(smodels_program_string, processed_heads_dict):
 
         # Move line_start to the start of the next line
         line_start = newline_pos + 1
+
+    del smodels_program_bytes
 
     return rules, domain_dictionary, total_domain, literals_dict
 

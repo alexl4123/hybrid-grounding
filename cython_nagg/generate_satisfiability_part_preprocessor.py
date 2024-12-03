@@ -119,9 +119,8 @@ class GenerateSatisfiabilityPartPreprocessor:
         return variable_index_dict, string_template
 
 
-    def get_sat_comparison_string_template(self, comparison, rule_number, full_ground):
+    def get_sat_comparison_string_template(self, comparison, rule_number, full_ground, variable_index_dict = {}, signum=None):
 
-        variable_index_dict = {}
         string_template = ""
         variable_index_value = 1
 
@@ -136,7 +135,7 @@ class GenerateSatisfiabilityPartPreprocessor:
             )
 
 
-        if comparison.signum < 0:
+        if (signum is None and comparison.signum < 0) or (signum is not None and signum < 0):
             string_template = left_string_template + comparison.operator + right_string_template
         else: # So: comparison.signum >= 0:
             # Negated one, as IDLV is unable to handle sth. like "not X1 != X2"
@@ -147,13 +146,50 @@ class GenerateSatisfiabilityPartPreprocessor:
 
     def generate_satisfiability_part(self, rule: Rule, variable_domain, rule_number):
 
+        comparison_literals = []
+        function_literals = []
+        comparison_variable_dict = {}
+
         for literal in rule.literals:
+            if "FUNCTION" in literal:
+                function_literals.append(literal)
+            elif "COMPARISON" in literal:
+                comparison_literals.append(literal)
+
+                variable_index_dict, atom_string_template = self.get_sat_comparison_string_template(literal["COMPARISON"], rule_number, self.full_ground,
+                    variable_index_dict={}, signum=literal["COMPARISON"].signum)
+
+                sorted_variable_list = sorted(list(variable_index_dict.keys()))
+                comparison_variable_dict[",".join(sorted_variable_list)] = literal["COMPARISON"]
+
+        ordered_literals = comparison_literals + function_literals
+
+        function_associated_comparison = None
+        function_associated_string_template = None
+
+        for literal in ordered_literals:
             if "FUNCTION" in literal:
                 variable_index_dict, atom_string_template = self.get_sat_atom_string_template(literal["FUNCTION"], rule_number, self.full_ground)
 
+                sorted_variable_list = ",".join(sorted(list(variable_index_dict.keys())))
+                if sorted_variable_list in comparison_variable_dict:
+                    function_associated_comparison = comparison_variable_dict[sorted_variable_list]
+
+                    # Invert Signum:
+                    if function_associated_comparison.signum < 0:
+                        tmp_signum = 1
+                    else:
+                        tmp_signum = -1
+
+                    variable_index_dict_, function_associated_string_template = self.get_sat_comparison_string_template(function_associated_comparison, rule_number, self.full_ground,
+                        variable_index_dict=variable_index_dict, signum=tmp_signum)
+
+                    atom_string_template += "," + function_associated_string_template
+
                 arguments = literal["FUNCTION"].arguments
             elif "COMPARISON" in literal:
-                variable_index_dict, atom_string_template = self.get_sat_comparison_string_template(literal["COMPARISON"], rule_number, self.full_ground)
+                variable_index_dict, atom_string_template = self.get_sat_comparison_string_template(literal["COMPARISON"], rule_number, self.full_ground,
+                    variable_index_dict={}, signum=literal["COMPARISON"].signum)
 
                 arguments = literal["COMPARISON"].arguments
             else:

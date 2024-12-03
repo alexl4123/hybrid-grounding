@@ -1,4 +1,8 @@
 
+import copy
+
+#from memory_profiler import profile
+
 from heuristic_splitter.domain_inferer import DomainInferer
 from heuristic_splitter.program.asp_program import ASPProgram
 
@@ -44,7 +48,7 @@ class SmodelsASPProgram(ASPProgram):
 
 
     def preprocess_smodels_program(self, smodels_program_string, domain_inferer: DomainInferer, save_smodels_rules = False):
-    
+
         rules, domain_dictionary, total_domain, literals_dict = cython_preprocess_smodels_program(smodels_program_string, domain_inferer.processed_literals)
 
         # Compute sizes of terms (recursively):
@@ -87,6 +91,7 @@ class SmodelsASPProgram(ASPProgram):
 
         domain_inferer.infer_processed_literals()
         domain_inferer.compute_domain_average()
+        
 
     def preprocess_smodels_programs_approximate_python(self, smodels_program_string, domain_inferer: DomainInferer):
 
