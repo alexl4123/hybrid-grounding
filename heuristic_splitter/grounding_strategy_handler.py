@@ -50,6 +50,7 @@ from cython_nagg.cython_nagg import CythonNagg
 from cython_nagg.justifiability_type import JustifiabilityType
 
 from heuristic_splitter.logging_class import LoggingClass
+from heuristic_splitter.cdnl.cdnl_data_structure import CDNLDataStructure
 
 from ctypes import *
 so_file = "./heuristic_splitter/c_output_redirector.so"
@@ -76,7 +77,7 @@ class GroundingStrategyHandler:
     def __init__(self, grounding_strategy: GroundingStrategyGenerator, rule_dictionary, graph_ds: GraphDataStructure, facts, query,
         debug_mode, enable_lpopt, sota_grounder = SotaGrounder.GRINGO,
         output_printer = None, enable_logging = False, logging_class: LoggingClass = None,
-        output_type: Output = None):
+        output_type: Output = None, cdnl_data_structure: CDNLDataStructure = None):
 
         self.grounding_strategy = grounding_strategy
         self.rule_dictionary = rule_dictionary
@@ -102,6 +103,9 @@ class GroundingStrategyHandler:
 
         self.final_program_input_to_grounder = ""
         self.full_ground = False
+
+
+        self.cdnl_data_structure = cdnl_data_structure
 
     def single_ground_call(self, all_heads):
 
@@ -209,8 +213,8 @@ class GroundingStrategyHandler:
 
                     if rule.in_program_rules is True:
                         # TDB -> TODO
-                        tmp_bdg_new_found_rules.append(bdg_rule)
-                        #tmp_bdg_old_found_rules.append(bdg_rule)
+                        #tmp_bdg_new_found_rules.append(bdg_rule)
+                        tmp_bdg_old_found_rules.append(bdg_rule)
                     else:
                         approx_number_rules, used_method, rule_str = self.get_best_method_by_approximated_rule_count(domain_transformer, rule)
 
@@ -233,6 +237,8 @@ class GroundingStrategyHandler:
 
                 if len(tmp_bdg_new_found_rules) > 0:
                     program_input = self.rule_list_to_rule_string(tmp_bdg_new_found_rules)
+
+                    self.infer_head_literals_of_bdg(tmp_bdg_old_found_rules)
 
                     if self.enable_logging is True:
                         self.logging_class.is_bdg_used = True
@@ -288,6 +294,10 @@ class GroundingStrategyHandler:
                 if len(tmp_bdg_old_found_rules) > 0:
 
                     program_input = self.rule_list_to_rule_string(tmp_bdg_old_found_rules)
+
+                    self.infer_head_literals_of_bdg(tmp_bdg_old_found_rules)
+
+
 
                     if self.enable_logging is True:
                         self.logging_class.is_bdg_used = True
@@ -513,6 +523,18 @@ class GroundingStrategyHandler:
                 raise NotImplementedError() # TBD Fallback
 
         return program_input
+
+    def infer_head_literals_of_bdg(self, rules):
+
+        for rule_index in rules:
+
+            rule = self.rule_dictionary[rule_index]
+            for literal in rule.literals:
+                if "FUNCTION" in literal:
+                    if literal["FUNCTION"].in_head is True:
+                        self.cdnl_data_structure.bdg_literals[literal["FUNCTION"].name] = rule
+
+            
 
 
     def start_sota_grounder(self, program_input, timeout=1800, mode="smodels"):

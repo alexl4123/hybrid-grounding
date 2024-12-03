@@ -51,6 +51,13 @@ class SmodelsASPProgram(ASPProgram):
 
         rules, domain_dictionary, total_domain, literals_dict = cython_preprocess_smodels_program(smodels_program_string, domain_inferer.processed_literals)
 
+        if "_total" not in domain_dictionary:
+            domain_dictionary["_total"] = {
+                "tuples_size":1,
+                "terms":[{}],
+                "terms_size":[0],
+            }
+
         # Compute sizes of terms (recursively):
         for function in domain_dictionary.keys():
             _dict = domain_dictionary[function]
@@ -63,20 +70,13 @@ class SmodelsASPProgram(ASPProgram):
                         cur_number_items += 1
                     else:
                         self.recursive_domain_size_computation(_dict["terms"][function_position_index][key])
+
+                    if key not in domain_dictionary["_total"]["terms"][0]:
+                        domain_dictionary["_total"]["terms"][0][key] = True
+                        domain_dictionary["_total"]["terms_size"][0] += 1
                 
                 _dict["terms_size"][function_position_index] = cur_number_items
 
-        if "_total" not in domain_dictionary:
-            domain_dictionary["_total"] = {
-                "tuples_size":1,
-                "terms":[{}],
-                "terms_size":[0],
-            }
-
-            for total_domain_key in total_domain:
-                if total_domain_key not in domain_dictionary["_total"]["terms"][0]:
-                    domain_dictionary["_total"]["terms"][0][total_domain_key] = True
-                    domain_dictionary["_total"]["terms_size"][0] += 1
 
         if save_smodels_rules is True:
             self.program = rules

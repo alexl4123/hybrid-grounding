@@ -65,6 +65,8 @@ class GraphAnalyzer:
         G = self.graph_ds.get_positive_nx_object()
         sccs = list(nx.strongly_connected_components(G))
 
+        self.graph_ds.positive_sccs = sccs
+
         scc_index = 0
         for scc in sccs:
 

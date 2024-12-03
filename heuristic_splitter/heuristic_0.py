@@ -32,7 +32,7 @@ class Heuristic0(HeuristicInterface):
 
         is_tight = len([True for head_key in head_atoms_scc_membership.keys() if head_key in body_atoms_scc_membership]) == 0
 
-        can_handle_rule = is_tight is True and has_aggregate is False and in_minimize_statement is False and all_comparison_variables_safe_by_predicate is True
+        can_handle_rule = has_aggregate is False and in_minimize_statement is False and all_comparison_variables_safe_by_predicate is True
 
         if self.rule_dictionary[rule_position].in_program_rules is True and can_handle_rule is True and body_is_stratified is False:
             # If user specifies grounded by BDG, then ground by BDG (if possible in theory)
@@ -79,12 +79,12 @@ class Heuristic0(HeuristicInterface):
                 # Constraint:
                 bdg_rules[rule_position] = True
 
-            elif is_tight is True and tw_effective > maximum_variables_in_literal + 1 and all_comparison_variables_safe_by_predicate is True:
+            elif is_tight is True and tw_effective > maximum_variables_in_literal * 1 and all_comparison_variables_safe_by_predicate is True:
                 # Tight normal:
                 # As in best case tw_effective > maximum_variables_in_literal (for foundedness encodings, although unlikely)
                 bdg_rules[rule_position] = True
             
-            elif is_tight is False and tw_effective > maximum_variables_in_literal * 3 and all_comparison_variables_safe_by_predicate is True:
+            elif is_tight is False and tw_effective > maximum_variables_in_literal * 1 and all_comparison_variables_safe_by_predicate is True:
                 # Non-tight normal:
                 bdg_rules[rule_position] = True
 

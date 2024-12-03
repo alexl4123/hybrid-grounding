@@ -12,6 +12,7 @@ class GraphDataStructure:
 
         self.not_stratified_index = {}
         self.positive_predicate_scc_index = {}
+        self.positive_sccs = []
 
         self.full_graph = nx.DiGraph()
         self.positive_graph = nx.DiGraph()

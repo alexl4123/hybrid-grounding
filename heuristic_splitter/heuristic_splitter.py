@@ -26,14 +26,19 @@ from heuristic_splitter.enums.output import Output
 from heuristic_splitter.heuristic_0 import Heuristic0
 
 from heuristic_splitter.grounding_strategy_generator import GroundingStrategyGenerator
-from heuristic_splitter.grounding_strategy_handler import GroundingStrategyHandler
+from heuristic_splitter.grounding_strategy_handler import GroundingStrategyHandler, CustomOutputPrinter
 
 from heuristic_splitter.grounding_approximation.approximate_generated_sota_rules import ApproximateGeneratedSotaRules
 
 from heuristic_splitter.program_structures.program_ds import ProgramDS
 
+from clingo.application import clingo_main
+from heuristic_splitter.cdnl.starter import Starter
+from heuristic_splitter.cdnl.cdnl_data_structure import CDNLDataStructure
+
 #from heuristic_splitter.get_facts import GetFacts
 #from heuristic_splitter.setup_get_facts_cython import get_facts_from_file_handle
+
 from heuristic_splitter.get_facts_cython import get_facts_from_file_handle
 from heuristic_splitter.logging_class import LoggingClass
 
@@ -52,10 +57,21 @@ class HeuristicSplitter:
 
         self.debug_mode = debug_mode
         self.enable_lpopt = enable_lpopt
-        self.output_printer = output_printer
+
+        # TODO
+        self.ground_and_solve = True
+
+        if self.ground_and_solve is True:
+            self.output_printer = CustomOutputPrinter()
+        else:
+            self.output_printer = None
+
         self.output_type = output_type
 
         self.enable_logging = enable_logging
+
+        self.cdnl_data_structure = CDNLDataStructure()
+
         path = None
 
         if self.enable_logging is True:
@@ -99,6 +115,9 @@ class HeuristicSplitter:
 
             graph_ds = GraphDataStructure()
             rule_dictionary = {}
+
+            self.cdnl_data_structure.graph_ds = graph_ds
+            self.cdnl_data_structure.rule_dictionary = rule_dictionary
 
             # Separate facts from other rules:
             facts, facts_heads, other_rules, query, terms_domain = get_facts_from_file_handle(virtual_file)
@@ -195,7 +214,7 @@ class HeuristicSplitter:
                     self.debug_mode, self.enable_lpopt,
                     output_printer = self.output_printer, sota_grounder = self.sota_grounder,
                     enable_logging = self.enable_logging, logging_class = self.logging_class,
-                    output_type = self.output_type)
+                    output_type = self.output_type, cdnl_data_structure=self.cdnl_data_structure)
                 if len(grounding_strategy) > 1 or len(grounding_strategy[0]["bdg"]) > 0:
                     if self.enable_logging is True:
                         self.logging_class.is_single_ground_call = False
@@ -207,6 +226,14 @@ class HeuristicSplitter:
                         self.logging_class.is_single_ground_call = True
 
                     grounding_handler.single_ground_call(all_heads)
+
+
+                if self.ground_and_solve is True:
+                    if self.output_printer is not None:
+                        clingo_main(
+                            Starter(self.output_printer.get_string(), self.cdnl_data_structure)
+                            )
+
 
             else:
 
