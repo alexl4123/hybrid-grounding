@@ -16,6 +16,7 @@ from heuristic_splitter.enums.grounding_strategy import GroundingStrategy
 from heuristic_splitter.enums.sota_grounder import SotaGrounder
 from heuristic_splitter.enums.treewidth_computation_strategy import TreewidthComputationStrategy
 from heuristic_splitter.enums.output import Output
+from heuristic_splitter.enums.cyclic_strategy import CyclicStrategy
 
 
 def main():
@@ -84,6 +85,22 @@ def main():
             "enum_mode": Output.BENCHMARK,
         },
     }
+
+    cyclic_strategies = {
+        "USE_SOTA": {
+            "cmd_line": "use-sota",
+            "enum_mode": CyclicStrategy.USE_SOTA
+            },
+        "UNFOUND_SET": {
+            "cmd_line": "unfound-set",
+            "enum_mode": CyclicStrategy.UNFOUND_SET,
+        },
+        "LEVEL_MAPPINGS": {
+            "cmd_line": "level-mappings",
+            "enum_mode": CyclicStrategy.LEVEL_MAPPINGS,
+        },
+    }
+
 
 
 
@@ -159,6 +176,15 @@ def main():
         ],
     )
 
+    parser.add_argument(
+        "--cyclic-strategy",
+        default=cyclic_strategies["USE_SOTA"]["cmd_line"],
+        choices=[
+            cyclic_strategies[key]["cmd_line"]
+            for key in cyclic_strategies.keys()
+        ]
+    )
+
     parser.add_argument("files", type=argparse.FileType("r"), nargs="+")
     args = parser.parse_args()
 
@@ -186,6 +212,11 @@ def main():
     for key in output_type.keys():
         if args.output_type == output_type[key]["cmd_line"]:
             output_type_used = output_type[key]["enum_mode"]
+
+    cyclic_strategy_used = None
+    for key in cyclic_strategies.keys():
+        if args.cyclic_strategy == cyclic_strategies[key]["cmd_line"]:
+            cyclic_strategy_used = cyclic_strategies[key]["enum_mode"]
 
     debug_mode = args.debug
     enable_lpopt = args.tw_aware
@@ -229,7 +260,8 @@ def main():
         args.enable_logging,
         log_file_path,
         sota_grounder_used = sota_grounder_used,
-        output_type = output_type_used
+        output_type = output_type_used,
+        cyclic_strategy_used = cyclic_strategy_used
     )
 
     heuristic.start(contents)

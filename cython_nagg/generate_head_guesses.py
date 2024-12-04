@@ -34,7 +34,8 @@ class GenerateHeadGuesses:
         self.terms_size_string = "terms_size"
 
 
-    def get_string_template_helper(self, argument, string_template, variable_index_dict, variable_index_value):
+    def get_string_template_helper(self, argument, string_template, variable_index_dict, variable_index_value,
+        variable_names = False):
 
         if self.variable_string in argument:
             # VARIABLE (e.g., X):
@@ -46,7 +47,10 @@ class GenerateHeadGuesses:
             else:
                 tmp_variable_index_value = variable_index_dict[variable]
 
-            string_template += f"%{tmp_variable_index_value}$s"
+            if variable_names is False:
+                string_template += f"%{tmp_variable_index_value}$s"
+            else:
+                string_template += f"X{tmp_variable_index_value}"
 
         elif self.function_string in argument:
             # FUNCTION (e.g., p(X)):
@@ -82,7 +86,8 @@ class GenerateHeadGuesses:
         return variable_index_value, string_template
 
 
-    def get_head_atom_template_helper(self, function, variable_index_dict = {}, variable_index_value = 1, string_template = ""):
+    def get_head_atom_template_helper(self, function, variable_index_dict = {},
+        variable_index_value = 1, string_template = "", variable_names = False):
 
         string_template += function.name
         if len(function.arguments) > 0:
@@ -94,7 +99,8 @@ class GenerateHeadGuesses:
 
                 variable_index_value, string_template, = self.get_string_template_helper(
                     argument, string_template,
-                    variable_index_dict, variable_index_value)
+                    variable_index_dict, variable_index_value,
+                    variable_names = variable_names)
 
                 index += 1
                 if index < len(function.arguments):
@@ -105,20 +111,24 @@ class GenerateHeadGuesses:
         return  variable_index_value, string_template
 
 
-    def get_head_atom_template(self, function, rule_number, encapsulated_head_template = True):
+    def get_head_atom_template(self, function, rule_number, encapsulated_head_template = True,
+        variable_index_dict = {}, variable_names = False, variable_index_value=1):
 
-        variable_index_dict = {} 
         if encapsulated_head_template is True:
             # For head-decoupling (for foundedness)
             clone = function.clone()
             clone.name = f"{function.name}_{self.nagg_call_number}_{rule_number}"
 
             _, string_template = self.get_head_atom_template_helper(clone,
-                variable_index_dict=variable_index_dict)
+                variable_index_dict=variable_index_dict, variable_names = variable_names,
+                variable_index_value=variable_index_value
+                )
 
         else:
             _, string_template = self.get_head_atom_template_helper(function,
-                variable_index_dict=variable_index_dict)
+                variable_index_dict=variable_index_dict, variable_names = variable_names,
+                variable_index_value=variable_index_value
+                )
 
         return variable_index_dict, string_template
 
@@ -135,9 +145,12 @@ class GenerateHeadGuesses:
             if self.function_string in literal and literal[self.function_string].in_head is True:
                 # IN HEAD FUNCTION
                 variable_index_dict, atom_string_template_encapsulated = self.get_head_atom_template(literal[self.function_string],
-                    rule_number, encapsulated_head_template=True)
+                    rule_number, encapsulated_head_template=True, variable_index_dict={},
+                    variable_names = False, variable_index_value=1
+                    )
                 _, atom_string_template = self.get_head_atom_template(literal[self.function_string],
-                    rule_number, encapsulated_head_template=False)
+                    rule_number, encapsulated_head_template=False, variable_index_dict={},
+                    variable_names = False, variable_index_value=1)
 
                 self.get_head_domain(literal[self.function_string], self.domain.domain_dictionary, variable_domain_including_sub_functions)
 

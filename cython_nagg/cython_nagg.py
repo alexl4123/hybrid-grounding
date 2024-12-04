@@ -1,6 +1,7 @@
 
 import sys
 import os
+import time
 
 import tempfile
 
@@ -62,20 +63,21 @@ class CythonNagg:
 
             if rule.is_constraint is False:
 
-                fd, path = tempfile.mkstemp()
-                stdout_backup = self.c_output_redirector.redirect_stdout_to_fd_and_duplicate_and_close(fd)
+                # TODO --> FIX?!?
+                #fd, path = tempfile.mkstemp()
+                #stdout_backup = self.c_output_redirector.redirect_stdout_to_fd_and_duplicate_and_close(fd)
 
                 head_guesses.generate_head_guesses_part(rule, variable_domain, rule_number, head_variables, variable_domain_including_sub_functions)
 
-                self.c_output_redirector.call_flush()
-                pipe_write_backup = self.c_output_redirector.redirect_stdout_to_fd_and_duplicate_and_close(stdout_backup)
+                #self.c_output_redirector.call_flush()
+                #pipe_write_backup = self.c_output_redirector.redirect_stdout_to_fd_and_duplicate_and_close(stdout_backup)
 
-                os.close(pipe_write_backup)
-                f = open(path, "r")
-                output = f.read()
-                f.close()
+                #os.close(pipe_write_backup)
+                #f = open(path, "r")
+                #output = f.read()
+                #f.close()
 
-                self.head_guesses_string += output
+                #self.head_guesses_string += output
 
                 justifiability.generate_justifiability_part(rule, variable_domain, rule_number, head_variables)
 

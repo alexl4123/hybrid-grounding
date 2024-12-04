@@ -22,6 +22,7 @@ from heuristic_splitter.enums.treewidth_computation_strategy import TreewidthCom
 from heuristic_splitter.enums.grounding_strategy import GroundingStrategy
 from heuristic_splitter.enums.sota_grounder import SotaGrounder
 from heuristic_splitter.enums.output import Output
+from heuristic_splitter.enums.cyclic_strategy import CyclicStrategy
 
 from heuristic_splitter.heuristic_0 import Heuristic0
 
@@ -49,7 +50,9 @@ class HeuristicSplitter:
         debug_mode, enable_lpopt,
         enable_logging = False, logging_file = None,
         output_printer = None, sota_grounder_used = SotaGrounder.GRINGO,
-        output_type = Output.DEFAULT_GROUNDER):
+        output_type = Output.DEFAULT_GROUNDER,
+        cyclic_strategy_used = CyclicStrategy.USE_SOTA
+        ):
 
         self.heuristic_strategy = heuristic_strategy
         self.treewidth_strategy = treewidth_strategy
@@ -59,8 +62,11 @@ class HeuristicSplitter:
         self.debug_mode = debug_mode
         self.enable_lpopt = enable_lpopt
 
-        # TODO
-        self.ground_and_solve = True
+        self.cyclic_strategy_used = cyclic_strategy_used    
+        if cyclic_strategy_used == CyclicStrategy.UNFOUND_SET:
+            self.ground_and_solve = True
+        else:
+            self.ground_and_solve = False
 
         if self.ground_and_solve is True:
             self.output_printer = CustomOutputPrinter()
@@ -345,7 +351,7 @@ class HeuristicSplitter:
                     output_printer = self.output_printer, sota_grounder = self.sota_grounder,
                     enable_logging = self.enable_logging, logging_class = self.logging_class,
                     output_type = self.output_type, cdnl_data_structure=self.cdnl_data_structure,
-                    ground_and_solve=self.ground_and_solve)
+                    ground_and_solve=self.ground_and_solve, cyclic_strategy_used=self.cyclic_strategy_used)
                 if len(grounding_strategy) > 1 or len(grounding_strategy[0]["bdg"]) > 0:
                     if self.enable_logging is True:
                         self.logging_class.is_single_ground_call = False
@@ -362,7 +368,8 @@ class HeuristicSplitter:
                 if self.ground_and_solve is True:
                     if self.output_printer is not None:
                         clingo_main(
-                            Starter(self.output_printer.get_string(), self.cdnl_data_structure)
+                            Starter(self.output_printer.get_string(), self.cdnl_data_structure),
+                            []
                             )
 
 

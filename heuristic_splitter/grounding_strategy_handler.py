@@ -42,11 +42,13 @@ from heuristic_splitter.domain_inferer import DomainInferer
 
 from heuristic_splitter.enums.sota_grounder import SotaGrounder
 from heuristic_splitter.enums.output import Output
+from heuristic_splitter.enums.cyclic_strategy import CyclicStrategy
 
 from heuristic_splitter.program.string_asp_program import StringASPProgram
 from heuristic_splitter.program.smodels_asp_program import SmodelsASPProgram
 
 from cython_nagg.cython_nagg import CythonNagg
+from cython_nagg.generate_head_guesses import GenerateHeadGuesses
 from cython_nagg.justifiability_type import JustifiabilityType
 
 from heuristic_splitter.logging_class import LoggingClass
@@ -77,13 +79,16 @@ class GroundingStrategyHandler:
     def __init__(self, grounding_strategy: GroundingStrategyGenerator, rule_dictionary, graph_ds: GraphDataStructure, facts, query,
         debug_mode, enable_lpopt, sota_grounder = SotaGrounder.GRINGO,
         output_printer = None, enable_logging = False, logging_class: LoggingClass = None,
-        output_type: Output = None, cdnl_data_structure: CDNLDataStructure = None, ground_and_solve=False):
+        output_type: Output = None, cdnl_data_structure: CDNLDataStructure = None, ground_and_solve=False,
+        cyclic_strategy_used=CyclicStrategy.USE_SOTA
+        ):
 
         self.grounding_strategy = grounding_strategy
         self.rule_dictionary = rule_dictionary
         self.facts = facts
         self.query = query
         self.ground_and_solve = ground_and_solve
+        self.cyclic_strategy_used = cyclic_strategy_used
 
         self.output_type = output_type
         
@@ -195,6 +200,8 @@ class GroundingStrategyHandler:
             sota_rules = level["sota"]
             bdg_rules = level["bdg"]
 
+            # If this evaluates to true (further down), special techniques have to be used!
+            is_non_tight_bdg_part = False
 
             if self.debug_mode is True:
                 print(f"-- {level_index}: SOTA-RULES: {sota_rules}, BDG-RULES: {bdg_rules}")
@@ -204,6 +211,12 @@ class GroundingStrategyHandler:
                 #domain_transformer.update_domain_sizes()
                 tmp_bdg_old_found_rules = []
                 tmp_bdg_new_found_rules = []
+
+                for bdg_rule in bdg_rules:
+                    rule = self.rule_dictionary[bdg_rule]
+
+                    if rule.is_tight is False:
+                        is_non_tight_bdg_part = True
 
                 for bdg_rule in bdg_rules:
 
@@ -221,7 +234,7 @@ class GroundingStrategyHandler:
 
                         if used_method == "SOTA":
                             sota_rules.append(bdg_rule)
-                        elif used_method == "BDG_OLD":
+                        elif used_method == "BDG_OLD" or is_non_tight_bdg_part:
                             tmp_bdg_old_found_rules.append(bdg_rule)
                         else:
                             #sota_rules.append(bdg_rule)
@@ -233,7 +246,6 @@ class GroundingStrategyHandler:
                 ground_guess = True
                 # Custom printer keeps result of prototype (NaGG)
                 aggregate_mode = AggregateMode.RA
-                cyclic_strategy = CyclicStrategy.LEVEL_MAPPING
                 grounding_mode = GroundingModes.REWRITE_AGGREGATES_GROUND_FULLY
 
                 if len(tmp_bdg_new_found_rules) > 0:
@@ -246,8 +258,6 @@ class GroundingStrategyHandler:
                         self.logging_class.is_bdg_new_used = True
                         self.logging_class.bdg_used_for_rules += program_input
                         self.logging_class.bdg_new_used_for_rules += program_input
-
-
 
                     input_rules = []
                     for bdg_rule in bdg_rules:
@@ -294,11 +304,74 @@ class GroundingStrategyHandler:
 
                 if len(tmp_bdg_old_found_rules) > 0:
 
+                    if is_non_tight_bdg_part is True and self.cyclic_strategy_used == CyclicStrategy.LEVEL_MAPPINGS:
+                        # Handle Level-Mappings!
+
+                        # Used for instantiating heads with variables:
+                        gen_head_guesses = GenerateHeadGuesses(None, nagg_call_number=self.total_nagg_calls)
+
+                        tmp_rule = self.rule_dictionary[tmp_bdg_old_found_rules[0]]
+
+                        # Assume 0 is head:
+                        head_literal = None
+                        for literal in tmp_rule.literals:
+                            if "FUNCTION" in literal and literal["FUNCTION"].in_head is True:
+                                head_literal = literal["FUNCTION"]
+                                break
+
+                        scc_index = self.graph_ds.positive_predicate_scc_index[head_literal.name]
+
+                        scc = self.graph_ds.positive_sccs[scc_index]
+
+                        tmp_variable_index_dictionary = {}
+                        scc_heads = []
+                        scc_heads_2 = []
+
+                        for scc_predicate_index in list(scc):
+                            rule_index = self.graph_ds.node_to_rule_lookup[scc_predicate_index][0]
+
+                            rule = self.rule_dictionary[rule_index]
+
+                            # Assume 0 is head:
+                            tmp_head_literal = None
+                            for literal in rule.literals:
+                                if "FUNCTION" in literal and literal["FUNCTION"].in_head is True:
+                                    tmp_head_literal = literal["FUNCTION"]
+                                    break
+
+                            if tmp_head_literal is not None:
+                                variable_index_dict, atom_string_template = gen_head_guesses.get_head_atom_template(tmp_head_literal,
+                                    0, encapsulated_head_template=False, variable_index_dict={},
+                                    variable_names = True, variable_index_value=len(tmp_variable_index_dictionary)
+                                    )
+                                for variable_name in variable_index_dict.keys():
+                                    new_variable = f"{variable_name}{variable_index_dict[variable_name]}"
+                                    tmp_variable_index_dictionary[new_variable] = variable_index_dict[variable_name]
+                                scc_heads.append(atom_string_template)
+
+                                # Same but with different variable names (due to the increased index)
+                                variable_index_dict, atom_string_template = gen_head_guesses.get_head_atom_template(tmp_head_literal,
+                                    0, encapsulated_head_template=False, variable_index_dict={},
+                                    variable_names = True, variable_index_value=len(tmp_variable_index_dictionary)
+                                    )
+                                for variable_name in variable_index_dict.keys():
+                                    new_variable = f"{variable_name}{variable_index_dict[variable_name]}"
+                                    tmp_variable_index_dictionary[new_variable] = variable_index_dict[variable_name]
+                                scc_heads_2.append(atom_string_template)
+
+                        # TODO --> Rules that are created by separating heads!
+                        level_mapping_rules = []
+                        for scc_head_1_index in range(len(scc_heads)):
+                            scc_head_1 = scc_heads[scc_head_1_index]
+                            for scc_head_2_index in range(scc_head_1_index, len(scc_heads_2)):
+                                scc_head_2 = scc_heads[scc_head_2_index]
+                                level_mapping_rule = f"prec({scc_head_1},{scc_head_2})|prec({scc_head_2},{scc_head_1}) :- {scc_head_1},{scc_head_2}."
+                                level_mapping_rules.append(level_mapping_rule)
+                        level_mapping_rules.append(":-prec(X1,X2),prec(X2,X3),prec(X3,X1).")
+                        self.grounded_program.add_other_string("\n".join(level_mapping_rules))
+
                     program_input = self.rule_list_to_rule_string(tmp_bdg_old_found_rules)
-
                     self.infer_head_literals_of_bdg(tmp_bdg_old_found_rules)
-
-
 
                     if self.enable_logging is True:
                         self.logging_class.is_bdg_used = True
@@ -332,7 +405,8 @@ class GroundingStrategyHandler:
                         f = open(path, "r")
                         output = f.read()
 
-                        self.grounded_program.add_string(cython_nagg.head_guesses_string)
+                        # TODO --> FIX?    
+                        #self.grounded_program.add_string(cython_nagg.head_guesses_string)
 
                         f.close()
 
