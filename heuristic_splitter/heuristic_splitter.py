@@ -35,6 +35,7 @@ from heuristic_splitter.program_structures.program_ds import ProgramDS
 from clingo.application import clingo_main
 from heuristic_splitter.cdnl.starter import Starter
 from heuristic_splitter.cdnl.cdnl_data_structure import CDNLDataStructure
+from heuristic_splitter.cdnl.positive_cycle_transformer import PositiveCycleTransformer
 
 #from heuristic_splitter.get_facts import GetFacts
 #from heuristic_splitter.setup_get_facts_cython import get_facts_from_file_handle
@@ -197,6 +198,135 @@ class HeuristicSplitter:
 
                     lpopt_rules.clear()
 
+
+            if self.ground_and_solve is True:
+                # Go through all SCCs
+                # See if there is any non-trivial, where BDG might be used
+                # If so --> Apply rewritings!
+
+
+                new_rules = []
+                new_bdg_rules = []
+
+                rewritten_data_structure = {}
+
+                scc_index = 0
+                for scc in graph_ds.positive_sccs:
+
+                    is_bdg_cycle = False
+
+                    for node in list(scc):
+                        rules = graph_ds.node_to_rule_lookup[node]
+
+                        for rule in rules:
+                            if rule in bdg_rules:
+                                is_bdg_cycle = True
+                                break
+
+                        if is_bdg_cycle is True:
+                            break
+                    
+                    if is_bdg_cycle is True:
+                        # rewrite rules:
+                        for node in list(scc):
+                            rules = graph_ds.node_to_rule_lookup[node]
+
+                            rules_string_array = []
+                            bdg_rules_string_array = []
+
+                            for rule in rules:
+                                if rule in bdg_rules:
+                                    bdg_rules_string_array.append(str(rule_dictionary[rule]))
+                                else:
+                                    rules_string_array.append(str(rule_dictionary[rule]))
+
+                            # Non-BDG Rules:
+                            rules_string = "\n".join(rules_string_array) 
+                            positive_cycle_transformer = PositiveCycleTransformer(scc_index, function_visit_index=0)
+                            parse_string(rules_string, lambda stm: positive_cycle_transformer(stm))
+
+                            new_rules += positive_cycle_transformer.transformed_rules
+                            new_rules += positive_cycle_transformer.new_rules
+                            rewritten_data_structure = rewritten_data_structure | positive_cycle_transformer.rewritten_to_original_dict
+
+                            prev_function_visit_index = positive_cycle_transformer.function_visit_index
+
+                            # Same for BDG:
+                            rules_string = "\n".join(bdg_rules_string_array) 
+                            positive_cycle_transformer = PositiveCycleTransformer(scc_index, function_visit_index=prev_function_visit_index)
+                            parse_string(rules_string, lambda stm: positive_cycle_transformer(stm))
+
+                            new_bdg_rules += positive_cycle_transformer.transformed_rules
+                            new_rules += positive_cycle_transformer.new_rules
+                            rewritten_data_structure = rewritten_data_structure | positive_cycle_transformer.rewritten_to_original_dict
+
+                    else:
+                        for node in list(scc):
+                            rules = graph_ds.node_to_rule_lookup[node]
+
+                            rules_string_array = []
+                            bdg_rules_string_array = []
+                            for rule in rules:
+                                if rule in bdg_rules:
+                                    bdg_rules_string_array.append(str(rule_dictionary[rule]))
+                                else:
+                                    rules_string_array.append(str(rule_dictionary[rule]))
+
+                            new_rules += rules_string_array
+                            new_bdg_rules += bdg_rules_string_array
+                    scc_index += 1
+
+                self.cdnl_data_structure.rewritten_to_original_dict = rewritten_data_structure
+
+                all_new_rules = new_rules + ["#program rules."] + new_bdg_rules
+            
+                tmp_graph_ds = GraphDataStructure()
+                tmp_rule_dictionary = {}
+
+                self.cdnl_data_structure.graph_ds = tmp_graph_ds
+                self.cdnl_data_structure.rule_dictionary = tmp_rule_dictionary
+
+                program_ds_tmp = ProgramDS()
+
+                for fact_head in facts_heads.keys():
+                    tmp_graph_ds.add_vertex(fact_head)
+
+                all_new_rules_string = "\n".join(all_new_rules)
+                graph_transformer = GraphCreatorTransformer(tmp_graph_ds, tmp_rule_dictionary, all_new_rules, self.debug_mode)
+                parse_string(all_new_rules_string, lambda stm: graph_transformer(stm))
+
+                graph_analyzer = GraphAnalyzer(tmp_graph_ds)
+                graph_analyzer.start()
+
+                if self.heuristic_strategy == HeuristicStrategy.TREEWIDTH_PURE:
+                    tmp_enable_lpopt = False
+                    heuristic = Heuristic0(self.treewidth_strategy, tmp_rule_dictionary, self.sota_grounder, tmp_enable_lpopt)
+                else:
+                    raise NotImplementedError()
+
+                bdg_rules = {}
+                sota_rules = {}
+                stratified_rules = {}
+                lpopt_rules = {}
+
+                constraint_rules = {}
+
+                # All heads already infered, so this one is not used!
+                all_heads_dev_null = {}
+
+                heuristic_transformer = HeuristicTransformer(tmp_graph_ds, heuristic, bdg_rules,
+                    sota_rules, stratified_rules, lpopt_rules, constraint_rules, all_heads_dev_null,
+                    self.debug_mode, tmp_rule_dictionary, program_ds_tmp)
+                parse_string(all_new_rules_string, lambda stm: heuristic_transformer(stm))
+
+                other_rules = all_new_rules
+                other_rules_string = all_new_rules_string
+                rule_dictionary = tmp_rule_dictionary
+                graph_ds = tmp_graph_ds
+                self.program_ds = program_ds_tmp
+
+
+
             generator_grounding_strategy = GroundingStrategyGenerator(graph_ds, bdg_rules, sota_rules,
                 stratified_rules, constraint_rules, lpopt_rules, rule_dictionary, self.program_ds)
             generator_grounding_strategy.generate_grounding_strategy(grounding_strategy)
@@ -214,7 +344,8 @@ class HeuristicSplitter:
                     self.debug_mode, self.enable_lpopt,
                     output_printer = self.output_printer, sota_grounder = self.sota_grounder,
                     enable_logging = self.enable_logging, logging_class = self.logging_class,
-                    output_type = self.output_type, cdnl_data_structure=self.cdnl_data_structure)
+                    output_type = self.output_type, cdnl_data_structure=self.cdnl_data_structure,
+                    ground_and_solve=self.ground_and_solve)
                 if len(grounding_strategy) > 1 or len(grounding_strategy[0]["bdg"]) > 0:
                     if self.enable_logging is True:
                         self.logging_class.is_single_ground_call = False
@@ -336,6 +467,9 @@ class HeuristicSplitter:
             tmp_graph_ds = GraphDataStructure()
             tmp_rule_dictionary = {}
 
+            self.cdnl_data_structure.graph_ds = tmp_graph_ds
+            self.cdnl_data_structure.rule_dictionary = tmp_rule_dictionary
+
             for fact_head in facts_heads.keys():
                 tmp_graph_ds.add_vertex(fact_head)
 
@@ -359,6 +493,7 @@ class HeuristicSplitter:
 
             tmp_rules_list = tmp_rules_list_2
             tmp_rule_string = "\n".join(tmp_rules_list)
+            
             program_ds_tmp = ProgramDS()
 
             graph_transformer = GraphCreatorTransformer(tmp_graph_ds, tmp_rule_dictionary, tmp_rules_list, self.debug_mode)

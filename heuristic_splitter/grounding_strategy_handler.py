@@ -77,12 +77,13 @@ class GroundingStrategyHandler:
     def __init__(self, grounding_strategy: GroundingStrategyGenerator, rule_dictionary, graph_ds: GraphDataStructure, facts, query,
         debug_mode, enable_lpopt, sota_grounder = SotaGrounder.GRINGO,
         output_printer = None, enable_logging = False, logging_class: LoggingClass = None,
-        output_type: Output = None, cdnl_data_structure: CDNLDataStructure = None):
+        output_type: Output = None, cdnl_data_structure: CDNLDataStructure = None, ground_and_solve=False):
 
         self.grounding_strategy = grounding_strategy
         self.rule_dictionary = rule_dictionary
         self.facts = facts
         self.query = query
+        self.ground_and_solve = ground_and_solve
 
         self.output_type = output_type
         
@@ -115,7 +116,7 @@ class GroundingStrategyHandler:
         if self.enable_logging is True:
             self.logging_class.grounding_strategy = self.grounding_strategy
 
-        if self.sota_grounder == SotaGrounder.GRINGO:
+        if self.sota_grounder == SotaGrounder.GRINGO and self.ground_and_solve is False:
             show_statements = "\n".join([f"#show {key}/{all_heads[key]}." for key in all_heads.keys()] + [f"#show -{key}/{all_heads[key]}." for key in all_heads.keys()])
         else:
             show_statements = ""
@@ -408,7 +409,7 @@ class GroundingStrategyHandler:
         if self.debug_mode is True:
             print("--- FINAL ---")
 
-        if self.sota_grounder == SotaGrounder.GRINGO:
+        if self.sota_grounder == SotaGrounder.GRINGO and self.ground_and_solve is False:
             show_statements = "\n".join([f"#show {key}/{all_heads[key]}." for key in all_heads.keys()] + [f"#show -{key}/{all_heads[key]}." for key in all_heads.keys()])
         else:
             show_statements = ""

@@ -189,15 +189,14 @@ class CythonNagg:
                 function = literal[self.function_string]
                 if literal[self.function_string].in_head is False and literal[self.function_string].signum > 0:
                     # Only for B_r^+ domain inference occurs:
-                    if function.name in domain and "terms" in domain[function.name]:
+                    if rule.is_tight is False:
+                        terms_domain = []
+                        for _ in range(len(function.arguments)):
+                            terms_domain.append(self.domain.domain_dictionary["_total"]["terms"][0])
+                    elif function.name in domain and "terms" in domain[function.name]:
                         terms_domain = domain[function.name]["terms"]
                     elif rule.is_tight is True:
                         terms_domain = []
-                    elif rule.is_tight is False:
-                        # Approximate the domain
-                        print("TODO -> Approx domain!")
-                        raise NotImplementedError("TODO -> Approx. domain!")
-                        pass
 
                     self.get_variable_domain_helper(function, terms_domain,
                         variable_domain, variable_domain_including_sub_functions=variable_domain_including_sub_functions,

@@ -157,6 +157,7 @@ class GenerateJustifiabilityOldPartPreprocessor:
         for literal in rule.literals:
             if self.function_string in literal and literal[self.function_string].in_head is True:
                 head_literal = literal[self.function_string]
+                head_variable_index_dict, _ = self.get_just_atom_string_template(head_literal, rule_number, variable_index_dict={})
                 break
 
         if head_literal is None:
@@ -231,7 +232,7 @@ class GenerateJustifiabilityOldPartPreprocessor:
             if self.function_string in literal:
                 if literal[self.function_string].in_head is False:
                     variable_index_dict, atom_string_template = self.get_just_atom_string_template(literal[self.function_string], rule_number,
-                        variable_index_dict={})
+                        variable_index_dict=head_variable_index_dict)
                 else:
                     # Skip head literal
                     # --> Do not allow disjunctive head (for now)

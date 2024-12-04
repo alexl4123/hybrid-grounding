@@ -22,7 +22,7 @@ class Starter(Application):
 
         propagator = BDGPropagator(self.cdnl_data_structure)
         ctl.register_propagator(propagator)
-        ctl.configuration.solve.models = 0
+        ctl.configuration.solve.models = 1
         ctl.configuration.solve.mode = "clasp"
         content = self.program_strings
         ctl.add("base", [], content)
