@@ -68,10 +68,10 @@ class HeuristicSplitter:
         else:
             self.ground_and_solve = False
 
-        if self.ground_and_solve is True:
+        if self.ground_and_solve is True and output_printer is None:
             self.output_printer = CustomOutputPrinter()
         else:
-            self.output_printer = None
+            self.output_printer = output_printer
 
         self.output_type = output_type
 

@@ -12,12 +12,11 @@ from cython_nagg.cython.cython_helpers import printf_
 
 class GenerateHeadGuesses:
 
-    def __init__(self, domain : DomainInferer, nagg_call_number = 0):
-
+    def __init__(self, domain : DomainInferer, nagg_call_number = 0, full_ground = False):
 
         self.domain = domain
-
         self.nagg_call_number = nagg_call_number
+        self.full_ground = full_ground
 
         self.just_atom_string = "just_{nagg_call_number}"
         self.just_atom_rule_string = "just_{nagg_call_number}_{rule_number}"
@@ -144,6 +143,7 @@ class GenerateHeadGuesses:
 
             if self.function_string in literal and literal[self.function_string].in_head is True:
                 # IN HEAD FUNCTION
+
                 variable_index_dict, atom_string_template_encapsulated = self.get_head_atom_template(literal[self.function_string],
                     rule_number, encapsulated_head_template=True, variable_index_dict={},
                     variable_names = False, variable_index_value=1
@@ -195,9 +195,22 @@ class GenerateHeadGuesses:
                         head_guess_rule_end, variable_domain_lists)
 
 
-                    head_inference_template = atom_string_template + ":-" + atom_string_template_encapsulated  + ".\n"
 
-                    generate_function_combinations_caller(head_inference_template, variable_domain_lists)
+
+                    if self.full_ground is True:
+                        head_inference_template = atom_string_template + ":-" + atom_string_template_encapsulated  + ".\n"
+                        generate_function_combinations_caller(head_inference_template, variable_domain_lists)
+                    else:
+                        variable_index_dict, atom_string_template_encapsulated = self.get_head_atom_template(literal[self.function_string],
+                            rule_number, encapsulated_head_template=True, variable_index_dict={},
+                            variable_names = True, variable_index_value=1
+                            )
+                        _, atom_string_template = self.get_head_atom_template(literal[self.function_string],
+                            rule_number, encapsulated_head_template=False, variable_index_dict={},
+                            variable_names = True, variable_index_value=1)
+                        
+                        head_inference = atom_string_template + ":-" + atom_string_template_encapsulated  + ".\n"
+                        printf_(head_inference.encode("ascii"))
 
                 else:
                     # Do nothing if there cannot exist a head!

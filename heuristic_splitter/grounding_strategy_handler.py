@@ -305,7 +305,9 @@ class GroundingStrategyHandler:
                 if len(tmp_bdg_old_found_rules) > 0:
 
                     if is_non_tight_bdg_part is True and self.cyclic_strategy_used == CyclicStrategy.LEVEL_MAPPINGS:
-                        # Handle Level-Mappings!
+                        ############################
+                        # Handle Level-Mappings!   #
+                        ############################
 
                         # Used for instantiating heads with variables:
                         gen_head_guesses = GenerateHeadGuesses(None, nagg_call_number=self.total_nagg_calls)
@@ -369,6 +371,9 @@ class GroundingStrategyHandler:
                                 level_mapping_rules.append(level_mapping_rule)
                         level_mapping_rules.append(":-prec(X1,X2),prec(X2,X3),prec(X3,X1).")
                         self.grounded_program.add_other_string("\n".join(level_mapping_rules))
+
+                        ## LEVEL MAPPINGS END ##
+                        ########################
 
                     program_input = self.rule_list_to_rule_string(tmp_bdg_old_found_rules)
                     self.infer_head_literals_of_bdg(tmp_bdg_old_found_rules)

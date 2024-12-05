@@ -14,7 +14,9 @@ cdef void print_string_starting_from_index_1(
     char*** domain_array, int* index_array,
     int length_of_arrays, char* template_string, char* error_string) noexcept nogil:
 
-    if length_of_arrays == 2: 
+    if length_of_arrays == 1:
+        printf("%s", template_string)
+    elif length_of_arrays == 2: 
         printf(template_string,domain_array[1][index_array[1]] )
     elif length_of_arrays == 3:
         printf(template_string, domain_array[1][index_array[1]], domain_array[2][index_array[2]])

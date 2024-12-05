@@ -49,7 +49,7 @@ class CythonNagg:
         elif self.justifiability_type == JustifiabilityType.UNFOUND:
             justifiability = GenerateJustifiabilityOldPartPreprocessor(self.domain, self.nagg_call_number, self.full_ground)
 
-        head_guesses = GenerateHeadGuesses(self.domain, self.nagg_call_number)
+        head_guesses = GenerateHeadGuesses(self.domain, self.nagg_call_number, full_ground=self.full_ground)
 
         for rule in rules:
 
