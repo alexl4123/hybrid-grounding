@@ -7,8 +7,11 @@ import tempfile
 
 from heuristic_splitter.program_structures.rule import Rule
 from heuristic_splitter.domain_inferer import DomainInferer
+from heuristic_splitter.graph_data_structure import GraphDataStructure
 
 from cython_nagg.justifiability_type import JustifiabilityType
+
+from heuristic_splitter.enums.cyclic_strategy import CyclicStrategy
 
 from cython_nagg.generate_satisfiability_part_preprocessor import GenerateSatisfiabilityPartPreprocessor
 from cython_nagg.generate_saturation_justifiability_part_preprocessor import GenerateSaturationJustifiabilityPartPreprocessor
@@ -19,12 +22,17 @@ from cython_nagg.cython.cython_helpers import printf_
 
 class CythonNagg:
 
-    def __init__(self, domain : DomainInferer,
+    def __init__(self, domain : DomainInferer, graph_ds: GraphDataStructure,
         nagg_call_number = 0, justifiability_type = JustifiabilityType.UNFOUND,
-        c_output_redirector = None, full_ground = False):
+        c_output_redirector = None, full_ground = False,
+        is_non_tight_bdg_part=False, cyclic_strategy_used=CyclicStrategy.USE_SOTA,
+        ):
 
         self.domain = domain
+        self.graph_ds = graph_ds
 
+        self.is_non_tight_bdg_part = is_non_tight_bdg_part
+        self.cyclic_strategy_used = cyclic_strategy_used
         self.nagg_call_number = nagg_call_number
 
         self.function_string = "FUNCTION"
@@ -47,7 +55,8 @@ class CythonNagg:
         if self.justifiability_type == JustifiabilityType.SATURATION:
             justifiability = GenerateSaturationJustifiabilityPartPreprocessor(self.domain, self.nagg_call_number, self.full_ground)
         elif self.justifiability_type == JustifiabilityType.UNFOUND:
-            justifiability = GenerateJustifiabilityOldPartPreprocessor(self.domain, self.nagg_call_number, self.full_ground)
+            justifiability = GenerateJustifiabilityOldPartPreprocessor(self.domain, self.graph_ds,
+                self.nagg_call_number, self.full_ground, self.is_non_tight_bdg_part, self.cyclic_strategy_used)
 
         head_guesses = GenerateHeadGuesses(self.domain, self.nagg_call_number, full_ground=self.full_ground)
 

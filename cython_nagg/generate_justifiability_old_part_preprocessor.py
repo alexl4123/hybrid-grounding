@@ -4,6 +4,8 @@ import sys
 
 from heuristic_splitter.program_structures.rule import Rule
 from heuristic_splitter.domain_inferer import DomainInferer
+from heuristic_splitter.enums.cyclic_strategy import CyclicStrategy
+from heuristic_splitter.graph_data_structure import GraphDataStructure
 
 from cython_nagg.cython.generate_function_combination_part import generate_function_combinations_caller
 from cython_nagg.cython.generate_comparison_combination_part import generate_comparison_combinations_caller
@@ -12,12 +14,17 @@ from cython_nagg.cython.cython_helpers import printf_
 
 class GenerateJustifiabilityOldPartPreprocessor:
 
-    def __init__(self, domain : DomainInferer, nagg_call_number = 0, full_ground = False):
+    def __init__(self, domain : DomainInferer, graph_ds: GraphDataStructure, nagg_call_number = 0, full_ground = False,
+        is_non_tight_bdg_part=False, cyclic_strategy_used=CyclicStrategy.USE_SOTA,
+    ):
 
         self.domain = domain
+        self.graph_ds = graph_ds
+
+        self.is_non_tight_bdg_part = is_non_tight_bdg_part
+        self.cyclic_strategy_used = cyclic_strategy_used
 
         self.full_ground = full_ground
-
         self.nagg_call_number = nagg_call_number
 
         self.just_atom_string = "ujust_{nagg_call_number}"
@@ -371,28 +378,66 @@ class GenerateJustifiabilityOldPartPreprocessor:
                     if len(variable_domain[reachable_head_variable]) == 0:
                         empty_variable_domain_found = True
 
+
+                tmp_head_variable_index_dict = {}
+
+                for head_variable in head_variable_index_dict:
+                    if head_variable in reachable_head_variables:
+                        tmp_head_variable_index_dict[head_variable] = variable_index_dict[head_variable]
+                    else:
+                        tmp_head_variable_index_dict[head_variable] = "_"
+
+                _, tmp_head_atom = self.get_just_atom_string_template(head_literal,
+                    rule_number, variable_index_dict=tmp_head_variable_index_dict,variable_names=True)
+
                 if empty_variable_domain_found is False:
                     # Everything 
                     if len(variable_strings) > 0:
                         full_string_template = just_atom_rule_instantiated + ":-" + ",".join(variable_strings) + "," + atom_string_template + ".\n"
                         full_string_template_reduced = just_atom_rule_instantiated + ":-" + ",".join(variable_strings) + ".\n"
 
+                        if self.is_non_tight_bdg_part is True and self.cyclic_strategy_used == CyclicStrategy.LEVEL_MAPPINGS:
+                            #############################
+                            # Implement Level Mappings  #
+                            signum = literal[self.function_string].signum
+                            scc_head_index = self.graph_ds.positive_predicate_scc_index[head_literal.name]
+                            scc_body_index = self.graph_ds.positive_predicate_scc_index[literal[self.function_string].name]
+                            
+                            if signum > 0 and scc_head_index == scc_body_index:
+ 
+                                tmp_lit = literal[self.function_string].clone()
+                                # As otherwise we would obtain a negated one (and we do not want this for level-mappings)
+                                tmp_lit.signum = -1
+                                _, tmp_atom_string_template = self.get_just_atom_string_template(tmp_lit, rule_number,
+                                    variable_index_dict=head_variable_index_dict.copy(), variable_names = True)
+                                # Only for positive body predicates:
+                                level_mapping_template = ":-" + ",".join(variable_strings) + "," + tmp_head_atom + "," + f"not prec({tmp_atom_string_template},{tmp_head_atom}).\n"
+                                printf_(level_mapping_template.encode("ascii"))
+                            # Done Level Mappings       #
+                            #############################
+
                     else:
                         # When all variables are in the head.
-
-                        reachable_head_variables
-                        tmp_head_variable_index_dict = {}
-
-                        for head_variable in head_variable_index_dict:
-                            if head_variable in reachable_head_variables:
-                                tmp_head_variable_index_dict[head_variable] = variable_index_dict[head_variable]
-                            else:
-                                tmp_head_variable_index_dict[head_variable] = "_"
-
-                        _, tmp_head_atom = self.get_just_atom_string_template(head_literal,
-                            rule_number, variable_index_dict=tmp_head_variable_index_dict,variable_names=True)
-
                         full_string_template = just_atom_rule_instantiated + ":-" + tmp_head_atom + "," + atom_string_template + ".\n"
+
+                        if self.is_non_tight_bdg_part is True and self.cyclic_strategy_used == CyclicStrategy.LEVEL_MAPPINGS:
+                            #############################
+                            # Implement Level Mappings  #
+                            signum = literal[self.function_string].signum
+                            scc_head_index = self.graph_ds.positive_predicate_scc_index[head_literal.name]
+                            scc_body_index = self.graph_ds.positive_predicate_scc_index[literal[self.function_string].name]
+                            
+                            if signum > 0 and scc_head_index == scc_body_index:
+                                tmp_lit = literal[self.function_string].clone()
+                                # As otherwise we would obtain a negated one (and we do not want this for level-mappings)
+                                tmp_lit.signum = -1
+                                _, tmp_atom_string_template = self.get_just_atom_string_template(tmp_lit, rule_number,
+                                    variable_index_dict=head_variable_index_dict.copy(), variable_names = True)
+                                # Only for positive body predicates:
+                                level_mapping_template = ":-" + tmp_head_atom + "," + f"not prec({tmp_atom_string_template},{tmp_head_atom}).\n"
+                                printf_(level_mapping_template.encode("ascii"))
+                            # Done Level Mappings       #
+                            #############################
 
                     if "FUNCTION" in literal:
                         if self.full_ground is True:
@@ -413,6 +458,10 @@ class GenerateJustifiabilityOldPartPreprocessor:
                         else:
                             printf_(full_string_template.encode("ascii"))
 
+                        
+
+
+
                 elif self.function_string in literal and literal[self.function_string].signum > 0:
                     # If domain is empty then is surely satisfied (and in B_r^+)
                     full_string_template = just_atom_rule_instantiated + ".\n"
@@ -429,6 +478,9 @@ class GenerateJustifiabilityOldPartPreprocessor:
                 full_string_template = just_atom_rule_instantiated + ":-" +  atom_string_template + ".\n"
                
                 printf_(full_string_template.encode("ascii"))
+
+
+
 
         #######################################
         # Print not being unfounded rules:    #
@@ -481,5 +533,3 @@ class GenerateJustifiabilityOldPartPreprocessor:
             generate_function_combinations_caller(string_template, variable_domain_lists)
         else:
             printf_(string_template.encode("ascii"))
-        
-

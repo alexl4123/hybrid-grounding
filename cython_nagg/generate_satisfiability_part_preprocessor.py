@@ -103,7 +103,8 @@ class GenerateSatisfiabilityPartPreprocessor:
         if function.in_head is True:
             # For head-disentangling (for foundedness)
             clone = function.clone()
-            clone.name = f"{function.name}_{self.nagg_call_number}_{rule_number}"
+            #clone.name = f"{function.name}_{self.nagg_call_number}_{rule_number}"
+            clone.name = f"{function.name}"
 
             _, string_template = self.get_sat_atom_string_template_helper(clone, full_ground,
                 variable_index_dict=variable_index_dict)

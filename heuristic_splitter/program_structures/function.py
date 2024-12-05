@@ -21,3 +21,16 @@ class Function:
         clone.in_head = self.in_head
 
         return clone
+
+    def __str__(self):
+        tmp_str = self.name
+
+        if len(self.arguments) > 0:
+            tmp_str += "("
+            for argument in self.arguments:
+                for key in argument:
+                    tmp_str += str(argument[key])
+            tmp_str += ")"
+
+        return tmp_str
+

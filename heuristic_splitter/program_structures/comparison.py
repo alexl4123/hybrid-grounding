@@ -23,6 +23,3 @@ class Comparison:
         clone.right_term = self.right_term
 
         return clone
-
-
-
