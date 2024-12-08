@@ -8,5 +8,6 @@ class GroundingStrategy(Enum):
 
     FULL = 1
     SUGGEST_USAGE = 2
+    NON_GROUND_REWRITE = 3
 
 

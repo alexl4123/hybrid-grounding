@@ -23,6 +23,7 @@ from heuristic_splitter.enums.grounding_strategy import GroundingStrategy
 from heuristic_splitter.enums.sota_grounder import SotaGrounder
 from heuristic_splitter.enums.output import Output
 from heuristic_splitter.enums.cyclic_strategy import CyclicStrategy
+from heuristic_splitter.enums.foundedness_strategy import FoundednessStrategy
 
 from heuristic_splitter.heuristic_0 import Heuristic0
 
@@ -46,17 +47,20 @@ from heuristic_splitter.logging_class import LoggingClass
 
 class HeuristicSplitter:
 
-    def __init__(self, heuristic_strategy: HeuristicStrategy, treewidth_strategy: TreewidthComputationStrategy, grounding_strategy:GroundingStrategy, 
-        debug_mode, enable_lpopt,
+    def __init__(self, heuristic_strategy: HeuristicStrategy, treewidth_strategy: TreewidthComputationStrategy,
+        grounding_strategy:GroundingStrategy, debug_mode, enable_lpopt,
         enable_logging = False, logging_file = None,
         output_printer = None, sota_grounder_used = SotaGrounder.GRINGO,
         output_type = Output.DEFAULT_GROUNDER,
-        cyclic_strategy_used = CyclicStrategy.USE_SOTA
+        cyclic_strategy_used = CyclicStrategy.USE_SOTA,
+        foundedness_strategy_used = FoundednessStrategy.HEURISTIC,
         ):
 
         self.heuristic_strategy = heuristic_strategy
         self.treewidth_strategy = treewidth_strategy
         self.grounding_strategy = grounding_strategy
+        self.foundedness_strategy_used = foundedness_strategy_used
+
         self.sota_grounder = sota_grounder_used
 
         self.debug_mode = debug_mode
@@ -343,7 +347,7 @@ class HeuristicSplitter:
                 print(grounding_strategy)
                 print("<<<<")
 
-            if self.grounding_strategy == GroundingStrategy.FULL:
+            if self.grounding_strategy in [GroundingStrategy.FULL, GroundingStrategy.NON_GROUND_REWRITE]:
 
                 grounding_handler = GroundingStrategyHandler(grounding_strategy, rule_dictionary, graph_ds,
                     facts, query,
@@ -351,18 +355,19 @@ class HeuristicSplitter:
                     output_printer = self.output_printer, sota_grounder = self.sota_grounder,
                     enable_logging = self.enable_logging, logging_class = self.logging_class,
                     output_type = self.output_type, cdnl_data_structure=self.cdnl_data_structure,
-                    ground_and_solve=self.ground_and_solve, cyclic_strategy_used=self.cyclic_strategy_used)
+                    ground_and_solve=self.ground_and_solve, cyclic_strategy_used=self.cyclic_strategy_used,
+                    foundedness_strategy_used = self.foundedness_strategy_used,)
                 if len(grounding_strategy) > 1 or len(grounding_strategy[0]["bdg"]) > 0:
                     if self.enable_logging is True:
                         self.logging_class.is_single_ground_call = False
 
                     domain_transformer = grounding_handler.ground()
-                    grounding_handler.output_grounded_program(all_heads, domain_transformer)
+                    grounding_handler.output_grounded_program(all_heads, domain_transformer, self.grounding_strategy)
                 else:
                     if self.enable_logging is True:
                         self.logging_class.is_single_ground_call = True
 
-                    grounding_handler.single_ground_call(all_heads)
+                    grounding_handler.single_ground_call(all_heads, self.grounding_strategy)
 
 
                 if self.ground_and_solve is True:

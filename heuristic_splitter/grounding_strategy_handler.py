@@ -40,9 +40,11 @@ from nagg.grounding_modes import GroundingModes
 from nagg.foundedness_strategy import FoundednessStrategy
 from heuristic_splitter.domain_inferer import DomainInferer
 
+from heuristic_splitter.enums.grounding_strategy import GroundingStrategy
 from heuristic_splitter.enums.sota_grounder import SotaGrounder
 from heuristic_splitter.enums.output import Output
 from heuristic_splitter.enums.cyclic_strategy import CyclicStrategy
+from heuristic_splitter.enums.foundedness_strategy import FoundednessStrategy
 
 from heuristic_splitter.program.string_asp_program import StringASPProgram
 from heuristic_splitter.program.smodels_asp_program import SmodelsASPProgram
@@ -80,7 +82,7 @@ class GroundingStrategyHandler:
         debug_mode, enable_lpopt, sota_grounder = SotaGrounder.GRINGO,
         output_printer = None, enable_logging = False, logging_class: LoggingClass = None,
         output_type: Output = None, cdnl_data_structure: CDNLDataStructure = None, ground_and_solve=False,
-        cyclic_strategy_used=CyclicStrategy.USE_SOTA
+        cyclic_strategy_used=CyclicStrategy.USE_SOTA, foundedness_strategy_used = FoundednessStrategy.HEURISTIC,
         ):
 
         self.grounding_strategy = grounding_strategy
@@ -89,6 +91,7 @@ class GroundingStrategyHandler:
         self.query = query
         self.ground_and_solve = ground_and_solve
         self.cyclic_strategy_used = cyclic_strategy_used
+        self.foundedness_strategy_used = foundedness_strategy_used
 
         self.output_type = output_type
         
@@ -226,9 +229,26 @@ class GroundingStrategyHandler:
                         self.logging_class.bdg_marked_for_use_rules += str(rule) + "\n"
 
                     if rule.in_program_rules is True:
-                        # TDB -> TODO
-                        #tmp_bdg_new_found_rules.append(bdg_rule)
-                        tmp_bdg_old_found_rules.append(bdg_rule)
+                        if self.foundedness_strategy_used == FoundednessStrategy.GUESS or is_non_tight_bdg_part:
+                            tmp_bdg_old_found_rules.append(bdg_rule)
+                        elif self.foundedness_strategy_used == FoundednessStrategy.SATURATION:
+                            tmp_bdg_new_found_rules.append(bdg_rule)
+                        else: # Heuristic:
+                            methods_approximations = []
+                            str_rule = str(rule)
+                            self.add_approximate_generated_ground_rules_for_non_ground_rule(domain_transformer,
+                                rule, str_rule, methods_approximations)
+                            methods_approximations.sort(key = lambda x : x[0])
+                            used_method = None
+                            for _, tmp_method_used, _ in methods_approximations:
+                                if "BDG" in tmp_method_used:
+                                    used_method = tmp_method_used
+                                    break
+
+                            if used_method == "BDG_OLD":
+                                tmp_bdg_old_found_rules.append(bdg_rule)
+                            else:
+                                tmp_bdg_new_found_rules.append(bdg_rule)
                     else:
                         approx_number_rules, used_method, rule_str = self.get_best_method_by_approximated_rule_count(domain_transformer, rule)
 
@@ -237,9 +257,6 @@ class GroundingStrategyHandler:
                         elif used_method == "BDG_OLD" or is_non_tight_bdg_part:
                             tmp_bdg_old_found_rules.append(bdg_rule)
                         else:
-                            #sota_rules.append(bdg_rule)
-                            # TODO!!!
-                            # For now do not use tmp_bdg_new in Benchmarks!
                             tmp_bdg_new_found_rules.append(bdg_rule) 
 
                 no_show = True
@@ -577,7 +594,7 @@ class GroundingStrategyHandler:
         return domain_transformer
         
 
-    def output_grounded_program(self, all_heads, domain_transformer):
+    def output_grounded_program(self, all_heads, domain_transformer, grounding_strategy_enum : GroundingStrategy ):
 
         if self.debug_mode is True:
             print("--- FINAL ---")
@@ -587,52 +604,56 @@ class GroundingStrategyHandler:
         else:
             show_statements = ""
 
-        if self.output_type == Output.STRING:
 
-            query_statement = ""
-            if len(self.query.keys()) > 0:
-                query_statement = list(self.query.keys())[0]
+        if grounding_strategy_enum == GroundingStrategy.FULL:
+            if self.output_type == Output.STRING:
 
-            input_program = self.grounded_program.get_string(insert_flags=True) + "\n" +\
-                self.grounded_program.other_prg_string + "\n" + show_statements + "\n" + query_statement
+                query_statement = ""
+                if len(self.query.keys()) > 0:
+                    query_statement = list(self.query.keys())[0]
 
-            decoded_string = self.start_sota_grounder(input_program, mode="smodels")
+                input_program = self.grounded_program.get_string(insert_flags=True) + "\n" +\
+                    self.grounded_program.other_prg_string + "\n" + show_statements + "\n" + query_statement
+                decoded_string = self.start_sota_grounder(input_program, mode="smodels")
 
-            #parse_string(decoded_string, lambda stm: domain_transformer(stm))
-            self.grounded_program = SmodelsASPProgram(self.grd_call)
-            self.grounded_program.preprocess_smodels_program(decoded_string, domain_transformer, save_smodels_rules=True)
+                #parse_string(decoded_string, lambda stm: domain_transformer(stm))
+                self.grounded_program = SmodelsASPProgram(self.grd_call)
+                self.grounded_program.preprocess_smodels_program(decoded_string, domain_transformer, save_smodels_rules=True)
 
-            # To get a unified acceptable string output, we parse it ourselves (but is slow):
-            final_program = self.grounded_program.get_string(insert_flags=True, rewrite_smodels_program=True)
-
-        else:
-            if self.sota_grounder == SotaGrounder.GRINGO:
-
-                if self.full_ground is False:
-                    input_program = self.grounded_program.get_string(insert_flags=True) + self.grounded_program.other_prg_string + show_statements
-                else:
-                    input_program = self.grounded_program.get_string(insert_flags=True) 
-
-                del self.grounded_program.other_prg_string
-                del show_statements
-                del self.grounded_program.program_string
-
-                final_program = self.start_sota_grounder(input_program, mode="standard")
-
-                del input_program
-
-                if self.full_ground is False:
-                    final_program = final_program
-                else:
-                    final_program += self.grounded_program.other_prg_string + "\n" + show_statements
+                # To get a unified acceptable string output, we parse it ourselves (but is slow):
+                final_program = self.grounded_program.get_string(insert_flags=True, rewrite_smodels_program=True)
 
             else:
-                input_program = self.grounded_program.other_prg_string + "\n" +\
-                    self.grounded_program.get_string(insert_flags=True)
-                final_program = self.start_sota_grounder(input_program, mode="standard")
+                if self.sota_grounder == SotaGrounder.GRINGO:
 
-                del self.grounded_program
-                del input_program
+                    if self.full_ground is False:
+                        input_program = self.grounded_program.get_string(insert_flags=True) + self.grounded_program.other_prg_string + show_statements
+                    else:
+                        input_program = self.grounded_program.get_string(insert_flags=True) 
+
+                    del self.grounded_program.other_prg_string
+                    del show_statements
+                    del self.grounded_program.program_string
+
+                    final_program = self.start_sota_grounder(input_program, mode="standard")
+
+                    del input_program
+
+                    if self.full_ground is False:
+                        final_program = final_program
+                    else:
+                        final_program += self.grounded_program.other_prg_string + "\n" + show_statements
+
+                else:
+                    input_program = self.grounded_program.other_prg_string + "\n" +\
+                        self.grounded_program.get_string(insert_flags=True)
+                    final_program = self.start_sota_grounder(input_program, mode="standard")
+
+                    del self.grounded_program
+                    del input_program
+        else:
+            final_program = self.grounded_program.get_string(insert_flags=True) + self.grounded_program.other_prg_string + show_statements
+
 
         if self.output_printer:
             self.output_printer.custom_print(final_program)

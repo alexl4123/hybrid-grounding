@@ -24,6 +24,10 @@ class Starter(Application):
         ctl.register_propagator(propagator)
         ctl.configuration.solve.models = 1
         ctl.configuration.solve.mode = "clasp"
+
+        #ctl.configuration.solve.project = "project"
+
+        ctl.configuration.solve.project 
         content = self.program_strings
         ctl.add("base", [], content)
         ctl.solve()

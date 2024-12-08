@@ -17,6 +17,7 @@ from heuristic_splitter.enums.sota_grounder import SotaGrounder
 from heuristic_splitter.enums.treewidth_computation_strategy import TreewidthComputationStrategy
 from heuristic_splitter.enums.output import Output
 from heuristic_splitter.enums.cyclic_strategy import CyclicStrategy
+from heuristic_splitter.enums.foundedness_strategy import FoundednessStrategy
 
 
 def main():
@@ -44,6 +45,10 @@ def main():
         "SUGGEST_USAGE": {
             "cmd_line": "suggest-bdg-usage",
             "enum_mode": GroundingStrategy.SUGGEST_USAGE,
+        },
+        "NON_GROUND_REWRITE": {
+            "cmd_line": "non-ground-rewrite",
+            "enum_mode": GroundingStrategy.NON_GROUND_REWRITE,
         },
     }
 
@@ -101,8 +106,20 @@ def main():
         },
     }
 
-
-
+    foundedness_strategies = {
+        "HEURISTIC": {
+            "cmd_line": "heuristic",
+            "enum_mode": FoundednessStrategy.HEURISTIC
+            },
+        "GUESS": {
+            "cmd_line": "guess",
+            "enum_mode": FoundednessStrategy.GUESS,
+        },
+        "SATURATION": {
+            "cmd_line": "saturation",
+            "enum_mode": FoundednessStrategy.SATURATION,
+        },
+    }
 
     parser = argparse.ArgumentParser(prog="heuristic", usage="%(prog)s [files]")
     parser.add_argument(
@@ -185,6 +202,15 @@ def main():
         ]
     )
 
+    parser.add_argument(
+        "--foundedness-strategy",
+        default=foundedness_strategies["HEURISTIC"]["cmd_line"],
+        choices=[
+            foundedness_strategies[key]["cmd_line"]
+            for key in foundedness_strategies.keys()
+        ]
+    )
+
     parser.add_argument("files", type=argparse.FileType("r"), nargs="+")
     args = parser.parse_args()
 
@@ -218,9 +244,13 @@ def main():
         if args.cyclic_strategy == cyclic_strategies[key]["cmd_line"]:
             cyclic_strategy_used = cyclic_strategies[key]["enum_mode"]
 
+    foundedness_strategy_used = None
+    for key in foundedness_strategies.keys():
+        if args.foundedness_strategy == foundedness_strategies[key]["cmd_line"]:
+            foundedness_strategy_used = foundedness_strategies[key]["enum_mode"]
+
     debug_mode = args.debug
     enable_lpopt = args.tw_aware
-
 
     files = args.files
 
@@ -261,7 +291,8 @@ def main():
         log_file_path,
         sota_grounder_used = sota_grounder_used,
         output_type = output_type_used,
-        cyclic_strategy_used = cyclic_strategy_used
+        cyclic_strategy_used = cyclic_strategy_used,
+        foundedness_strategy_used = foundedness_strategy_used,
     )
 
     heuristic.start(contents)
