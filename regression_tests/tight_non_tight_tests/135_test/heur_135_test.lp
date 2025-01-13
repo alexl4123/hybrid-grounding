@@ -8,4 +8,4 @@ e(2,5).
 
 #program rules.
 
-a(X,Y) :- f(X,X1), f(Y,Y1), f(X1,Y1).
+a(X,Y) :- f(X,X1), f(Y,Y1), X1 = Y1.

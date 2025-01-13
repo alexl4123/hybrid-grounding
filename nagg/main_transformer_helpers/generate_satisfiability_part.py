@@ -294,6 +294,10 @@ class GenerateSatisfiabilityPart:
         else:
             body_interpretation = ""
 
+
+        #print(
+        #    f"{sat_atom} :- {body_interpretation}{sat_predicate}."
+        #)
         self.printer.custom_print(
             f"{sat_atom} :- {body_interpretation}{sat_predicate}."
         )

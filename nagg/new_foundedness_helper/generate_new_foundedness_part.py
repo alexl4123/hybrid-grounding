@@ -201,7 +201,7 @@ class GenerateNewFoundednessPart:
                     parsed_variables.append(f"f'{self.current_rule_position}_{other_variable}({value}{head_variable_string})")
 
                 self.printer.custom_print( 
-                    "1{" + ";".join(parsed_variables) + "}1 " + head_literals_instantiated + "."
+                    "1<={" + ";".join(parsed_variables) + "}<=1 " + head_literals_instantiated + "."
                 )
 
 
@@ -252,7 +252,7 @@ class GenerateNewFoundednessPart:
                 parsed_variables.append(f"f'{self.current_rule_position}_{variable}({value}{head_variable_string})")
 
             self.printer.custom_print( 
-                "1{" + ";".join(parsed_variables) + "}1 :- " + ",".join(head_variable_literals) + "."
+                "1<={" + ";".join(parsed_variables) + "}<=1 :- " + ",".join(head_variable_literals) + "."
             )
 
 

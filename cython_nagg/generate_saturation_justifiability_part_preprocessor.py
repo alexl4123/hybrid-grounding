@@ -347,11 +347,11 @@ class GenerateSaturationJustifiabilityPartPreprocessor:
  
 
             if self.full_ground is True:
-                guess_rule_start = "1{"
+                guess_rule_start = "1<={"
                 if len(list(head_variables.keys())) > 0:
-                    guess_rule_end_instantiated = "}1:-" + ','.join(variable_strings) + ".\n"
+                    guess_rule_end_instantiated = "}<=1:-" + ','.join(variable_strings) + ".\n"
                 else:
-                    guess_rule_end_instantiated = "}1.\n"
+                    guess_rule_end_instantiated = "}<=1.\n"
 
                 cur_just_atom_variable_string_helper_instantiated =  just_atom_variable_string_helper.format(
                     nagg_call_number = self.nagg_call_number,
@@ -373,7 +373,7 @@ class GenerateSaturationJustifiabilityPartPreprocessor:
                 abstract_rule_template = cur_just_atom_variable_string_instantiated + ":-" + cur_just_atom_variable_string_helper_instantiated + ".\n"
                 generate_function_combinations_caller(abstract_rule_template, variable_domain_lists)
             else:
-                guess_rule_start = "\n1{"
+                guess_rule_start = "\n1<={"
 
                 variable_index_dict, atom_string_template = self.get_just_atom_string_template(head_literal, rule_number, self.full_ground, ignore_signum=True)
 
@@ -410,7 +410,7 @@ class GenerateSaturationJustifiabilityPartPreprocessor:
 
                     choices.append(cur_just_atom_variable_string_helper_instantiated)
 
-                non_ground_choice_rule = guess_rule_start + ";".join(choices) + "}1 :- " + atom_string_template + ".\n"
+                non_ground_choice_rule = guess_rule_start + ";".join(choices) + "}<=1 :- " + atom_string_template + ".\n"
                 printf_(non_ground_choice_rule.encode('ascii'))
 
                 # Replace %1$s with special variable name (not a X<NUMBER>):

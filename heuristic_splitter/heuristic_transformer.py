@@ -491,6 +491,7 @@ class HeuristicTransformer(Transformer):
 
         self.head_atoms_scc_membership = {}
         self.body_atoms_scc_membership = {}
+        self.all_comparison_variables = {}
 
     def _reset_temporary_function_variables(self):
         self.current_function_variables = None

@@ -245,9 +245,9 @@ class GenerateJustifiabilityOldPartPreprocessor:
 
             _, string_template = self.get_just_atom_string_template(head_literal, rule_number, variable_index_dict = head_literal_variable_lookup)
 
-            guess_rule_start = "1{"
+            guess_rule_start = "1<={"
             guess_rule_choice_template = cur_just_atom_variable_string_instantiated
-            guess_rule_end_instantiated = "}1:-" + string_template + ".\n"
+            guess_rule_end_instantiated = "}<=1:-" + string_template + ".\n"
 
             if empty_variable_domain_found is False: 
                 generate_saturation_justification_helper_variables_caller(guess_rule_start, guess_rule_choice_template, guess_rule_end_instantiated, variable_domain_lists)

@@ -116,7 +116,7 @@ class GroundingStrategyHandler:
 
         self.cdnl_data_structure = cdnl_data_structure
 
-    def single_ground_call(self, all_heads):
+    def single_ground_call(self, all_heads, grounding_strategy_enum : GroundingStrategy ):
 
         if self.grounded_program is None: 
             self.grounded_program = StringASPProgram("\n".join(list(self.facts.keys())))
@@ -229,9 +229,9 @@ class GroundingStrategyHandler:
                         self.logging_class.bdg_marked_for_use_rules += str(rule) + "\n"
 
                     if rule.in_program_rules is True:
-                        if self.foundedness_strategy_used == FoundednessStrategy.GUESS or is_non_tight_bdg_part:
+                        if self.foundedness_strategy_used == FoundednessStrategy.GUESS or (is_non_tight_bdg_part and self.cyclic_strategy_used==CyclicStrategy.LEVEL_MAPPINGS):
                             tmp_bdg_old_found_rules.append(bdg_rule)
-                        elif self.foundedness_strategy_used == FoundednessStrategy.SATURATION:
+                        elif self.foundedness_strategy_used == FoundednessStrategy.SATURATION or (is_non_tight_bdg_part and self.cyclic_strategy_used==CyclicStrategy.UNFOUND_SET):
                             tmp_bdg_new_found_rules.append(bdg_rule)
                         else: # Heuristic:
                             methods_approximations = []
@@ -268,7 +268,7 @@ class GroundingStrategyHandler:
                 if len(tmp_bdg_new_found_rules) > 0:
                     program_input = self.rule_list_to_rule_string(tmp_bdg_new_found_rules)
 
-                    self.infer_head_literals_of_bdg(tmp_bdg_old_found_rules)
+                    self.infer_head_literals_of_bdg(tmp_bdg_new_found_rules)
 
                     if self.enable_logging is True:
                         self.logging_class.is_bdg_used = True
@@ -445,7 +445,7 @@ class GroundingStrategyHandler:
                                 domains = [f"dom(X{scc_head_1_var_dict[variable]})" for variable in list(scc_head_1_var_dict.keys())]
                                 domains += [f"dom(X{scc_head_2_var_dict[variable]})" for variable in list(scc_head_2_var_dict.keys())]
 
-                                level_mapping_rule = "1{" + f"prec({scc_head_1},{scc_head_2});prec({scc_head_2},{scc_head_1})" + "}1" + f" :- {','.join(domains)}."
+                                level_mapping_rule = "1<={" + f"prec({scc_head_1},{scc_head_2});prec({scc_head_2},{scc_head_1})" + "}<=1" + f" :- {','.join(domains)}."
                                 level_mapping_rules.append(level_mapping_rule)
                         level_mapping_rules.append(":-prec(X1,X2),prec(X2,X3),prec(X3,X1),X1!=X2,X1!=X3,X2!=X3.\n")
                         self.grounded_program.add_other_string("\n".join(level_mapping_rules))
