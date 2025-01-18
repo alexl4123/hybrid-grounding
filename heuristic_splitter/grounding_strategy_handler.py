@@ -670,7 +670,7 @@ class GroundingStrategyHandler:
         approximated_sota_rule_instantiations = approximate_sota_rules.approximate_sota_size()
         methods_approximations.append((approximated_sota_rule_instantiations, "SOTA", str_rule))
 
-        approximated_bdg_rules = ApproximateGeneratedBDGRules(domain_transformer, rule, self.graph_ds)
+        approximated_bdg_rules = ApproximateGeneratedBDGRules(domain_transformer, rule, self.graph_ds, self.rule_dictionary)
         approximated_bdg_new_rule_instantiations, approximated_bdg_old_rule_instantiations = approximated_bdg_rules.approximate_bdg_sizes()
 
         methods_approximations.append((approximated_bdg_old_rule_instantiations, "BDG_OLD", str_rule))

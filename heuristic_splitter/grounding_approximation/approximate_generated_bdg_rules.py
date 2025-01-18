@@ -3,7 +3,9 @@ from heuristic_splitter.grounding_approximation.variable_domain_size_inferer imp
 
 class ApproximateGeneratedBDGRules:
 
-    def __init__(self, domain_transformer, rule, graph_ds):
+    def __init__(self, domain_transformer, rule, graph_ds, rule_dictionary):
+
+        self.rule_dictionary = rule_dictionary
 
         self.domain_transformer = domain_transformer
         self.rule = rule
@@ -87,16 +89,15 @@ class ApproximateGeneratedBDGRules:
                         # Such a rule has to exist as it is in the SCC
                         scc_tmp_rule_index = self.graph_ds.node_to_rule_lookup[scc_element][0]
 
-                        print(scc_tmp_rule_index)
 
                         scc_tmp_rule = self.rule_dictionary[scc_tmp_rule_index]
                         scc_tmp_rule_ast = scc_tmp_rule.ast_rule
-                        print(scc_tmp_rule_ast)
 
                         if "head" in scc_tmp_rule_ast.child_keys:
-                            old = getattr(node, "head")
+                            old = getattr(scc_tmp_rule_ast, "head")
 
-                            tmp_pred_arity = len(scc_tmp_rule.arguments)
+
+                            tmp_pred_arity = len(scc_tmp_rule.literals[0]["FUNCTION"].arguments)
 
                             total_domain_size = len(self.domain_transformer.total_domain.keys())
 
