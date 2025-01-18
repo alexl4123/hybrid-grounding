@@ -89,7 +89,6 @@ class ApproximateGeneratedBDGRules:
                         # Such a rule has to exist as it is in the SCC
                         scc_tmp_rule_index = self.graph_ds.node_to_rule_lookup[scc_element][0]
 
-
                         scc_tmp_rule = self.rule_dictionary[scc_tmp_rule_index]
                         scc_tmp_rule_ast = scc_tmp_rule.ast_rule
 
