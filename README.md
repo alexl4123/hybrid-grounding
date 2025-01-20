@@ -1,3 +1,6 @@
+Newground3, which enables the efficient integration of state-of-the-art grounders with BDG, and can efficiently determine which parts of a program to ground with BDG,
+will be made available to the public in Q2 2025.
+
 # newground
 
 Documentation page: [Documentation](https://www.dbai.tuwien.ac.at/proj/hypar/newground/index.html).
