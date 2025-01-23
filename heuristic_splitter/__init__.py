@@ -121,7 +121,7 @@ def main():
         },
     }
 
-    parser = argparse.ArgumentParser(prog="heuristic", usage="%(prog)s [files]")
+    parser = argparse.ArgumentParser(prog="Newground3", usage="%(prog)s [files]")
 
     parser.add_argument(
         "--grounding-strategy",
@@ -178,6 +178,11 @@ def main():
         help="Use treewidth aware rewritings for rule decomposition (lpopt tool).",
     )
 
+    parser.add_argument(
+        "--relevancy-mode",
+        action="store_true",
+        help="Heuristic option to only ground when grounding (dom^k) size is reduced by at least one k.",
+    )
 
 
     parser.add_argument(
@@ -263,6 +268,7 @@ def main():
 
     debug_mode = args.debug
     enable_lpopt = args.tw_aware
+    relevancy_mode = args.relevancy_mode
 
     files = args.files
 
@@ -305,6 +311,7 @@ def main():
         output_type = output_type_used,
         cyclic_strategy_used = cyclic_strategy_used,
         foundedness_strategy_used = foundedness_strategy_used,
+        relevancy_mode = relevancy_mode
     )
 
     heuristic.start(contents)

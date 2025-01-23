@@ -9,7 +9,7 @@ from heuristic_splitter.program_structures.program_ds import ProgramDS
 class GroundingStrategyGenerator:
 
     def __init__(self, graph_ds: GraphDataStructure, bdg_rules, sota_rules, stratified_rules,
-        constraint_rules, lpopt_rules, rule_dictionary, program_ds:ProgramDS):
+        constraint_rules, lpopt_rules, rule_dictionary, program_ds:ProgramDS, relevancy_mode):
 
         self.graph_ds = graph_ds
         self.bdg_rules = bdg_rules
@@ -20,6 +20,7 @@ class GroundingStrategyGenerator:
         self.rule_dictionary = rule_dictionary
 
         self.program_ds = program_ds
+        self.relevancy_mode = relevancy_mode
 
     
     def get_grounding_strategy_dependency_indices(self, current_scc_nodes, condensed_graph_inverted,scc_node_to_grounding_order_lookup):
@@ -182,8 +183,7 @@ class GroundingStrategyGenerator:
             exists_disjunctive_rule = False
             exists_non_tight_rule = False
 
-            # TODO -> Add to cmd.-line options:
-            only_significant_bdg_rules = True
+            only_significant_bdg_rules = self.relevancy_mode
         
             for node in subgraph.nodes:
                 # All those rules that have "node" as a head.

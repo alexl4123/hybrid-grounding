@@ -54,12 +54,14 @@ class HeuristicSplitter:
         output_type = Output.DEFAULT_GROUNDER,
         cyclic_strategy_used = CyclicStrategy.USE_SOTA,
         foundedness_strategy_used = FoundednessStrategy.HEURISTIC,
+        relevancy_mode = False
         ):
 
         self.heuristic_strategy = heuristic_strategy
         self.treewidth_strategy = treewidth_strategy
         self.grounding_strategy = grounding_strategy
         self.foundedness_strategy_used = foundedness_strategy_used
+        self.relevancy_mode = relevancy_mode
 
         self.sota_grounder = sota_grounder_used
 
@@ -338,7 +340,7 @@ class HeuristicSplitter:
 
 
             generator_grounding_strategy = GroundingStrategyGenerator(graph_ds, bdg_rules, sota_rules,
-                stratified_rules, constraint_rules, lpopt_rules, rule_dictionary, self.program_ds)
+                stratified_rules, constraint_rules, lpopt_rules, rule_dictionary, self.program_ds, self.relevancy_mode)
             generator_grounding_strategy.generate_grounding_strategy(grounding_strategy)
 
 
