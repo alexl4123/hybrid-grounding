@@ -42,10 +42,10 @@ def main():
             "cmd_line": "full",
             "enum_mode": GroundingStrategy.FULL
             },
-        "SUGGEST_USAGE": {
-            "cmd_line": "suggest-bdg-usage",
-            "enum_mode": GroundingStrategy.SUGGEST_USAGE,
-        },
+        #"SUGGEST_USAGE": {
+        #    "cmd_line": "suggest-bdg-usage",
+        #    "enum_mode": GroundingStrategy.SUGGEST_USAGE,
+        #},
         "NON_GROUND_REWRITE": {
             "cmd_line": "non-ground-rewrite",
             "enum_mode": GroundingStrategy.NON_GROUND_REWRITE,
@@ -53,10 +53,10 @@ def main():
     }
 
     heuristic_methods = {
-        "VARIABLE": {
-            "cmd_line": "variable",
-            "enum_mode": HeuristicStrategy.VARIABLE
-            },
+        #"VARIABLE": {
+        #    "cmd_line": "variable",
+        #    "enum_mode": HeuristicStrategy.VARIABLE
+        #    },
         "TREEWIDTH_PURE": {
             "cmd_line": "treewidth-pure",
             "enum_mode": HeuristicStrategy.TREEWIDTH_PURE,
@@ -69,10 +69,10 @@ def main():
             "cmd_line": "networkx",
             "enum_mode": TreewidthComputationStrategy.NETWORKX_HEUR
             },
-        "TWALGOR": {
-            "cmd_line": "twalgor-exact",
-            "enum_mode": TreewidthComputationStrategy.TWALGOR_EXACT,
-        },
+        #"TWALGOR": {
+        #    "cmd_line": "twalgor-exact",
+        #    "enum_mode": TreewidthComputationStrategy.TWALGOR_EXACT,
+        #},
     }
 
 
@@ -122,13 +122,25 @@ def main():
     }
 
     parser = argparse.ArgumentParser(prog="heuristic", usage="%(prog)s [files]")
+
     parser.add_argument(
-        "--heuristic-method",
-        default=heuristic_methods["TREEWIDTH_PURE"]["cmd_line"],
+        "--grounding-strategy",
+        default=grounding_strategies["FULL"]["cmd_line"],
         choices=[
-            heuristic_methods[key]["cmd_line"]
-            for key in heuristic_methods.keys()
+            grounding_strategies[key]["cmd_line"]
+            for key in grounding_strategies.keys()
         ],
+        help="Decide whether Newground3 shall be used as a full grounder (full) or in a non-ground rewrite mode (non-ground-rewrite)."
+    )
+
+    parser.add_argument(
+        "--sota-grounder",
+        default=sota_grounder["GRINGO"]["cmd_line"],
+        choices=[
+            sota_grounder[key]["cmd_line"]
+            for key in sota_grounder.keys()
+        ],
+        help="Decide which state-of-the-art (SOTA) grounder to use ('./gringo' or './idlv.bin' must be present in same directory)."
     )
 
     parser.add_argument(
@@ -138,29 +150,14 @@ def main():
             output_type[key]["cmd_line"]
             for key in output_type.keys()
         ],
+        help="For the full grounder output in specific format."
     )
 
-
-
-    parser.add_argument(
-        "--sota-grounder",
-        default=sota_grounder["GRINGO"]["cmd_line"],
-        choices=[
-            sota_grounder[key]["cmd_line"]
-            for key in sota_grounder.keys()
-        ],
-    )
 
     parser.add_argument(
         "--debug",
         action="store_true",
         help="Print debug information.",
-    )
-
-    parser.add_argument(
-        "--tw-aware",
-        action="store_true",
-        help="Use treewidth aware rewritings for rule decomposition (lpopt tool).",
     )
 
     parser.add_argument(
@@ -175,6 +172,13 @@ def main():
         help="Path to the logging file (--enable-logging must be supported as well). Default a file in logs/<FIRST_FILE_NAME>-<CURRENT-DATE-TIME>.log is generated."
     )
 
+    parser.add_argument(
+        "--tw-aware",
+        action="store_true",
+        help="Use treewidth aware rewritings for rule decomposition (lpopt tool).",
+    )
+
+
 
     parser.add_argument(
         "--treewidth-strategy",
@@ -182,14 +186,6 @@ def main():
         choices=[
             treewidth_strategies[key]["cmd_line"]
             for key in treewidth_strategies.keys()
-        ],
-    )
-    parser.add_argument(
-        "--grounding-strategy",
-        default=grounding_strategies["FULL"]["cmd_line"],
-        choices=[
-            grounding_strategies[key]["cmd_line"]
-            for key in grounding_strategies.keys()
         ],
     )
 
@@ -208,16 +204,32 @@ def main():
         choices=[
             foundedness_strategies[key]["cmd_line"]
             for key in foundedness_strategies.keys()
-        ]
+        ],
+        help="Decide which BDG version to use - heuristic decides the smalles grounding size automatically, "+\
+            "SATURATION prefers FastFound, and GUESS prefers the standard foundedness check."
     )
+
+    # -------------------
+    # IF ENABLE DIFFERENT HEURISTICS:
+    #parser.add_argument(
+    #    "--heuristic-method",
+    #    default=heuristic_methods["TREEWIDTH_PURE"]["cmd_line"],
+    #    choices=[
+    #        heuristic_methods[key]["cmd_line"]
+    #        for key in heuristic_methods.keys()
+    #    ],
+    #)
 
     parser.add_argument("files", type=argparse.FileType("r"), nargs="+")
     args = parser.parse_args()
 
-    heuristic_method = None
-    for key in heuristic_methods.keys():
-        if args.heuristic_method == heuristic_methods[key]["cmd_line"]:
-            heuristic_method = heuristic_methods[key]["enum_mode"]
+    #heuristic_method = None
+    #for key in heuristic_methods.keys():
+    #    if args.heuristic_method == heuristic_methods[key]["cmd_line"]:
+    #        heuristic_method = heuristic_methods[key]["enum_mode"]
+
+    heuristic_method = heuristic_methods["TREEWIDTH_PURE"]["enum_mode"]
+
 
     treewidth_strategy = None
     for key in treewidth_strategies.keys():

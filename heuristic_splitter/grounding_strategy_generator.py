@@ -183,7 +183,7 @@ class GroundingStrategyGenerator:
             exists_non_tight_rule = False
 
             # TODO -> Add to cmd.-line options:
-            only_significant_bdg_rules = False
+            only_significant_bdg_rules = True
         
             for node in subgraph.nodes:
                 # All those rules that have "node" as a head.
