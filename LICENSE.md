@@ -1,6 +1,6 @@
 # MIT License
 
-Copyright (c) 2022 Viktor Besin
+Copyright (c) 2023 (The Authors)
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the

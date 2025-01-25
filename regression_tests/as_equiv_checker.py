@@ -4,18 +4,29 @@ import argparse
 import subprocess
 import resource
 
+
+
 import clingo
 
-from newground.newground import Newground
-from newground.default_output_printer import DefaultOutputPrinter
+from datetime import datetime
 
-from newground.aggregate_strategies.aggregate_mode import AggregateMode
+from nagg.nagg import NaGG
+from nagg.default_output_printer import DefaultOutputPrinter
 
-from newground.cyclic_strategy import CyclicStrategy
+from nagg.aggregate_strategies.aggregate_mode import AggregateMode
 
-from newground.grounding_modes import GroundingModes
+from nagg.cyclic_strategy import CyclicStrategy
+
+from nagg.grounding_modes import GroundingModes
 
 from .regression_test_mode import RegressionTestStrategy
+
+from heuristic_splitter.heuristic_splitter import HeuristicSplitter
+
+from heuristic_splitter.enums.heuristic_strategy import HeuristicStrategy
+from heuristic_splitter.enums.treewidth_computation_strategy import TreewidthComputationStrategy
+from heuristic_splitter.enums.grounding_strategy import GroundingStrategy
+from heuristic_splitter.enums.output import Output
 
 def limit_virtual_memory():
     max_virtual_memory = 1024 * 1024 * 1024 * 64 # 64GB
@@ -52,13 +63,19 @@ class Context:
 
 class EquivChecker:
 
-    def __init__(self, chosenRegressionTestMode):
+    def __init__(self, chosenRegressionTestMode, foundedness_strategy, log_file_tmp_prefix, heuristic_splitter_test = False):
+
+        self.log_file_tmp_prefix = log_file_tmp_prefix
+
         self.chosenRegressiontestMode = chosenRegressionTestMode
+        self.foundedness_strategy = foundedness_strategy
+        self.heuristic_splitter_test = heuristic_splitter_test
+
         self.clingo_output = []
-        self.newground_output = []
+        self.nagg_output = []
 
         self.clingo_hashes = {}
-        self.newground_hashes = {}
+        self.nagg_hashes = {}
 
     def on_model(self, m, output, hashes):
         symbols = m.symbols(shown=True)
@@ -72,7 +89,7 @@ class EquivChecker:
         hashes[(hash(tuple(output[cur_pos])))] = cur_pos
 
     def parse(self):
-        parser = argparse.ArgumentParser(prog='Answerset Equivalence Checker', description='Checks equivalence of answersets produced by newground and clingo.')
+        parser = argparse.ArgumentParser(prog='Answerset Equivalence Checker', description='Checks equivalence of answersets produced by nagg and clingo.')
 
         parser.add_argument('instance')
         parser.add_argument('encoding')
@@ -97,8 +114,19 @@ class EquivChecker:
 
     def start(self, instance_file_contents, encoding_file_contents, verbose = True, one_directional_equivalence = True):
         """ 
-            one_directional_equivalence: If True, then only the direction clingo -> newground is checked, i.e. it must be the case, that for each answer set in the clingo result, there must be one in the newground result as well (but therefore it could be, that newground has more answersets)
+            one_directional_equivalence: If True, then only the direction clingo -> nagg is checked, i.e. it must be the case, that for each answer set in the clingo result, there must be one in the nagg result as well (but therefore it could be, that nagg has more answersets)
         """
+
+        gringo_encoding = []
+        encoding_splits = encoding_file_contents.split("\n")
+        for encoding_line in encoding_splits:
+            if encoding_line.startswith("#program"):
+                # Do not add lines to the encoding with #program lpopt|rules.
+                continue
+        
+            gringo_encoding.append(encoding_line)
+
+        gringo_encoding_contents = "\n".join(gringo_encoding)
 
         regression_test_strategy_string = ""
 
@@ -141,7 +169,7 @@ class EquivChecker:
             grounding_mode = GroundingModes.REWRITE_AGGREGATES_GROUND_PARTLY
             ground_guess = False
 
-            regression_test_strategy_string = "Checking Newground with partly rewriting "
+            regression_test_strategy_string = "Checking nagg with partly rewriting "
 
             if self.chosenRegressiontestMode == RegressionTestStrategy.REWRITING_TIGHT:
                 cyclic_strategy = CyclicStrategy.ASSUME_TIGHT
@@ -162,7 +190,7 @@ class EquivChecker:
             grounding_mode = GroundingModes.REWRITE_AGGREGATES_GROUND_FULLY
             ground_guess = True
 
-            regression_test_strategy_string = "Checking Newground with fully rewriting "
+            regression_test_strategy_string = "Checking nagg with fully rewriting "
 
             if self.chosenRegressiontestMode == RegressionTestStrategy.FULLY_GROUNDED_TIGHT:
                 cyclic_strategy = CyclicStrategy.ASSUME_TIGHT
@@ -190,39 +218,76 @@ class EquivChecker:
 
             print(f"[INFO] Checking current test with aggregate strategy: {aggregate_mode[0]}")
 
-            combined_file_input = instance_file_contents + encoding_file_contents
-            total_content = instance_file_contents + "\n#program rules.\n" + encoding_file_contents
-            self.start_clingo(combined_file_input, self.clingo_output, self.clingo_hashes)
+            combined_file_input = instance_file_contents + gringo_encoding_contents
+            optimization_problem_clingo = self.start_clingo(combined_file_input, self.clingo_output, self.clingo_hashes, mode="clingo")
 
+            # Custom printer keeps result of prototype (NaGG)
             custom_printer = CustomOutputPrinter()
 
-            newground = Newground(no_show = no_show, ground_guess = ground_guess, output_printer = custom_printer, aggregate_mode = aggregate_mode[1], cyclic_strategy=cyclic_strategy, grounding_mode=grounding_mode)
-            newground.start(total_content)
-            
-            self.start_clingo(custom_printer.get_string(), self.newground_output, self.newground_hashes)
+            heuristic_strategy = HeuristicStrategy.TREEWIDTH_PURE
+            treewidth_strategy = TreewidthComputationStrategy.NETWORKX_HEUR
+            grounding_strategy = GroundingStrategy.FULL
+            output_type = Output.DEFAULT_GROUNDER
 
-            if not one_directional_equivalence and len(self.clingo_output) != len(self.newground_output):
-                works = False
+            debug_mode = False
+
+            enable_lpopt = True
+            enable_logging = True
+
+            current_datetime = datetime.now()
+            log_file_name = self.log_file_tmp_prefix + "_" + current_datetime.strftime("%Y%m%d-%H%M%S") + ".log"
+
+            if self.heuristic_splitter_test is False:
+                total_content = instance_file_contents + "\n#program rules.\n" + encoding_file_contents
+
+                heuristic_splitter = HeuristicSplitter(
+                    heuristic_strategy, treewidth_strategy, grounding_strategy,
+                    debug_mode, enable_lpopt, output_printer = custom_printer,
+                    enable_logging=enable_logging, logging_file=log_file_name,
+                    output_type=output_type
+                )
+                heuristic_splitter.start(total_content)
+
             else:
-                for clingo_key in self.clingo_hashes.keys():
-                    if clingo_key not in self.newground_hashes:
-                        works = False
-                        if verbose:
-                            print(f"[ERROR] Used Aggregate Mode: {aggregate_mode[0]} - Could not find corresponding stable model in newground for hash {clingo_key}")
-                            print(f"[ERROR] This corresponds to the answer set: ")
-                            print(self.clingo_output[self.clingo_hashes[clingo_key]])
-                            print("Output of Newground:")
-                            print(self.newground_output)
+                heur_split_content = instance_file_contents + "\n" + encoding_file_contents
 
-                for newground_key in self.newground_hashes.keys():
-                    if newground_key not in self.clingo_hashes:
-                        works = False
-                        if verbose:
-                            print(f"[ERROR] Used Aggregate Mode: {aggregate_mode[0]} - Could not find corresponding stable model in clingo for hash {newground_key}")
-                            print(f"[ERROR] This corresponds to the answer set: ")
-                            print(self.newground_output[self.newground_hashes[newground_key]])
-                            print("Output of Newground:")
-                            print(self.newground_output)
+                heuristic_splitter = HeuristicSplitter(
+                    heuristic_strategy, treewidth_strategy, grounding_strategy,
+                    debug_mode, enable_lpopt, output_printer = custom_printer,
+                    enable_logging=enable_logging, logging_file=log_file_name,
+                    output_type=output_type
+                )
+                heuristic_splitter.start(heur_split_content)
+            
+            optimization_problem_nagg = self.start_clingo(custom_printer.get_string(), self.nagg_output, self.nagg_hashes, mode="clingo")
+
+            if optimization_problem_clingo is not None and optimization_problem_nagg is not None:
+                if optimization_problem_clingo != optimization_problem_nagg:
+                    works = False
+                    print(f"[ERROR] Final optimzed value clingo: {optimization_problem_clingo} vs. NaGG: {optimization_problem_nagg}")
+            else:                    
+                if not one_directional_equivalence and len(self.clingo_output) != len(self.nagg_output):
+                    works = False
+                else:
+                    for clingo_key in self.clingo_hashes.keys():
+                        if clingo_key not in self.nagg_hashes:
+                            works = False
+                            if verbose:
+                                print(f"[ERROR] Used Aggregate Mode: {aggregate_mode[0]} - Could not find corresponding stable model in nagg for hash {clingo_key}")
+                                print(f"[ERROR] This corresponds to the answer set: ")
+                                print(self.clingo_output[self.clingo_hashes[clingo_key]])
+                                #print("Output of nagg:")
+                                #print(self.nagg_output)
+
+                    for nagg_key in self.nagg_hashes.keys():
+                        if nagg_key not in self.clingo_hashes:
+                            works = False
+                            if verbose:
+                                print(f"[ERROR] Used Aggregate Mode: {aggregate_mode[0]} - Could not find corresponding stable model in clingo for hash {nagg_key}")
+                                print(f"[ERROR] This corresponds to the answer set: ")
+                                print(self.nagg_output[self.nagg_hashes[nagg_key]])
+                                #print("Output of nagg:")
+                                #print(self.nagg_output)
 
 
         if not works:
@@ -232,19 +297,19 @@ class EquivChecker:
                 print("[INFO] ----------------------")
                 print("[INFO] The answersets DIFFER!")
                 print(f"[INFO] Clingo produced a total of {len(self.clingo_output)}")
-                print(f"[INFO] newground produced a total of {len(self.newground_output)}")
+                print(f"[INFO] nagg produced a total of {len(self.nagg_output)}")
 
-            return (False, len(self.clingo_output), len(self.newground_output))
+            return (False, len(self.clingo_output), len(self.nagg_output))
         else: # works
             if verbose:
                 print("[INFO] The answersets are the SAME!")
 
-            return (True, len(self.clingo_output), len(self.newground_output))
+            return (True, len(self.clingo_output), len(self.nagg_output))
         
     
-    def start_clingo(self, program_input, output, hashes, timeout=1800):
+    def start_clingo(self, program_input, output, hashes, timeout=1800, mode="clingo"):
 
-        arguments = ["clingo", "--project", "--model=0"]
+        arguments = ["clingo", "--project", "--model=0", f"--mode={mode}"]
 
         try:
             #p = subprocess.Popen(arguments, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, preexec_fn=limit_virtual_memory)       
@@ -253,7 +318,7 @@ class EquivChecker:
 
             decoded_string = ret_vals_encoded.decode()
 
-            self.parse_clingo_output(decoded_string, output, hashes)
+            optimization_problem = self.parse_clingo_output(decoded_string, output, hashes)
 
             if p.returncode != 0 and p.returncode != 10 and p.returncode != 20 and p.returncode != 30:
                 print(f">>>>> Other return code than 0 in helper: {p.returncode}")
@@ -266,28 +331,48 @@ class EquivChecker:
 
             print(ex)
 
+        return optimization_problem
+
     def parse_clingo_output(self, output_string, output, hashes):
 
         next_line_model = False
 
         splits = output_string.split("\n")
         index = 0
+        prev_line = None
+        tmp_prev_line = None
+        optimization_problem = None
+
+        is_a_optimization_problem = False
+
         for line in splits:
 
-            if next_line_model == True:
+            prev_line = tmp_prev_line
+            tmp_prev_line = line
 
-                splits_space = line.split(" ")
-                splits_space.sort()
+            if is_a_optimization_problem is False:
+                if next_line_model == True:
+                    splits_space = line.split(" ")
+                    splits_space.sort()
 
-                output.append([])
-                cur_pos = len(output) - 1
-                output[cur_pos] = splits_space
-                hashes[(hash(tuple(output[cur_pos])))] = cur_pos
+                    output.append([])
+                    cur_pos = len(output) - 1
+                    output[cur_pos] = splits_space
+                    hashes[(hash(tuple(output[cur_pos])))] = cur_pos
 
-                next_line_model = False
+                    next_line_model = False
 
-            if line.startswith("Answer"):
-                next_line_model = True
+                if line.startswith("Answer"):
+                    next_line_model = True
 
+            if "Optimization" in line:
+                is_a_optimization_problem = True
+                hashes.clear()
+
+            if "OPTIMUM FOUND" == line:
+                optimization_problem = prev_line
 
             index = index + 1
+
+        return optimization_problem
+

@@ -1,4 +1,9 @@
-*.swp
-
-dlv*
 __pycache__
+*.class
+*.java
+*.c
+*.so
+heuristic_splitter/*.so
+heuristic_splitter/*.c
+heuristic_splitter/build
+build

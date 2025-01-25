@@ -1,5 +1,5 @@
 q(X) :- p(X), p(Y), X = Y.
 
-a :- not b.
-b :- not a.
+a(1) :- not a(2).
+a(2) :- not a(1).
 

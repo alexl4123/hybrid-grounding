@@ -6,13 +6,14 @@ import sys
 
 from .as_equiv_checker import EquivChecker
 from .regression_test_mode import RegressionTestStrategy
+from nagg.foundedness_strategy import FoundednessStrategy
 
 class RegressionTest:
     
     @classmethod
     def start(cls):
 
-        parser = argparse.ArgumentParser(prog='Regression test for Answerset Equivalence Checker', description='Checks equivalence of answersets produced by newground and clingo on all instance-encoding pairs in a subfolder.')
+        parser = argparse.ArgumentParser(prog='Regression test for Answerset Equivalence Checker', description='Checks equivalence of answersets produced by nagg and clingo on all instance-encoding pairs in a subfolder.')
 
         all_test = "test-all"
         rewriting_modes = [
@@ -50,78 +51,119 @@ class RegressionTest:
         parser.add_argument('--mode', choices=[regressionTestMode[0] for regressionTestMode in regressionTestModes] + [all_test], default=regressionTestModes[1][0])
         parser.add_argument('--folder', default="__DEFAULT__")
 
+        foundednessStrategies = [
+            ("default", FoundednessStrategy.DEFAULT),
+            ("saturation", FoundednessStrategy.SATURATION)
+        ]
+        parser.add_argument('--foundedness-strategy',
+            choices=[foundednessStrategy[0] for foundednessStrategy in foundednessStrategies],
+            default=foundednessStrategies[0][0])
+
+
+        parser.add_argument(
+            "--heuristic-splitter-test",
+            action="store_true",
+            help="Test the heuristic splitter (and not NaGG).",
+        )
+
         args = parser.parse_args()
 
         chosenRegressionTestMode = None
         for regressionTestMode in regressionTestModes:
             if regressionTestMode[0] == args.mode:
                 chosenRegressionTestMode = regressionTestMode[1]
-        
+
+        chosen_foundedness_strategy = None
+        for foundednessStrategy in foundednessStrategies:
+            if foundednessStrategy[0] == args.foundedness_strategy:
+                chosen_foundedness_strategy = foundednessStrategy[1]
+
         if args.mode == all_test:
             chosenRegressionTestMode = all_test
 
         folder_path = args.folder 
 
-        if chosenRegressionTestMode != all_test:
+        if args.heuristic_splitter_test is False:
+            if chosenRegressionTestMode != all_test:
+                if folder_path == "__DEFAULT__" and chosenRegressionTestMode in rewriting_modes:
+                    folder_path = os.path.join("regression_tests","tight_non_tight_tests")
+                elif folder_path == "__DEFAULT__" and chosenRegressionTestMode in aggregate_modes:
+                    folder_path = os.path.join("regression_tests","aggregate_tests")
+
+                tests_successfull = cls.regression_test_a_strategy_helper(chosenRegressionTestMode, folder_path, chosen_foundedness_strategy)
+
+                if tests_successfull is True:
+                    sys.exit(0)
+                else:
+                    sys.exit(1)
+            else:
+
+                tests_successfull = True
+
+                for aggregate_strategy in aggregate_modes:
+                    if folder_path == "__DEFAULT__" and aggregate_strategy in aggregate_modes:
+                        aggregates_folder = os.path.join("regression_tests","aggregate_tests")
+                    else:
+                        aggregates_folder = folder_path
+
+                    test_successful = cls.regression_test_a_strategy_helper(aggregate_strategy, aggregates_folder, chosen_foundedness_strategy)
+                    if not test_successful:
+                        strategy_index = regressionTestModes.index(lambda element : element[1] == aggregate_strategy)
+                        strategy_string = regressionTestModes[strategy_index][0]
+                        print("---------------------------------------------")
+                        print(f"The following aggregate-strategy FAILED (responded with an error): {strategy_string}")
+                        print("---------------------------------------------")
+
+                    tests_successfull = tests_successfull and test_successful
+
+                for rewriting_strategy in rewriting_modes:
+                    if folder_path == "__DEFAULT__" and rewriting_strategy in rewriting_modes:
+                        rewriting_folder = os.path.join("regression_tests","tight_non_tight_tests")
+                    else:
+                        rewriting_folder = folder_path
+
+                    test_successful = cls.regression_test_a_strategy_helper(rewriting_strategy, rewriting_folder, chosen_foundedness_strategy)
+                    if not test_successful:
+                        strategy_index = regressionTestModes.index(lambda element : element[1] == rewriting_strategy)
+                        strategy_string = regressionTestModes[strategy_index][0]
+                        print("---------------------------------------------")
+                        print(f"The following rewriting-strategy FAILED (responded with an error): {strategy_string}")
+                        print("---------------------------------------------")
+
+                    tests_successfull = tests_successfull and test_successful
+
+                if tests_successfull:
+                    sys.exit(0)
+                else:
+                    sys.exit(1)
+
+        else:
+
+            folder_path = args.folder 
             if folder_path == "__DEFAULT__" and chosenRegressionTestMode in rewriting_modes:
                 folder_path = os.path.join("regression_tests","tight_non_tight_tests")
             elif folder_path == "__DEFAULT__" and chosenRegressionTestMode in aggregate_modes:
                 folder_path = os.path.join("regression_tests","aggregate_tests")
 
-            tests_successfull = cls.regression_test_a_strategy_helper(chosenRegressionTestMode, folder_path)
+            tests_successfull = cls.regression_test_a_strategy_helper(chosenRegressionTestMode, folder_path, chosen_foundedness_strategy, True)
 
             if tests_successfull is True:
                 sys.exit(0)
             else:
                 sys.exit(1)
-        else:
-
-            tests_successfull = True
-
-            for aggregate_strategy in aggregate_modes:
-                if folder_path == "__DEFAULT__" and aggregate_strategy in aggregate_modes:
-                    aggregates_folder = os.path.join("regression_tests","aggregate_tests")
-                else:
-                    aggregates_folder = folder_path
-
-                test_successful = cls.regression_test_a_strategy_helper(aggregate_strategy, aggregates_folder)
-                if not test_successful:
-                    strategy_index = regressionTestModes.index(lambda element : element[1] == aggregate_strategy)
-                    strategy_string = regressionTestModes[strategy_index][0]
-                    print("---------------------------------------------")
-                    print(f"The following aggregate-strategy FAILED (responded with an error): {strategy_string}")
-                    print("---------------------------------------------")
-
-                tests_successfull = tests_successfull and test_successful
-
-            for rewriting_strategy in rewriting_modes:
-                if folder_path == "__DEFAULT__" and rewriting_strategy in rewriting_modes:
-                    rewriting_folder = os.path.join("regression_tests","newground_tests")
-                else:
-                    rewriting_folder = folder_path
-
-                test_successful = cls.regression_test_a_strategy_helper(rewriting_strategy, rewriting_folder)
-                if not test_successful:
-                    strategy_index = regressionTestModes.index(lambda element : element[1] == rewriting_strategy)
-                    strategy_string = regressionTestModes[strategy_index][0]
-                    print("---------------------------------------------")
-                    print(f"The following rewriting-strategy FAILED (responded with an error): {strategy_string}")
-                    print("---------------------------------------------")
-
-                tests_successfull = tests_successfull and test_successful
-
-            if tests_successfull:
-                sys.exit(0)
-            else:
-                sys.exit(1)
 
     @classmethod
-    def regression_test_a_strategy_helper(cls, chosenRegressionTestMode, folder_path):
+    def regression_test_a_strategy_helper(cls, chosenRegressionTestMode, folder_path, foundedness_strategy, heuristic_splitter_test = False):
         sub_directories = []
 
-        sub_folder_pattern = re.compile("^[0-9]{2,3}_test$")
-        encoding_pattern = re.compile("^encoding_[0-9]{2,3}_test\.lp$")
-        instance_pattern = re.compile("^instance_[0-9]{2,3}_test\.lp$")
+        if heuristic_splitter_test is False:
+            sub_folder_pattern = re.compile(r"^[0-9]{2,3}_test$")
+            encoding_pattern = re.compile(r"^encoding_[0-9]{2,3}_test\.lp$")
+            instance_pattern = re.compile(r"^instance_[0-9]{2,3}_test\.lp$")
+        else:
+            sub_folder_pattern = re.compile(r"^.+$")
+            encoding_pattern = re.compile(r"^encoding.*\.lp$")
+            instance_pattern = re.compile(r"^instance.*\.lp$")
 
         for f in os.scandir(folder_path):
             if f.is_dir():
@@ -130,13 +172,17 @@ class RegressionTest:
       
         sub_directories.sort()
 
-        return cls.regression_test_a_strategy(chosenRegressionTestMode, folder_path, sub_directories, encoding_pattern, instance_pattern)
+        return cls.regression_test_a_strategy(chosenRegressionTestMode, folder_path, sub_directories,
+            encoding_pattern, instance_pattern, foundedness_strategy, heuristic_splitter_test = heuristic_splitter_test)
 
     @classmethod
-    def regression_test_a_strategy(cls, chosenRegressionTestMode, folder_path, sub_directories, encoding_pattern, instance_pattern):
+    def regression_test_a_strategy(cls, chosenRegressionTestMode, folder_path, sub_directories,
+            encoding_pattern, instance_pattern, foundedness_strategy, heuristic_splitter_test = False):
         total_tests = 0
         failed_tests = {}
         skipped_tests = {}
+
+        log_file_prefix = "logs/regression_tests_logs/"
 
         for sub in sub_directories:
             print("<<<<---->>>>")
@@ -169,16 +215,18 @@ class RegressionTest:
 
             start_time = time.time()
 
-            checker = EquivChecker(chosenRegressionTestMode)
-            result, clingo_answersets, newground_answersets = checker.start(instance_file_contents, encoding_file_contents)
+            log_file_tmp_prefix = log_file_prefix + sub
+
+            checker = EquivChecker(chosenRegressionTestMode, foundedness_strategy, log_file_tmp_prefix, heuristic_splitter_test = heuristic_splitter_test)
+            result, clingo_answersets, nagg_answersets = checker.start(instance_file_contents, encoding_file_contents)
 
             end_time = time.time()
 
             if result:
-                print(f"[INFO] \"{sub}\" test was SUCCESSFUL, clingo-answersets: {clingo_answersets}, newground-answersets: {newground_answersets}")
+                print(f"[INFO] \"{sub}\" test was SUCCESSFUL, clingo-answersets: {clingo_answersets}, nagg-answersets: {nagg_answersets}")
             else:
-                print(f"[INFO] \"{sub}\" test FAILED, clingo-answersets: {clingo_answersets}, newground-answersets: {newground_answersets}")
-                failed_tests[sub] = {"clingo_answersets":clingo_answersets, "newground_answersets":newground_answersets}
+                print(f"[INFO] \"{sub}\" test FAILED, clingo-answersets: {clingo_answersets}, nagg-answersets: {nagg_answersets}")
+                failed_tests[sub] = {"clingo_answersets":clingo_answersets, "nagg_answersets":nagg_answersets}
 
             total_tests += 1
 
@@ -193,7 +241,7 @@ class RegressionTest:
         if number_failed_tests > 0:
             print(f"{number_failed_tests}/{total_tests} of executed tests failed:")
             for key in failed_tests.keys():
-                print(f"- {key} - Clingo Answersets: {failed_tests[key]['clingo_answersets']}, newground Answersets: {failed_tests[key]['newground_answersets']}")
+                print(f"- {key} - Clingo Answersets: {failed_tests[key]['clingo_answersets']}, nagg Answersets: {failed_tests[key]['nagg_answersets']}")
         else:
             print(f"All executed tests were SUCCESSFUL (In total {total_tests} were conducted and {total_tests - len(skipped_tests.keys())} were executed).")
 

@@ -1,0 +1,14 @@
+node(1).
+node(2).
+node(3).
+node(4).
+link(1,2).
+link(1,3).
+link(2,4).
+link(4,3).
+link(3,1).
+colour(red0).
+colour(green0).
+colour(blue0).
+%colour(yellow0).
+%colour(cyan0).

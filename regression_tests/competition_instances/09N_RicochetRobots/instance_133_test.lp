@@ -1,0 +1,12 @@
+barrier(1,2,south).
+barrier(3,2,south).
+barrier(2,3,north).
+dim(1).
+dim(2).
+dim(3).
+length(3).
+pos(blue,1,3).
+pos(green,3,1).
+pos(red,1,1).
+pos(yellow,3,3).
+target(red,2,2).

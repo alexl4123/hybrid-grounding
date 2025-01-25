@@ -1,0 +1,2 @@
+- The original encoding uses same name predicates with different arities!
+-> Not supported!
