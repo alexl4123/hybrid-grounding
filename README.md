@@ -1,5 +1,3 @@
-# Newground 3 (Heuristic Splitter)
-
 # Newground3: Advanced Grounding for ASP
 
 **Prototype Status:**  
@@ -108,6 +106,10 @@ python start_heuristic_splitter.py --grounding-strategy=non-ground-rewrite test_
 ## Acknowledgments
 
 I developed this software as part of my Master's Thesis, see [thesis](https://beiser.eu) for details.
+
+## Supplementary Material:
+
+[Supplementary Material](https://github.com/alexl4123/newground3-supplementary-material-MSC-Thesis)
 
 # Earlier Versions: Newground and NaGG
 
